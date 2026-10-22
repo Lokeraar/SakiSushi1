@@ -52,7 +52,7 @@ CREATE TABLE config (
     aumento_indefinido BOOLEAN DEFAULT FALSE,
     fecha_ultimo_aumento TIMESTAMP WITH TIME ZONE,
     ultima_actualizacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    admin_password TEXT DEFAULT '654321',
+    admin_password TEXT DEFAULT '123456',
     recovery_email TEXT DEFAULT 'admin@sakisushi.com',
     alerta_stock_minimo INTEGER DEFAULT 5,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -72,7 +72,7 @@ INSERT INTO config (
     0, 0,
     FALSE, FALSE, FALSE,
     NULL, NULL, FALSE,
-    '654321', 'admin@sakisushi.com', 5
+    '123456', 'admin@sakisushi.com', 5
 )
 ON CONFLICT (id) DO UPDATE SET
     admin_password      = COALESCE(EXCLUDED.admin_password,      config.admin_password),

@@ -6,7 +6,7 @@
 -- escrita en supabase-config.js) cualquiera lee, sin autenticarse:
 --
 --   usuarios.password_hash   (bcrypt de los 3 usuarios)
---   config.admin_password    (texto plano: '654321')
+--   config.admin_password    (texto plano)
 --
 -- Verificado desde la consola del navegador: `from('usuarios')
 -- .select('password_hash')` devuelve 2 filas con el hash incluido.
