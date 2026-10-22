@@ -236,8 +236,12 @@ window.tienePermisoPush = function() {
 // ============================================
 window.cargarConfiguracion = async function() {
     try {
+        // Se lee la vista pública, no la tabla cruda: desde la migración 05
+        // `config` solo es legible por cajero y admin, y el cliente anónimo
+        // necesita la tasa para mostrar precios. La vista `config_publica`
+        // expone todo menos `admin_password`.
         const { data, error } = await window.supabaseClient
-            .from('config')
+            .from('config_publica')
             .select('*')
             .eq('id', 1)
             .single();

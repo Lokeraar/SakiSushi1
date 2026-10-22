@@ -24,8 +24,11 @@
                 // Usar los recientes (ya tienen foto o null)
                 admins = recent;
             } else {
-                // Obtener todos los admins activos de la BD
-                const { data, error } = await window.supabaseClient.from('usuarios').select('*').eq('rol', 'admin').eq('activo', true);
+                // Se lee la vista pública, no la tabla cruda: desde la migración 05
+                // `usuarios` solo es legible por admin, y el login necesita listar
+                // administradores ANTES de tener sesión. `usuarios_publicos` expone
+                // nombre, username, rol y foto, nunca password_hash.
+                const { data, error } = await window.supabaseClient.from('usuarios_publicos').select('*').eq('rol', 'admin').eq('activo', true);
                 if (error) throw error;
                 admins = data || [];
             }
