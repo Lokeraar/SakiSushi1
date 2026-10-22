@@ -251,7 +251,11 @@
         var costoEnvio = _preciosPorParroquia[deliveryFormData.parroquia] || 0;
         var items = S.state.carrito.map(function(i) {
             return {
-                platillo_id: parseInt(i.platilloId),
+                // El id real de `menu` es TEXT con forma `plat_<uuid>_<n>`.
+                // `parseInt` sobre eso devuelve NaN, y NaN se serializa a JSON
+                // como null: la RPC recibía platillo_id null y rechazaba el
+                // pedido. Se envía el id tal cual viene del menú.
+                platillo_id: i.platilloId,
                 nombre: i.nombre,
                 cantidad: i.cantidad || 1,
                 precio: i.precio || 0,

@@ -34,7 +34,11 @@
     function crearPedidoBase(tipo) {
         var items = (S.state.carrito || []).map(function(item) {
             return {
-                platillo_id: parseInt(item.platilloId),
+                // El id real de `menu` es TEXT con forma `plat_<uuid>_<n>`.
+                // `parseInt` sobre eso devuelve NaN, y NaN se serializa a JSON
+                // como null: la RPC recibía platillo_id null y rechazaba el
+                // pedido. Se envía el id tal cual viene del menú.
+                platillo_id: item.platilloId,
                 nombre: item.nombre,
                 cantidad: item.cantidad || 1,
                 precio: item.precio || 0,
