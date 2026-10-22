@@ -1,0 +1,18 @@
+# Normalizar finales de línea: este repo se trabajó en Windows (CRLF) y ahora
+# vive en Android (LF). Sin esto, `git status` reporta 58 archivos modificados
+# cuando en realidad hay 10 líneas de cambio.
+* text=auto eol=lf
+
+# Binarios: nunca tocar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+
+# Windows: no aplica en este proyecto, pero si se vuelve a editar allá
+*.bat text eol=crlf
+*.ps1 text eol=crlf

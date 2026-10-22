@@ -1,0 +1,14 @@
+{
+  "name": "sakisushi0",
+  "version": "1.0.0",
+  "description": "Sushi restaurant ordering system",
+  "scripts": {
+    "test": "npx playwright test --reporter=line",
+    "test:headed": "npx playwright test --headed",
+    "test:ui": "npx playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "http-server": "^14.1.1"
+  }
+}

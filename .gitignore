@@ -1,0 +1,58 @@
+# Dependencias
+node_modules/
+
+# Builds
+dist/
+build/
+target/
+.astro/
+
+# Python
+__pycache__/
+*.py[cod]
+.Python
+env/
+venv/
+.venv/
+.env
+.env.local
+.env.*
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cobertura y resultados de pruebas
+coverage/
+htmlcov/
+.coverage
+test-results/
+playwright-report/
+test-results.txt
+
+# Comprimidos
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+
+# Memoria local del agente (no es código del proyecto)
+.engram/
+.atl/
+
+# Credenciales locales del dispositivo — NUNCA al repositorio
+.pguri*
