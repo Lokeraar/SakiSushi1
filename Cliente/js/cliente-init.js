@@ -7,7 +7,7 @@
 
     // ==================== INIT (DOMContentLoaded) ====================
 
-    function inicializarCliente() {
+    async function inicializarCliente() {
         // 0. Extraer parámetros de la URL (mesa, etc.)
         var urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mesa')) S.state.mesaId = urlParams.get('mesa');
@@ -25,8 +25,14 @@
         var hayCarrito = false;
         if (window.restaurarCarrito) hayCarrito = window.restaurarCarrito();
 
-        // 3. Configuración global
-        if (window.cargarConfiguracion) window.cargarConfiguracion();
+        // 3. Configuración global — CON await, a propósito.
+        // Antes se llamaba sin esperar, así que el render corría antes de que
+        // llegara la tasa y pintaba los precios con el valor por defecto.
+        // Como ahora la config incluye la consulta al BCV, esperar es
+        // obligatorio: sin esto los precios salen con la tasa vieja.
+        if (window.cargarConfiguracion) {
+            await window.cargarConfiguracion();
+        }
 
         // 4. Cargar menú e inventario en paralelo
         Promise.all([
@@ -164,11 +170,20 @@
 
     // ==================== HOOK INTO PAGE EVENTS ==================== 
 
+    // inicializarCliente es async desde que espera la tasa del BCV. Las dos
+    // invocaciones atrapan el rechazo: si algo falla dentro, sin este catch
+    // quedaría un unhandled rejection y el arranque se cortaría en silencio.
+    function _arrancar() {
+        inicializarCliente().catch(function(e) {
+            console.error('Error al inicializar el Cliente:', e);
+        });
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', inicializarCliente);
+        document.addEventListener('DOMContentLoaded', _arrancar);
     } else {
         // DOM already loaded
-        inicializarCliente();
+        _arrancar();
     }
 
     // beforeunload — cleanup (NOT realtime, NOT service worker)

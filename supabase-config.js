@@ -234,6 +234,84 @@ window.tienePermisoPush = function() {
 // ============================================
 // FUNCIONES DE CARGA DE CONFIGURACIÓN
 // ============================================
+// TASA DEL BCV
+// ============================================
+// La Edge Function `tasa-bcv-scraper` consulta el BCV y devuelve la tasa
+// oficial del día. Existe desde mayo pero estaba desconectada del frontend:
+// los precios se mostraban con la tasa guardada en `config`, que quedó
+// congelada en 544,58 desde el 28-may.
+//
+// Se cachea por día en localStorage para no golpear la función en cada carga
+// y para que un fallo del BCV no rompa la app.
+window.obtenerTasaBCV = async function(opciones) {
+    const forzar = opciones && opciones.forzar;
+    const hoy = new Date().toISOString().split('T')[0];
+
+    if (!forzar) {
+        const fechaCache = localStorage.getItem('saki_bcv_fecha');
+        const valorCache = parseFloat(localStorage.getItem('saki_bcv_valor'));
+        if (fechaCache === hoy && valorCache > 0) {
+            return valorCache;
+        }
+    }
+
+    try {
+        const url = window.SUPABASE_URL + '/functions/v1/tasa-bcv-scraper';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': window.SUPABASE_ANON_KEY,
+                'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY
+            }
+        });
+        const data = await res.json();
+        if (!data.success || !(data.tasa > 0)) {
+            console.warn('BCV no devolvió una tasa usable:', data.error || 'sin detalle');
+            return null;
+        }
+        localStorage.setItem('saki_bcv_fecha', hoy);
+        localStorage.setItem('saki_bcv_valor', String(data.tasa));
+        console.log('💱 Tasa BCV del día:', data.tasa, '(' + (data.fuente || 'BCV') + ')');
+        return data.tasa;
+    } catch (e) {
+        console.warn('No se pudo consultar el BCV, se usa la tasa guardada:', e.message);
+        return null;
+    }
+};
+
+// Aplica el aumento vigente sobre una tasa base, igual que el admin.
+// Se duplica a propósito la aritmética de admin-config.js para que el cliente
+// no dependa de que el admin tenga el panel abierto.
+function _calcularTasaEfectiva(tasaBase, cfg) {
+    var activoDiario  = !!cfg.aumento_activo;
+    var activoSemanal = !!cfg.aumento_semanal;
+    var indefinido    = !!cfg.aumento_indefinido;
+    var pct           = parseFloat(cfg.aumento_diario) || 0;
+
+    if ((!activoDiario && !activoSemanal) || !cfg.aumento_desde) {
+        return tasaBase;
+    }
+
+    var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    var desde = new Date(String(cfg.aumento_desde).split('T')[0] + 'T00:00:00');
+    if (desde > hoy) return tasaBase;
+
+    var hasta = (!indefinido && cfg.aumento_hasta)
+        ? new Date(String(cfg.aumento_hasta).split('T')[0] + 'T00:00:00')
+        : null;
+    if (hasta && hasta < desde) return tasaBase;
+
+    var finEfectivo = (hasta && hasta < hoy) ? hasta : hoy;
+    var msDia       = 24 * 60 * 60 * 1000;
+    var msPeriodo   = activoSemanal ? 7 * msDia : msDia;
+    var periodos    = Math.max(0, Math.floor((finEfectivo - desde) / msPeriodo) + 1);
+    var acumulado   = periodos * pct;
+
+    return tasaBase * (1 + acumulado / 100);
+}
+
+// ============================================
 window.cargarConfiguracion = async function() {
     try {
         // Se lee la vista pública, no la tabla cruda: desde la migración 05
@@ -247,7 +325,32 @@ window.cargarConfiguracion = async function() {
             .single();
         if (error && error.code !== 'PGRST116') throw error;
         if (data) window.configGlobal = { ...window.configGlobal, ...data };
-        console.log('✅ Configuración cargada.');
+
+        // ── Tasa del día ──
+        // Se consulta el BCV y, si responde, se usa como tasa base. El precio
+        // final lo sigue calculando `tasa_efectiva` = base × (1 + aumento).
+        //
+        // Importante: el aumento SOLO se aplica mientras esté vigente (activo
+        // o semanal, dentro de su ventana de fechas). Si no, tasa_efectiva es
+        // la tasa base tal cual. Antes esto se recalculaba solo si el admin
+        // abría su panel, así que el cliente podía quedar con un valor viejo.
+        var tasaBCV = window.obtenerTasaBCV ? await window.obtenerTasaBCV() : null;
+        if (tasaBCV > 0) {
+            window.configGlobal.tasa_cambio      = tasaBCV;
+            window.configGlobal.tasa_efectiva    = _calcularTasaEfectiva(tasaBCV, window.configGlobal);
+            window.configGlobal.tasa_origen      = 'bcv';
+            window.configGlobal.tasa_consultada  = new Date().toISOString();
+        } else {
+            // Sin BCV se usa lo que haya en config, que la migración dejó como
+            // último valor bueno. Nunca se cae a un 400 hardcodeado.
+            window.configGlobal.tasa_origen = 'config';
+        }
+
+        console.log('✅ Configuración cargada.', {
+            base: window.configGlobal.tasa_cambio,
+            efectiva: window.configGlobal.tasa_efectiva,
+            origen: window.configGlobal.tasa_origen
+        });
         return window.configGlobal;
     } catch (error) {
         console.error('Error cargando configuración:', error);
