@@ -33,6 +33,13 @@
             window.revisarCarritoAlCargar();
         }
 
+        // 2c. Preguntar si quiere continuar con el pedido anterior.
+        // El contador ya decidió si sigue vigente; esto solo pide permiso.
+        // Si venció, revisarCarritoAlCargar() ya lo vació y no se pregunta.
+        if (window.mostrarDialogoSiCorresponde) {
+            setTimeout(function () { window.mostrarDialogoSiCorresponde(); }, 600);
+        }
+
         // 3. Configuración global — CON await, a propósito.
         // Antes se llamaba sin esperar, así que el render corría antes de que
         // llegara la tasa y pintaba los precios con el valor por defecto.
