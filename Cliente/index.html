@@ -1318,6 +1318,26 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             cursor:pointer;
         }
         .menu-card.agotado .menu-card-image{filter:grayscale(100%);cursor:default}
+        /* Tarjeta bloqueada: además de la foto en gris, hay que APAGAR los
+           botones. Sin esto quedaban naranjas y con cursor de mano, así que
+           el cliente tocaba y no pasaba nada: parecía un fallo de la app. */
+        .menu-card.agotado .btn-add,
+        .menu-card.agotado .btn-add[disabled],
+        .menu-card.agotado .btn-customize,
+        .menu-card.agotado .btn-customize[disabled]{
+            background:rgba(120,120,120,.35)!important;
+            color:rgba(255,255,255,.45)!important;
+            cursor:not-allowed!important;
+            pointer-events:none;
+            box-shadow:none!important;
+        }
+        .menu-card.agotado .menu-card-title,
+        .menu-card.agotado .menu-card-price{opacity:.55}
+        /* Aviso de ingrediente secundario faltante: el platillo sigue
+           disponible, solo se advierte que viene incompleto. */
+        .aviso-secundarios{font-size:.72rem;color:#FF9800;padding:.35rem .5rem;
+            border-top:1px solid rgba(255,255,255,.08);
+            display:flex;gap:.3rem;align-items:center}
         .menu-card-sold-overlay {
             position:absolute;
             inset:0;
@@ -2918,9 +2938,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-favoritos.js"></script>
     <script src="js/cliente-voz.js"></script>
     <script src="js/cliente-stock.js"></script>
-    <script src="js/cliente-disponibilidad.js"></script>
-    <script src="js/cliente-mesonero.js"></script>
-    <script src="js/cliente-menu.js"></script>
+    <script src="js/cliente-disponibilidad.js?v=1792779365"></script>
+    <script src="js/cliente-mesonero.js?v=1792779365"></script>
+    <script src="js/cliente-menu.js?v=1792779365"></script>
     <script src="js/cliente-scroll.js"></script>
     <script src="js/cliente-ui.js"></script>
     <script src="js/cliente-notificaciones.js"></script>

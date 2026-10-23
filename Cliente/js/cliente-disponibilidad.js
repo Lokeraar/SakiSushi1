@@ -244,4 +244,12 @@
         aplicarAlDom(r);
         return r;
     };
+
+    // Si el menú ya se pintó antes de que este archivo cargara, se aplica la
+    // capa ahora. Sin esto, un orden de scripts distinto dejaría la regla sin
+    // efecto hasta el primer repintado.
+    if (window._pendientesDisponibilidad) {
+        window._pendientesDisponibilidad.length = 0;
+        window.actualizarDisponibilidadMenu();
+    }
 })();

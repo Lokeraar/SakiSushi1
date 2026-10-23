@@ -105,6 +105,24 @@
         const pagItems = filteredMenuItems.slice((_paginaActual - 1) * ITEMS_POR_PAGINA, _paginaActual * ITEMS_POR_PAGINA);
         // Render directo, síncrono, sin observer ni RAF — tarjetas siempre visibles
         menuGrid.innerHTML = pagItems.map(_htmlTarjeta).join('') + _htmlPaginacion(_paginaActual, totalPaginas);
+
+        // Punto de enganche de la disponibilidad.
+        //
+        // Cada repintado reescribe el innerHTML, así que cualquier marca
+        // anterior desaparece: filtros, búsqueda, cambio de página. Si la
+        // capa se aplicara solo en el arranque (como estaba), la regla se
+        // perdía en el primer clic en una categoría.
+        //
+        // Se engancha AQUÍ y no en renderizarMenuPaginado porque esta función
+        // también se llama al paginar, que no pasa por allá.
+        //
+        // La referencia se guarda al cargar para no depender del orden de los
+        // scripts: cliente-disponibilidad.js puede no haber corrido aún.
+        if (window.actualizarDisponibilidadMenu) {
+            window.actualizarDisponibilidadMenu();
+        } else {
+            (window._pendientesDisponibilidad = window._pendientesDisponibilidad || []).push(1);
+        }
     }
 
     // Function to render the menu with given filters
