@@ -74,6 +74,24 @@
                 detenerTimer(tipo);
                 document.getElementById(tipo + 'Modal').classList.remove('active');
                 if (window.mostrarToast) window.mostrarToast('⏰ Tiempo de pago agotado. Pedido cancelado.', 'warning');
+
+                // ── Avisar a la base, no solo a la pantalla ──
+                // Antes esto terminaba acá: el modal se cerraba y el mensaje
+                // decía "cancelado", pero el pedido seguía 'pendiente' en la
+                // base con sus ingredientes reservados. La reserva quedaba
+                // tomada para siempre.
+                //
+                // Ahora se intenta cancelar de verdad. El barrido de pg_cron
+                // es la red de seguridad para cuando el cliente cerró la
+                // pestaña; esto es el caso normal, con la pestaña abierta.
+                if (window.cancelarPedidoPorVencimiento) {
+                    window.cancelarPedidoPorVencimiento(S.state.pedidoPendienteId)
+                        .catch(function(e) { console.warn('No se pudo cancelar el pedido vencido:', e.message); });
+                }
+                // Limpiar el carrito local: el pedido ya no existe para el cliente
+                if (S.state) S.state.carrito = [];
+                if (window.guardarCarrito) window.guardarCarrito();
+                if (window.actualizarCarritoUI) window.actualizarCarritoUI();
             }
         }, 1000);
     }
@@ -299,6 +317,12 @@
             if (window.guardarCarrito) window.guardarCarrito();
             if (window.actualizarCarritoUI) window.actualizarCarritoUI();
             if (window.actualizarCarritoBadge) window.actualizarCarritoBadge();
+            // Recordar el pedido real (la RPC genera el id) para poder cancelarlo
+            // si el pago no llega antes de que venza el plazo.
+            if (resp.data && resp.data.pedido_id) {
+                S.state.pedidoPendienteId = resp.data.pedido_id;
+                if (window.guardarPedidoPendiente) window.guardarPedidoPendiente(resp.data.pedido_id, 'delivery');
+            }
             detenerTimer('delivery');
             limpiarDatosFormulario();
             document.getElementById('deliveryModal').classList.remove('active');

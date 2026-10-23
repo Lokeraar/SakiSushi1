@@ -65,6 +65,22 @@
         // 11. Historial
         if (window.actualizarBotonHistorial) window.actualizarBotonHistorial();
 
+        // 11b. Reservas vencidas
+        // Si el cliente cerró la pestaña con un pedido pendiente y vuelve
+        // después del plazo, hay que avisarle. El barrido de pg_cron ya
+        // liberó el stock; esto limpia el rastro local y avisa.
+        if (window.revisarPedidoPendienteAlCargar) {
+            window.revisarPedidoPendienteAlCargar().then(function(r) {
+                if (r && r.enPlazo === false) {
+                    if (window.mostrarToastNotificacion) {
+                        window.mostrarToastNotificacion('⏰ Tu pedido anterior venció sin pago y fue cancelado. El stock volvió al inventario.', 'warning');
+                    }
+                }
+            }).catch(function(e) {
+                console.warn('No se pudo revisar el pedido pendiente:', e.message);
+            });
+        }
+
         // 12. Audio
         if (window.verificarPermisosAudio) window.verificarPermisosAudio();
 
