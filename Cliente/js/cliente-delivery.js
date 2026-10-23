@@ -388,10 +388,14 @@
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
 
         var items = S.state.carrito.map(function (i) {
-            // El id real de `menu` es TEXT con forma `plat_<uuid>_<n>`.
-            // parseInt sobre eso da NaN, y NaN se serializa a null.
+            // OJO: el carrito tiene DOS ids.
+            //   i.id         -> id de la LÍNEA del carrito, con forma cart_<uuid>
+            //   i.platilloId -> id del PLATILLO, con forma plat_<uuid>_<n>
+            //
+            // Usar i.id mandaba `cart_...` como platillo_id, y la RPC
+            // respondía "Un platillo de la reserva ya no está disponible".
             return {
-                platillo_id: i.id,
+                platillo_id: i.platilloId,
                 cantidad: i.cantidad,
                 precio: i.precio,
                 nombre: i.nombre,
@@ -526,17 +530,23 @@
 
         // Upload to Supabase Storage
         if (window.subirComprobante) {
-            window.subirComprobante(file, function(progreso) {
-                document.getElementById('uploadProgressBar').style.width = progreso + '%';
-            }).then(function(url) {
-                // `subirComprobante` RESUELVE con {success:false,error} cuando
-                // la subida falla, en vez de rechazar la promesa. Sin este
-                // chequeo ese objeto se guardaba como si fuera la URL, y el
-                // pedido quedaba con un comprobante inexistente.
-                if (typeof url !== 'string' || !/^https?:/.test(url)) {
-                    var detalle = (url && url.error) ? url.error : 'respuesta inesperada';
-                    throw new Error('No se pudo subir el comprobante: ' + detalle);
+            // FIRMA REAL: subirComprobante(file, tipo, onProgress)
+            //
+            // Antes se llamaba con dos argumentos: la función de progreso
+            // caía en el parámetro `tipo` y terminaba dentro de la ruta del
+            // archivo, que Supabase rechazaba con
+            // "Invalid key: ()=>{}/<timestamp>_<archivo>".
+            //
+            // Y devuelve {success, url} — NUNCA rechaza la promesa. Por eso
+            // hay que mirar success, no encadenar .catch esperando un error.
+            window.subirComprobante(file, 'delivery', function(progreso) {
+                var pct = (progreso && progreso.percent != null) ? progreso.percent : progreso;
+                document.getElementById('uploadProgressBar').style.width = pct + '%';
+            }).then(function(res) {
+                if (!res || res.success !== true || !res.url) {
+                    throw new Error((res && res.error) || 'respuesta inesperada del servidor');
                 }
+                var url = res.url;
                 isUploading = false;
                 uploadComplete = true;
                 deliveryFormData.comprobante = url;
@@ -588,17 +598,23 @@
         if (barra) barra.style.display = 'block';
 
         if (window.subirComprobante) {
-            window.subirComprobante(file, function (progreso) {
-                if (barraInt) barraInt.style.width = progreso + '%';
-            }).then(function (url) {
-                // `subirComprobante` RESUELVE con {success:false,error} cuando
-                // la subida falla, en vez de rechazar la promesa. Sin este
-                // chequeo ese objeto se guardaba como si fuera la URL, y el
-                // pedido quedaba con un comprobante inexistente.
-                if (typeof url !== 'string' || !/^https?:/.test(url)) {
-                    var detalle = (url && url.error) ? url.error : 'respuesta inesperada';
-                    throw new Error('No se pudo subir el comprobante: ' + detalle);
+            // FIRMA REAL: subirComprobante(file, tipo, onProgress)
+            //
+            // Antes se llamaba con dos argumentos: la función de progreso
+            // caía en el parámetro `tipo` y terminaba dentro de la ruta del
+            // archivo, que Supabase rechazaba con
+            // "Invalid key: ()=>{}/<timestamp>_<archivo>".
+            //
+            // Y devuelve {success, url} — NUNCA rechaza la promesa. Por eso
+            // hay que mirar success, no encadenar .catch esperando un error.
+            window.subirComprobante(file, 'reserva', function (progreso) {
+                var pct = (progreso && progreso.percent != null) ? progreso.percent : progreso;
+                if (barraInt) barraInt.style.width = pct + '%';
+            }).then(function (res) {
+                if (!res || res.success !== true || !res.url) {
+                    throw new Error((res && res.error) || 'respuesta inesperada del servidor');
                 }
+                var url = res.url;
                 uploadComplete = true;
                 reservaFormData.comprobante = url;
                 if (barraInt) barraInt.style.width = '100%';
