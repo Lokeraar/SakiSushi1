@@ -3,15 +3,40 @@
     window.guardarWifiPersistente = function() {
         const ssid = document.getElementById('qrWifiSsid')?.value || '';
         const password = document.getElementById('qrWifiPassword')?.value || '';
-        
-        if (ssid !== window.wifiSsidPersistente) {
+
+        // El wifi vive en la tabla `config`, NO en localStorage.
+        //
+        // Antes se guardaba solo en localStorage, así que el QR salía con
+        // wifi únicamente si se generaba en el mismo teléfono del admin.
+        // Desde otra máquina salía sin wifi y nadie se enteraba.
+        if (ssid !== window.wifiSsidPersistente || password !== window.wifiPasswordPersistente) {
             window.wifiSsidPersistente = ssid;
-            localStorage.setItem('saki_wifi_ssid', ssid);
-        }
-        if (password !== window.wifiPasswordPersistente) {
             window.wifiPasswordPersistente = password;
-            localStorage.setItem('saki_wifi_pwd', password);
+            window._guardarWifiEnBase(ssid, password);
         }
+    };
+
+    // Escritura en la base, con rebote para no disparar una consulta por
+    // cada tecla que se escribe en el campo del wifi.
+    var _wifiTimer = null;
+    window._guardarWifiEnBase = function(ssid, password) {
+        if (_wifiTimer) clearTimeout(_wifiTimer);
+        _wifiTimer = setTimeout(async function() {
+            if (!window.supabaseClient) return;
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('config').select('id').limit(1);
+                if (error) throw error;
+                if (!data || data.length === 0) return;
+                const { error: errUpd } = await window.supabaseClient
+                    .from('config')
+                    .update({ wifi_ssid: ssid, wifi_password: password })
+                    .eq('id', data[0].id);
+                if (errUpd) throw errUpd;
+            } catch (e) {
+                console.warn('[wifi] no se pudo guardar en la base:', e.message);
+            }
+        }, 900);
     };
 
     window.restaurarWifiPersistente = function() {
@@ -19,6 +44,25 @@
         const passwordInput = document.getElementById('qrWifiPassword');
         if (ssidInput && window.wifiSsidPersistente) ssidInput.value = window.wifiSsidPersistente;
         if (passwordInput && window.wifiPasswordPersistente) passwordInput.value = window.wifiPasswordPersistente;
+    };
+
+    // Lee el wifi desde la base para que los campos muestren lo guardado
+    // aunque el admin entre desde otro dispositivo.
+    window.cargarWifiDesdeBase = async function() {
+        if (!window.supabaseClient) return null;
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('config').select('wifi_ssid, wifi_password').limit(1);
+            if (error) throw error;
+            const c = data && data[0] ? data[0] : {};
+            window.wifiSsidPersistente = c.wifi_ssid || '';
+            window.wifiPasswordPersistente = c.wifi_password || '';
+            window.restaurarWifiPersistente();
+            return c;
+        } catch (e) {
+            console.warn('[wifi] no se pudo leer de la base:', e.message);
+            return null;
+        }
     };
 
     window._convertirUnidad = function(valor, desde, hacia) {

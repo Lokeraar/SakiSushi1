@@ -6,10 +6,10 @@
             if (error) throw error;
             window.qrCodes = data || [];
             window.renderizarQRs();
-            const _ssid = localStorage.getItem('saki_wifi_ssid');
-            const _pwd  = localStorage.getItem('saki_wifi_pwd');
-            if (_ssid) { const el = document.getElementById('qrWifiSsid'); if (el) el.value = _ssid; }
-            if (_pwd)  { const el = document.getElementById('qrWifiPassword'); if (el) el.value = _pwd; }
+            // El wifi se lee de la tabla config, no de localStorage: así el
+            // admin ve lo mismo entre desde el teléfono del local o desde
+            // cualquier otra máquina.
+            if (window.cargarWifiDesdeBase) await window.cargarWifiDesdeBase();
         } catch (e) { console.error('Error cargando QRs:', e); window.mostrarToast('Error cargando QRs', 'error'); }
     };
 
@@ -17,12 +17,17 @@
         const grid = document.getElementById('qrGrid');
         if (!grid) return;
         grid.innerHTML = '';
-        const _ssid = localStorage.getItem('saki_wifi_ssid') || '';
-        const _pwd  = localStorage.getItem('saki_wifi_pwd') || '';
+        // El QR lleva SOLO el nombre de la mesa.
+        //
+        // Antes llevaba también el ssid y la clave del wifi dentro de la URL.
+        // Eso obliga a reimprimir los seis portamesas cada vez que cambia la
+        // clave, y los carteles viejos quedan circulando con datos muertos.
+        //
+        // Ahora el QR es estable para siempre: el cliente consulta el wifi a
+        // la base al escanear (función wifi_publico()).
+        const _ssid = window.wifiSsidPersistente || '';
         (window.qrCodes || []).forEach(qr => {
             const params = new URLSearchParams({ mesa: qr.nombre });
-            if (_ssid) params.set('wifi_ssid', _ssid);
-            if (_pwd)  params.set('wifi_pwd', _pwd);
             const qrText = window.location.origin + '/Cliente/index.html?' + params.toString();
             const qrId   = 'qr-' + qr.id;
             const card = document.createElement('div');
@@ -58,7 +63,17 @@
         window.guardarWifiPersistente();
         if (!nombre) { window.mostrarToast('Ingresa el nombre de la mesa', 'error'); return; }
         if (ssid && !password) { window.mostrarToast('Ingresa la contraseña WiFi', 'error'); return; }
-        const qrData = { id: window.generarId('QR_'), nombre: nombre, fecha: new Date().toISOString() };
+        // Se guardan el ssid y la clave en el propio registro para que quede
+        // historial de con qué wifi se generó cada QR. La fuente de verdad
+        // para el cliente es config.wifi_ssid, no esta columna.
+        const qrData = {
+            id: window.generarId('QR_'),
+            nombre: nombre,
+            tipo: 'mesa',
+            ssid: ssid || null,
+            password: password || null,
+            fecha: new Date().toISOString()
+        };
         try {
             const { error } = await window.supabaseClient.from('codigos_qr').insert([qrData]);
             if (error) throw error;
