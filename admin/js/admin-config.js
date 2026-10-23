@@ -187,7 +187,34 @@
             const activoDiario = document.getElementById('aumentoActivoToggle').checked;
             const activoSemanal = document.getElementById('aumentoSemanalToggle')?.checked || false;
             const indefinido = document.getElementById('aumentoIndefinido')?.checked || false;
-            
+
+            // ── Guardas antes de escribir ──
+            // Este es el único punto donde el aumento entra a la base, así que
+            // es donde tiene que doler si el valor no tiene sentido. Un dedazo
+            // acá descuadra TODOS los precios del restaurante.
+            if (!(tasaBase > 0)) {
+                window.mostrarToast('❌ La tasa base debe ser mayor que 0', 'error');
+                return;
+            }
+            if (aumentoPct < 0) {
+                window.mostrarToast('❌ El aumento no puede ser negativo', 'error');
+                return;
+            }
+            if (aumentoPct > 100) {
+                window.mostrarToast('❌ Un aumento de ' + aumentoPct + '% por periodo es imposible. Revisá el valor.', 'error');
+                return;
+            }
+            // Aviso, no bloqueo: un aumento alto puede ser legítimo en una
+            // emergencia cambiaria, pero el admin tiene que confirmarlo sabiendo.
+            if (aumentoPct > 5) {
+                const sigue = confirm(
+                    'Vas a guardar un aumento de ' + aumentoPct + '% por periodo.\n\n' +
+                    'Para referencia, el ajuste pensado para compensar inflación es del orden de 0.01%.\n\n' +
+                    '¿Confirmás que es intencional?'
+                );
+                if (!sigue) return;
+            }
+
             window.configGlobal.tasa_cambio = tasaBase;
             window.configGlobal.aumento_diario = aumentoPct;
             window.configGlobal.aumento_activo = activoDiario;

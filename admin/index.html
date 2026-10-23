@@ -19,6 +19,7 @@
     <script src="js/admin-config.js" defer></script>
     <script src="js/admin-helpers.js" defer></script>
     <script src="js/admin-ui.js" defer></script>
+    <script src="js/admin-tasa-aviso.js" defer></script>
     <script src="js/admin-menu.js" defer></script>
     <script src="js/admin-inventario.js" defer></script>
     <script src="js/admin-usuarios.js" defer></script>
@@ -198,7 +199,15 @@
                         </div>
                         <div class="tcb-card tcb-card-pct">
                             <div class="tcb-label" id="labelAumentoPct">Aumento Diario %:</div>
-                            <input type="number" step="0.1" id="aumentoDiarioInput" class="tcb-input" oninput="window.recalcularTasaEfectiva && window.recalcularTasaEfectiva()">
+                            <!-- step=0.01 a propósito: el aumento tipico es del orden
+                                 de 0.01% diario. Con step=0.1 el navegador invita a
+                                 tipear 0.1, que es DIEZ VECES el valor buscado y
+                                 descuadra todos los precios. max=100 evita un
+                                 dedazo tipo 1000. -->
+                            <input type="number" step="0.01" min="0" max="100"
+                                   id="aumentoDiarioInput" class="tcb-input"
+                                   inputmode="decimal"
+                                   oninput="window.recalcularTasaEfectiva && window.recalcularTasaEfectiva()">
                             <div class="tcb-sublabel">por periodo</div>
                         </div>
                         <div class="tcb-card tcb-card-efectiva">

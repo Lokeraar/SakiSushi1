@@ -281,8 +281,10 @@ window.obtenerTasaBCV = async function(opciones) {
 };
 
 // Aplica el aumento vigente sobre una tasa base, igual que el admin.
-// Se duplica a propósito la aritmética de admin-config.js para que el cliente
-// no dependa de que el admin tenga el panel abierto.
+//
+// OJO: esta función NO se usa en el flujo del cliente. Queda disponible para
+// el panel del admin y para pruebas, porque el precio que ve el comensal sale
+// de `config.tasa_efectiva` ya confirmado, no de un cálculo en el navegador.
 function _calcularTasaEfectiva(tasaBase, cfg) {
     var activoDiario  = !!cfg.aumento_activo;
     var activoSemanal = !!cfg.aumento_semanal;
@@ -327,28 +329,29 @@ window.cargarConfiguracion = async function() {
         if (data) window.configGlobal = { ...window.configGlobal, ...data };
 
         // ── Tasa del día ──
-        // Se consulta el BCV y, si responde, se usa como tasa base. El precio
-        // final lo sigue calculando `tasa_efectiva` = base × (1 + aumento).
+        // # CAMBIO REVERTIDO — leer antes de tocar
         //
-        // Importante: el aumento SOLO se aplica mientras esté vigente (activo
-        // o semanal, dentro de su ventana de fechas). Si no, tasa_efectiva es
-        // la tasa base tal cual. Antes esto se recalculaba solo si el admin
-        // abría su panel, así que el cliente podía quedar con un valor viejo.
-        var tasaBCV = window.obtenerTasaBCV ? await window.obtenerTasaBCV() : null;
-        if (tasaBCV > 0) {
-            window.configGlobal.tasa_cambio      = tasaBCV;
-            window.configGlobal.tasa_efectiva    = _calcularTasaEfectiva(tasaBCV, window.configGlobal);
-            window.configGlobal.tasa_origen      = 'bcv';
-            window.configGlobal.tasa_consultada  = new Date().toISOString();
-        } else {
-            // Sin BCV se usa lo que haya en config, que la migración dejó como
-            // último valor bueno. Nunca se cae a un 400 hardcodeado.
-            window.configGlobal.tasa_origen = 'config';
-        }
+        // El precio que ve el cliente NO se calcula acá. Sale de
+        // `config.tasa_efectiva`, que es el valor que el admin guardó al
+        // confirmar. Eso es deliberado y es una decisión de producto:
+        //
+        //   El admin debe apretar GUARDAR a propósito. Si el sistema aplicara
+        //   el aumento solo, un valor mal tipeado descuadraría todos los
+        //   precios sin que nadie lo note. El guardado manual es el punto de
+        //   control humano: si se presionó, fue intencional.
+        //
+        // Por eso el Cliente NO recalcula el aumento por su cuenta: si lo
+        // hiciera, mostraría un precio distinto al que cobra el Cajero, que
+        // lee `config.tasa_efectiva`.
+        //
+        // Lo que sí hace el Cliente: usar la última tasa CONFIRMADA, y avisar
+        // (sin escribir nada) si el BCV se movió lo suficiente como para que
+        // el admin quiera revisar. Se consulta el BCV con `obtenerTasaBCV()`
+        // desde el panel del admin, no acá.
+        window.configGlobal.tasa_origen = window.configGlobal.tasa_origen || 'config';
 
         console.log('✅ Configuración cargada.', {
-            base: window.configGlobal.tasa_cambio,
-            efectiva: window.configGlobal.tasa_efectiva,
+            tasa_efectiva: window.configGlobal.tasa_efectiva,
             origen: window.configGlobal.tasa_origen
         });
         return window.configGlobal;

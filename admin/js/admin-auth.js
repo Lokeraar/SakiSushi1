@@ -194,6 +194,11 @@
                     window.restaurarWifiPersistente();
                     window._registrarPushAdmin();
                     window.agregarTarjetaDiferenciaTasa();
+                    // Aviso de tasa vieja: compara la confirmada contra el BCV
+                    // y avisa si la deriva es grande. No escribe nada.
+                    if (typeof window.avisarTasaVieja === 'function') {
+                        window.avisarTasaVieja();
+                    }
                     window._verificarTasaDeHoy((tasa) => {
                         const tasaInput = document.getElementById('tasaBaseInput');
                         if (tasaInput) tasaInput.value = tasa;
