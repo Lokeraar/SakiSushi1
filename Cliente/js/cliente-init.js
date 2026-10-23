@@ -52,7 +52,8 @@
         // 4. Cargar menú e inventario en paralelo
         Promise.all([
             cargarMenuSiPosible(),
-            cargarInventarioSiPosible()
+            cargarInventarioSiPosible(),
+            cargarSeccionesSiPosible()
         ]).then(function() {
             if (window.precalcularStockMenu) window.precalcularStockMenu();
             if (window.renderizarMenuPaginado) window.renderizarMenuPaginado(null, null, '');
@@ -130,6 +131,30 @@
             .catch(function(err) {
                 console.warn('Error cargando menú:', err);
                 S.state.menuItems = [];
+            });
+    }
+
+    // Las secciones de la carta viven en la tabla `secciones`, no en el código.
+    //
+    // Antes estaban escritas a mano en cliente-menu.js, y la base tenía sus
+    // propias categorías en menu.categoria. Coincidían de casualidad: renombrar
+    // una sección desde el admin hacía desaparecer sus platos de la carta.
+    //
+    // Si esta consulta falla, el sistema sigue andando con la lista de respaldo
+    // que quedó en cliente-menu.js. Es feo pero no deja al cliente sin carta.
+    function cargarSeccionesSiPosible() {
+        if (!window.supabaseClient) return Promise.resolve();
+        return window.supabaseClient
+            .from('secciones')
+            .select('id, nombre, madre_id, orden, icono, visible, hora_desde, hora_hasta')
+            .order('orden')
+            .then(function(resp) {
+                if (resp.error) throw resp.error;
+                S.state.secciones = resp.data || [];
+            })
+            .catch(function(err) {
+                console.warn('Error cargando secciones, se usa la lista de respaldo:', err);
+                S.state.secciones = [];
             });
     }
 

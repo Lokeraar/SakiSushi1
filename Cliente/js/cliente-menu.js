@@ -7,6 +7,15 @@
     // Private variables that will be set by external code (from Supabase or other modules)
     let menuItems = []; // Array of menu items from Supabase
     let filteredMenuItems = []; // Array after filtering
+    // RESPALDO, no fuente de verdad.
+    //
+    // La carta real vive en la tabla `secciones` desde la migración 13 y se
+    // lee en cliente-init.js. Esta lista queda solo para que el cliente no se
+    // quede sin carta si la consulta falla (sin señal, base caída).
+    //
+    // Antes esta lista ERA la carta: renombrar una sección desde el admin
+    // hacía desaparecer sus platos, porque el filtro buscaba un nombre que ya
+    // no existía. Esa lista quedó congelada y ya no se actualiza.
     let categoriasPredefinidas = [
         {id:'todos',nombre:'Todos los platillos'},
         {id:'favoritos',nombre:'⭐ Favoritos'},
@@ -22,6 +31,20 @@
         {id:'ninos',nombre:'Para Niños'},
         {id:'ejecutivo',nombre:'Combo Ejecutivo'}
     ];
+    // Etiqueta corta para la barra lateral.
+    //
+    // Se separa del `nombre` a propósito: el nombre es el que FILTRA (tiene
+    // que coincidir con menu.categoria) y la etiqueta es la que SE VE.
+    //
+    // Sin esto, "Todos los platillos" (el nombre real) aparecía completo en
+    // la barra y empujaba el ancho. Y el filtro de "Sushi" quedaba como
+    // " Sushi", con un espacio adelante, por un recorte con expresión regular
+    // que le comía la primera letra al ícono.
+    let etiquetasCortas = {
+        'todos': 'Todos los platillos',
+        'favoritos': 'Favoritos'
+    };
+
     let iconosCategorias = {
         'todos':'fa-utensils','entradas':'fa-leaf','sushi':'fa-fish','rolls':'fa-egg',
         'tragos':'fa-wine-glass-alt','pokes':'fa-bowl-food','ensaladas':'fa-carrot',
@@ -157,14 +180,62 @@
         renderizarPaginaActual();
     }
 
+    /**
+     * Arma la lista de secciones para pintar la barra lateral.
+     *
+     * Prioridad:
+     *   1. La tabla `secciones` (fuente de verdad, la administra el dueño).
+     *   2. La lista de respaldo escrita acá, si la consulta falló.
+     *
+     * Ojo con "Todos los platillos": en la tabla su id es 'todos' y su nombre
+     * es largo. La barra lateral necesita el nombre corto, así que se respeta
+     * el nombre que ya se mostraba para no cambiar la vista en el paso 2.
+     */
+    function _obtenerSecciones() {
+        var deBase = (window.Saki.state.secciones || []);
+        if (!deBase.length) return categoriasPredefinidas;
+
+        var madres = deBase.filter(function (s) { return !s.madre_id; });
+        return madres.map(function (s) {
+            var hijas = deBase
+                .filter(function (h) { return h.madre_id === s.id; })
+                .sort(function (a, b) { return a.orden - b.orden; })
+                .map(function (h) { return h.nombre; });
+
+            var seccion = {
+                id: s.id,
+                // `nombre` es el valor que FILTRA: tiene que coincidir con
+                // menu.categoria o menu.subcategoria. Viene de la base.
+                nombre: s.nombre,
+                // `etiqueta` es lo que SE VE en la barra lateral.
+                etiqueta: etiquetasCortas[s.id] || s.nombre,
+                icono: s.icono,
+                hora_desde: s.hora_desde,
+                hora_hasta: s.hora_hasta
+            };
+            // Solo las que tienen hijas llevan subcategorías; si va vacío, el
+            // código de abajo dibuja la sección sin la flechita.
+            if (hijas.length) seccion.subcategorias = hijas;
+            return seccion;
+        });
+    }
+
     // Function to load categories into the sidebar
     function cargarCategorias() {
         if (!categoryList) return;
         let html = '';
-        categoriasPredefinidas.forEach(cat => {
-            const icono = iconosCategorias[cat.id] || 'fa-utensils';
+        _obtenerSecciones().forEach(cat => {
+            // Sección nueva creada desde el admin: si no tiene ícono propio,
+            // se usa el genérico. Nunca queda sin dibujar.
+            const icono = cat.icono || iconosCategorias[cat.id] || 'fa-utensils';
             const activeClass = cat.id === 'todos' ? 'active' : '';
-            html += `<li class="category-item ${activeClass}" data-categoria="${cat.id}"><span><i class="fas ${icono}"></i> ${cat.nombre}</span>${cat.subcategorias ? '<i class="fas fa-chevron-right"></i>' : ''}</li>`;
+            // data-filtro lleva el NOMBRE real (el que compara el filtro).
+            // El texto visible lleva la etiqueta corta.
+            // `cat.etiqueta` puede venir undefined cuando se usa la lista de
+            // RESPALDO (esa lista solo tiene `nombre`). Sin el respaldo acá, la
+            // barra lateral mostraba la palabra "undefined" en cada sección.
+            const textoVisible = cat.etiqueta || cat.nombre;
+            html += `<li class="category-item ${activeClass}" data-categoria="${cat.id}" data-filtro="${cat.nombre}"><span><i class="fas ${icono}"></i> ${textoVisible}</span>${cat.subcategorias ? '<i class="fas fa-chevron-right"></i>' : ''}</li>`;
             if (cat.subcategorias) {
                 html += `<ul class="subcategory-list" data-categoria="${cat.id}">`;
                 cat.subcategorias.forEach(sub => html += `<li class="subcategory-item" data-subcategoria="${sub}">${sub}</li>`);
@@ -195,7 +266,11 @@
                 if (searchInput) {
                     searchInput.value = '';
                 }
-                renderizarMenuPaginado(categoria === 'todos' ? null : categoria);
+                // Se filtra por el NOMBRE (data-filtro), no por la clave.
+                // Antes se pasaba la clave ('sushi') y la base guarda el
+                // nombre ('Sushi'): nunca coincidían y la sección salía vacía.
+                const nombreFiltro = item.dataset.filtro || categoria;
+                renderizarMenuPaginado(categoria === 'todos' ? null : nombreFiltro);
                 // Close sidebar on mobile if needed
                 if (window.innerWidth <= 992) {
                     // We'll close the category sidebar by removing the 'open' class if present
@@ -223,7 +298,13 @@
                 if (searchInput) {
                     searchInput.value = '';
                 }
-                renderizarMenuPaginado(categoria, subcategoria);
+                // Igual que arriba: se filtra por el NOMBRE de la madre
+                // ('Rolls'), no por su clave ('rolls'). Con la clave, el
+                // filtro de categoría descartaba todo antes de llegar a la
+                // subcategoría, y la sección salía vacía.
+                const madreEl = document.querySelector(`.category-item[data-categoria="${categoria}"]`);
+                const nombreMadre = (madreEl && madreEl.dataset.filtro) || categoria;
+                renderizarMenuPaginado(nombreMadre, subcategoria);
                 // Close sidebar on mobile if needed
                 if (window.innerWidth <= 992) {
                     const categorySidebar = document.getElementById('categorySidebar');
