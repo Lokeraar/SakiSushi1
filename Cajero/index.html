@@ -271,7 +271,7 @@
 <script src="../supabase-config.js"></script>
 <script>
 // ============================================ VARIABLES GLOBALES ============================================
-window.currentUser=null;window.jwtToken=null;window.pedidos=[];window.ventasHoy=[];window.propinas=[];window.menuItems=[];window.inventario=[];window.mesas=[];window.currentPedido=null;window.enProcesoDeCobro=false;window.pedidoParaAccion=null;window.accionPendiente=null;window.tasaEfectiva=400;window.currentPropinaPedido=null;window.mesoneros=[];window.deliverys=[];window.alarmaAudio=document.getElementById('alarmaSonido');window.alarmaActiva=false;window.suscripciones=[];window.paginaVisible=true;window.reconectando=false;window.intervaloVerificacion=null;window.ultimaActualizacion=Date.now();window.propinaSeleccionada={mesonero:null,mesa:'',metodo:'efectivo_bs',monto:0,referencia:''};window.referenciaPropina=['','','','','',''];window.pendingLoginUser=null;window.stockCache={data:{},lastUpdate:0,duration:5e3,get:function(id){const ahora=Date.now();if(ahora-this.lastUpdate>this.duration)this.clear();return this.data[id]},set:function(id,v){this.data[id]=v;this.lastUpdate=Date.now()},clear:function(){this.data={};this.lastUpdate=0},invalidate:function(){this.data={};this.lastUpdate=0}};
+window.currentUser=null;window.jwtToken=null;window.pedidos=[];window.ventasHoy=[];window.propinas=[];window.menuItems=[];window.inventario=[];window.mesas=[];window.currentPedido=null;window.enProcesoDeCobro=false;window.pedidoParaAccion=null;window.accionPendiente=null;window.__tasaUnica=400;Object.defineProperty(window,'tasaEfectiva',{get:function(){var c=window.configGlobal;var v=c&&parseFloat(c.tasa_efectiva);return v>0?v:(window.__tasaUnica>0?window.__tasaUnica:400)},set:function(v){window.__tasaUnica=v},configurable:true});window.currentPropinaPedido=null;window.mesoneros=[];window.deliverys=[];window.alarmaAudio=document.getElementById('alarmaSonido');window.alarmaActiva=false;window.suscripciones=[];window.paginaVisible=true;window.reconectando=false;window.intervaloVerificacion=null;window.ultimaActualizacion=Date.now();window.propinaSeleccionada={mesonero:null,mesa:'',metodo:'efectivo_bs',monto:0,referencia:''};window.referenciaPropina=['','','','','',''];window.pendingLoginUser=null;window.stockCache={data:{},lastUpdate:0,duration:5e3,get:function(id){const ahora=Date.now();if(ahora-this.lastUpdate>this.duration)this.clear();return this.data[id]},set:function(id,v){this.data[id]=v;this.lastUpdate=Date.now()},clear:function(){this.data={};this.lastUpdate=0},invalidate:function(){this.data={};this.lastUpdate=0}};
 // ============================================ TEMA ============================================
 window.toggleTema=function(){document.body.classList.toggle('tema-claro');const icono=document.querySelector('#themeToggle i');if(document.body.classList.contains('tema-claro')){icono.className='fas fa-sun';localStorage.setItem('saki_tema_cajero','claro')}else{icono.className='fas fa-moon';localStorage.setItem('saki_tema_cajero','oscuro')}actualizarTooltips()};
 function cargarTemaGuardado(){const tema=localStorage.getItem('saki_tema_cajero');if(tema==='claro'){document.body.classList.add('tema-claro');document.querySelector('#themeToggle i').className='fas fa-sun'}}
@@ -382,7 +382,7 @@ window.setupLogoutListener=function(){if(!window.currentUser)return;const channe
 window.mostrarPanel=function(){document.getElementById('loginContainer').classList.add('hidden');document.getElementById('panelContainer').classList.remove('hidden');const usernameDisplay=document.getElementById('usernameDisplay');if(usernameDisplay&&window.currentUser){usernameDisplay.innerHTML='<i class="fas fa-user-circle"></i> <span>'+window.currentUser.nombre+'</span>'}else if(usernameDisplay){usernameDisplay.innerHTML='<i class="fas fa-user-circle"></i> <span>Usuario</span>'};window.setupEventListeners();window.setupRealtimeSubscriptions();window.setupLogoutListener();setTimeout(()=>window.verificarYControlarAlarma(),100)};
 window.showSection=function(section){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById(`section-${section}`).classList.add('active');event.target.classList.add('active');if(section==='pedidos')window.renderizarPedidos();else if(section==='menu')window.renderizarMenu();else if(section==='propinas')window.renderizarPropinas();else if(section==='deliverys')window.renderizarDeliverysStats()};
 // ============================================ CARGA DE DATOS ============================================
-window.cargarDatosIniciales=async function(){try{await window.cargarConfiguracion();window.tasaEfectiva=(window.configGlobal&&window.configGlobal.tasa_efectiva)||400;
+window.cargarDatosIniciales=async function(){try{await window.cargarConfiguracion();window.__tasaUnica=(window.configGlobal&&parseFloat(window.configGlobal.tasa_efectiva))||400;
                     // Rellenar widget de tasa en header
                     const _tasaInp = document.getElementById('cajeroTasaInput');
                     if (_tasaInp) {
@@ -401,12 +401,34 @@ window.cargarDatosIniciales=async function(){try{await window.cargarConfiguracio
                     window.renderizarMenu && window.renderizarMenu();
                     window.actualizarEstadisticas && window.actualizarEstadisticas();
                     // Persistir en Supabase para que admin y otros clientes se sincronicen
+                    // OJO: antes esto escribia tasa_efectiva: v, o sea la misma
+                    // tasa nueva en los dos campos. Eso BORRABA el aumento del
+                    // admin: con base 884.75 y 5% acumulado (efectiva 929.0),
+                    // aplicar la tasa dejaba efectiva = 884.75 y el porcentaje
+                    // desaparecia en silencio.
+                    //
+                    // Ahora solo se actualiza la BASE. La efectiva la calcula
+                    // el admin al confirmar, porque ese es su punto de control.
+                    // Si el cajero necesita ver el precio correcto de inmediato,
+                    // se recalcula en memoria sin tocar la base.
                     try {
+                        const _cfg = window.configGlobal || {};
+                        const _baseAnterior = parseFloat(_cfg.tasa_cambio) || 0;
+                        const _efectivaAnterior = parseFloat(_cfg.tasa_efectiva) || 0;
+                        const _ratio = (_baseAnterior > 0 && _efectivaAnterior > 0)
+                            ? (_efectivaAnterior / _baseAnterior) : 1;
+
                         await window.supabaseClient.from('config').update({
                             tasa_cambio: v,
-                            tasa_efectiva: v,
                             ultima_actualizacion: new Date().toISOString()
                         }).eq('id', 1);
+
+                        // Reflejar en memoria preservando el factor de aumento
+                        if (window.configGlobal) {
+                            window.configGlobal.tasa_cambio   = v;
+                            window.configGlobal.tasa_efectiva = Math.round(v * _ratio * 100) / 100;
+                        }
+                        window.__tasaUnica = (window.configGlobal && window.configGlobal.tasa_efectiva) || v;
                         window.mostrarToast && window.mostrarToast('💱 Tasa actualizada: Bs ' + v.toFixed(2), 'success');
                     } catch(e) { console.error('Error guardando tasa:', e); }
                 };
