@@ -264,17 +264,28 @@
     window.validarFormularioDelivery = validarFormularioDelivery;
     S.modules.delivery.validarFormularioDelivery = validarFormularioDelivery;
 
+    // IDs REALES del HTML. Antes esta función buscaba 'reservaFecha' y
+    // 'reservaNombre', que NO EXISTEN: el HTML usa 'fechaReserva' y
+    // 'nombreReserva'. Como getElementById devolvía null, esos dos chequeos
+    // se salteaban en silencio. Y el botón que habilitaba era
+    // 'confirmReservaOrder', que tampoco existe (es 'confirmReserva'), así
+    // que el botón quedaba deshabilitado PARA SIEMPRE.
     function validarFormularioReserva() {
         var ok = true;
-        var fecha = document.getElementById('reservaFecha');
-        if (fecha && !fecha.value) ok = false;
-        var nombre = document.getElementById('reservaNombre');
-        if (nombre && nombre.value.trim().length < 3) ok = false;
+
+        var fecha = document.getElementById('fechaReserva');
+        if (!fecha || !fecha.value) ok = false;
+
+        var nombre = document.getElementById('nombreReserva');
+        if (!nombre || nombre.value.trim().length < 3) ok = false;
+
         var ref = getReferencia('reserva');
         if (ref.length !== 6) ok = false;
+
+        // El comprobante es obligatorio para reservar
         if (!uploadComplete) ok = false;
 
-        var btn = document.getElementById('confirmReservaOrder');
+        var btn = document.getElementById('confirmReserva');
         if (btn) btn.disabled = !ok;
         return ok;
     }
@@ -358,17 +369,95 @@
     window.confirmarPedidoDelivery = confirmarPedidoDelivery;
     S.modules.delivery.confirmarPedidoDelivery = confirmarPedidoDelivery;
 
+    // EL DEFECTO QUE ESTO ARREGLA
+    //
+    // Esta función mostraba "✅ Reserva registrada" y cerraba el modal SIN
+    // GUARDAR NADA. No llamaba a ninguna RPC. Prueba: `SELECT count(*) FROM
+    // pedidos WHERE tipo='reserva'` daba 0 en toda la historia de la base.
+    //
+    // El cliente subía su comprobante, veía el tilde verde y se iba. No
+    // había reserva y nadie lo llamaba.
     function confirmarPedidoReserva() {
         if (!validarFormularioReserva()) return;
-        // Similar to delivery but for reserva
-        var btn = document.getElementById('confirmReservaOrder');
+        if (!S.state.carrito || S.state.carrito.length === 0) {
+            if (window.mostrarToast) window.mostrarToast('❌ Tu carrito está vacío', 'error');
+            return;
+        }
+
+        var btn = document.getElementById('confirmReserva');
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
 
-        detenerTimer('reserva');
-        limpiarDatosFormulario();
-        document.getElementById('reservaModal').classList.remove('active');
-        if (window.mostrarToast) window.mostrarToast('✅ Reserva registrada', 'success');
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar'; }
+        var items = S.state.carrito.map(function (i) {
+            // El id real de `menu` es TEXT con forma `plat_<uuid>_<n>`.
+            // parseInt sobre eso da NaN, y NaN se serializa a null.
+            return {
+                platillo_id: i.id,
+                cantidad: i.cantidad,
+                precio: i.precio,
+                nombre: i.nombre,
+                personalizacion: i.personalizacion || [],
+                ingredientes_quitados: i.ingredientesQuitados || []
+            };
+        });
+
+        var fechaEl = document.getElementById('fechaReserva');
+        var nombreEl = document.getElementById('nombreReserva');
+
+        // La fecha del input es 'YYYY-MM-DD' sin hora. Se reserva a las 12:00
+        // del día elegido si el cliente no especificó una hora.
+        var fechaIso = null;
+        if (fechaEl && fechaEl.value) {
+            fechaIso = new Date(fechaEl.value + 'T12:00:00').toISOString();
+        }
+
+        var totales = (window.calcularTotalesCarrito ? window.calcularTotalesCarrito() : null) || {};
+        var totalBs = totales.total || S.state.carrito.reduce(function (a, i) {
+            return a + (i.precio * i.cantidad);
+        }, 0);
+        var totalUsd = totales.totalUsd || 0;
+
+        if (!window.supabaseClient) {
+            if (window.mostrarToast) window.mostrarToast('❌ Sin conexión. Intentá de nuevo.', 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Reserva'; }
+            return;
+        }
+
+        window.supabaseClient.rpc('crear_reserva', {
+            p_items: items,
+            p_total: totalBs,
+            p_total_usd: totalUsd,
+            p_cliente_nombre: nombreEl ? nombreEl.value.trim() : '',
+            p_fecha_reserva: fechaIso,
+            p_referencia: getReferencia('reserva'),
+            p_comprobante_url: reservaFormData.comprobante || '',
+            p_notas: 'Reserva'
+        }).then(function (resp) {
+            if (resp.error) throw resp.error;
+
+            var d = resp.data || {};
+            if (d.success !== true) {
+                throw new Error(d.error || 'No se pudo registrar la reserva');
+            }
+
+            // Recién acá se limpia. Antes se limpiaba y se cerraba mostrando
+            // un éxito que no existía.
+            detenerTimer('reserva');
+            limpiarDatosFormulario();
+
+            S.state.carrito = [];
+            if (window.guardarCarrito) window.guardarCarrito();
+            if (window.actualizarCarritoUI) window.actualizarCarritoUI();
+            if (window.actualizarCarritoBadge) window.actualizarCarritoBadge();
+
+            document.getElementById('reservaModal').classList.remove('active');
+            if (window.mostrarToast) {
+                window.mostrarToast('✅ Reserva registrada. El local verificará tu pago.', 'success');
+            }
+        }).catch(function (err) {
+            if (window.mostrarToast) window.mostrarToast('❌ ' + (err.message || err), 'error');
+        }).finally(function () {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Reserva'; }
+        });
     }
     window.confirmarPedidoReserva = confirmarPedidoReserva;
     S.modules.delivery.confirmarPedidoReserva = confirmarPedidoReserva;
@@ -440,6 +529,14 @@
             window.subirComprobante(file, function(progreso) {
                 document.getElementById('uploadProgressBar').style.width = progreso + '%';
             }).then(function(url) {
+                // `subirComprobante` RESUELVE con {success:false,error} cuando
+                // la subida falla, en vez de rechazar la promesa. Sin este
+                // chequeo ese objeto se guardaba como si fuera la URL, y el
+                // pedido quedaba con un comprobante inexistente.
+                if (typeof url !== 'string' || !/^https?:/.test(url)) {
+                    var detalle = (url && url.error) ? url.error : 'respuesta inesperada';
+                    throw new Error('No se pudo subir el comprobante: ' + detalle);
+                }
                 isUploading = false;
                 uploadComplete = true;
                 deliveryFormData.comprobante = url;
@@ -475,9 +572,55 @@
             if (window.mostrarToast) window.mostrarToast('❌ La imagen no debe superar 5MB', 'error');
             return;
         }
-        reservaFormData.comprobante = file.name;
-        uploadComplete = true;
-        validarFormularioReserva();
+
+        // Antes se guardaba solo el NOMBRE del archivo y se marcaba
+        // uploadComplete = true. El comprobante nunca se subía, así que la
+        // reserva se habría guardado sin forma de que el cajero verificara
+        // el pago. Ahora se sube igual que en el flujo de delivery.
+        var label = document.getElementById('comprobanteReservaLabel');
+        var barra = document.getElementById('uploadProgressReserva');
+        var barraInt = document.getElementById('uploadProgressBarReserva');
+
+        if (label) {
+            label.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Subiendo comprobante...</span><small>' + file.name + '</small>';
+            label.classList.add('has-file');
+        }
+        if (barra) barra.style.display = 'block';
+
+        if (window.subirComprobante) {
+            window.subirComprobante(file, function (progreso) {
+                if (barraInt) barraInt.style.width = progreso + '%';
+            }).then(function (url) {
+                // `subirComprobante` RESUELVE con {success:false,error} cuando
+                // la subida falla, en vez de rechazar la promesa. Sin este
+                // chequeo ese objeto se guardaba como si fuera la URL, y el
+                // pedido quedaba con un comprobante inexistente.
+                if (typeof url !== 'string' || !/^https?:/.test(url)) {
+                    var detalle = (url && url.error) ? url.error : 'respuesta inesperada';
+                    throw new Error('No se pudo subir el comprobante: ' + detalle);
+                }
+                uploadComplete = true;
+                reservaFormData.comprobante = url;
+                if (barraInt) barraInt.style.width = '100%';
+                setTimeout(function () { if (barra) barra.style.display = 'none'; }, 500);
+                if (label) {
+                    label.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success)"></i>' +
+                        '<span style="color:var(--success)">Comprobante subido</span><small>' + file.name + '</small>';
+                }
+                validarFormularioReserva();
+            }).catch(function (err) {
+                if (window.mostrarToast) window.mostrarToast('❌ Error al subir: ' + (err.message || err), 'error');
+                uploadComplete = false;
+                reservaFormData.comprobante = null;
+                if (barra) barra.style.display = 'none';
+                validarFormularioReserva();
+            });
+        } else {
+            // Sin módulo de subida no se puede reservar: fingir que subió
+            // dejaría una reserva sin comprobante.
+            if (window.mostrarToast) window.mostrarToast('❌ No se pudo subir el comprobante', 'error');
+            uploadComplete = false;
+        }
     }
     window.handleComprobanteReservaSelect = handleComprobanteReservaSelect;
     S.modules.delivery.handleComprobanteReservaSelect = handleComprobanteReservaSelect;

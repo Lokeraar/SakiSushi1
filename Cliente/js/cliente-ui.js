@@ -317,13 +317,16 @@
         if (cancelDelivery) cancelDelivery.addEventListener('click', function() { document.getElementById('deliveryModal').classList.remove('active'); });
 
         // Reserva
-        var confirmReserva = document.getElementById('confirmReservaOrder');
+        //
+        // Los IDs eran 'confirmReservaOrder' y 'cancelReservaOrder', que NO
+        // EXISTEN en el HTML. Los reales son 'confirmReserva' y no hay botón
+        // de cancelar (se cierra con la X). Con getElementById devolviendo
+        // null, el listener nunca se ataba: tocar "Confirmar Reserva" no
+        // hacía absolutamente nada.
+        var confirmReserva = document.getElementById('confirmReserva');
         if (confirmReserva) confirmReserva.addEventListener('click', function() {
             if (window.confirmarPedidoReserva) window.confirmarPedidoReserva();
         });
-
-        var cancelReserva = document.getElementById('cancelReservaOrder');
-        if (cancelReserva) cancelReserva.addEventListener('click', function() { document.getElementById('reservaModal').classList.remove('active'); });
 
         var closeReserva = document.getElementById('closeReservaModal');
         if (closeReserva) closeReserva.addEventListener('click', function() { document.getElementById('reservaModal').classList.remove('active'); });
