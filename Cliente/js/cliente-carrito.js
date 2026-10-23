@@ -82,6 +82,15 @@
         try {
             var data = { items: S.state.carrito, timestamp: Date.now() };
             localStorage.setItem('saki_carrito', JSON.stringify(data));
+            // Fase 1: cada cambio del carrito REINICIA el plazo de 20 minutos.
+            // Si el carrito queda vacío, se deja de vigilar.
+            if (window.reiniciarContadorCarrito) {
+                if (S.state.carrito && S.state.carrito.length > 0) {
+                    window.reiniciarContadorCarrito();
+                } else if (window.detenerVigilanciaCarrito) {
+                    window.detenerVigilanciaCarrito();
+                }
+            }
         } catch(e) {}
     }
     window.guardarCarrito = guardarCarrito;
@@ -93,11 +102,10 @@
             if (!saved) return false;
             var data = JSON.parse(saved);
             if (!data || !data.items || !data.timestamp) return false;
-            var TTL = 60 * 60 * 1000; // 1 hour
-            if (Date.now() - data.timestamp > TTL) {
-                localStorage.removeItem('saki_carrito');
-                return false;
-            }
+            // El TTL de 1 hora se quitó: ahora lo maneja cliente-carrito-timer.js
+            // con 20 minutos REINICIABLES desde la última acción, que es lo que
+            // definió el dueño. Aquí solo se restaura; el vencimiento real lo
+            // decide revisarCarritoAlCargar().
             S.state.carrito = data.items;
             return true;
         } catch(e) {

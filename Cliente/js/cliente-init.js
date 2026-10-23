@@ -25,6 +25,14 @@
         var hayCarrito = false;
         if (window.restaurarCarrito) hayCarrito = window.restaurarCarrito();
 
+        // 2b. Fase 1: ¿venció el carrito mientras la pestaña estaba cerrada?
+        // El plazo son 20 minutos reiniciables desde la última acción. Si venció,
+        // se vacía acá y se avisa, sin esperar a que corra el intervalo.
+        // Si sigue vigente, esto arranca la vigilancia y el aviso en pantalla.
+        if (window.revisarCarritoAlCargar) {
+            window.revisarCarritoAlCargar();
+        }
+
         // 3. Configuración global — CON await, a propósito.
         // Antes se llamaba sin esperar, así que el render corría antes de que
         // llegara la tasa y pintaba los precios con el valor por defecto.

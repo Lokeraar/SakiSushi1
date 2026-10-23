@@ -38,8 +38,10 @@
             summary.innerHTML = html;
         }
 
-        // Start 20-minute timer
-        iniciarTimerFrontend('delivery', 20);
+        // Contador del modal: 20 minutos que NO se reinician por volver a abrir.
+        // Solo arranca si no había uno en curso. Si el cliente sale del modal
+        // y vuelve a entrar, el plazo sigue corriendo desde donde estaba.
+        iniciarTimerSiNoCorre('delivery', 20);
         restaurarDatosFormulario();
         modal.classList.add('active');
     }
@@ -48,11 +50,31 @@
 
     function iniciarProcesoReserva() {
         document.getElementById('reservaModal').classList.add('active');
-        iniciarTimerFrontend('reserva', 20);
+        iniciarTimerSiNoCorre('reserva', 20);
         restaurarDatosFormulario();
     }
     window.iniciarProcesoReserva = iniciarProcesoReserva;
     S.modules.delivery.iniciarProcesoReserva = iniciarProcesoReserva;
+
+    // Contador del modal de pago: UNA SOLA CUENTA.
+    // Volver a abrir el mismo modal no reinicia (regla del dueño); cambiar de
+    // tipo de pedido sí, porque es otro pedido. El plazo persiste en
+    // localStorage, así que sobrevive al cierre del navegador.
+    function iniciarTimerSiNoCorre(tipo, minutos) {
+        if (window.iniciarPlazoModal) {
+            var arrancado = window.iniciarPlazoModal(tipo);
+            if (!arrancado) {
+                // Ya estaba corriendo: reanudar con lo que le queda, no con 20.
+                var restantes = window.segundosModalRestantes();
+                if (restantes !== null && restantes > 0) {
+                    iniciarTimerFrontend(tipo, Math.max(1, Math.ceil(restantes / 60)));
+                    return;
+                }
+            }
+        }
+        iniciarTimerFrontend(tipo, minutos);
+    }
+    window.iniciarTimerSiNoCorre = iniciarTimerSiNoCorre;
 
     function iniciarTimerFrontend(tipo, minutos) {
         detenerTimer(tipo);
