@@ -56,6 +56,10 @@
         ]).then(function() {
             if (window.precalcularStockMenu) window.precalcularStockMenu();
             if (window.renderizarMenuPaginado) window.renderizarMenuPaginado(null, null, '');
+            // Capa de disponibilidad: aplica la regla principal/secundario
+            // SOBRE el render ya hecho. No reemplaza el cálculo de
+            // cliente-stock.js, que sigue aportando el número.
+            if (window.actualizarDisponibilidadMenu) window.actualizarDisponibilidadMenu();
             if (window.actualizarCarritoUI) window.actualizarCarritoUI();
         });
 

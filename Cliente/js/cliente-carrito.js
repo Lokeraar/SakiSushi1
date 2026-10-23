@@ -42,6 +42,20 @@
         // Red de seguridad: aunque la tarjeta no mostrara el bloqueo, un platillo sin
         // ingredientes suficientes no entra al carrito. El stock real se calcula como
         // min(stock - reservado) entre los ingredientes de la receta.
+        // Red de seguridad PRIMERO: si la regla principal/secundario dice
+        // bloqueado, no entra aunque el número de stock diera positivo.
+        // Un faltante principal no es cuestión de cantidades: no se puede
+        // preparar el plato.
+        var disp = window._disponibilidad && window._disponibilidad[platilloId];
+        if (disp && disp.bloqueado) {
+            var faltan = (disp.faltanPrincipales || []).join(', ');
+            if (S.utils && S.utils.mostrarToast) {
+                S.utils.mostrarToast('🚫 ' + item.nombre + ' no se puede preparar' +
+                    (faltan ? ': falta ' + faltan : ''), 'error');
+            }
+            return;
+        }
+
         var stockDisp = (window._stockPrecalculado && window._stockPrecalculado[platilloId]);
         if (stockDisp === undefined) stockDisp = 0;
         if (stockDisp <= 0 || item.disponible === false) {
