@@ -2497,6 +2497,16 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                 <h1>Saki Sushi</h1>
                 <span class="header-slogan">"Adictos al universo saki"</span>
             </div>
+            <!-- Acceso de mesonero: abre el modal "Soy mesonero" con el PIN.
+                 Al validar, el sistema reconoce a qué mesonero corresponde. -->
+            <button id="btnMesonero" onclick="abrirModalPinMesonero()"
+                    data-tooltip="Soy mesonero"
+                    aria-label="Acceso para mesoneros con PIN"
+                    style="background:none;border:none;font-size:1.5rem;line-height:1;cursor:pointer;
+                           padding:.25rem;margin-left:.4rem;vertical-align:middle;opacity:.9;
+                           transition:opacity .2s,transform .2s"
+                    onmouseover="this.style.opacity=1;this.style.transform='scale(1.1)'"
+                    onmouseout="this.style.opacity=.9;this.style.transform='scale(1)'">🤵🏻‍♂️</button>
             <div class="header-icons" id="headerIcons">
                 <div style="position:relative">
                     <button class="icon-button" id="notificationBell" data-tooltip="Notificaciones"><i class="fas fa-bell"></i></button>
@@ -2909,6 +2919,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-voz.js"></script>
     <script src="js/cliente-stock.js"></script>
     <script src="js/cliente-disponibilidad.js"></script>
+    <script src="js/cliente-mesonero.js"></script>
     <script src="js/cliente-menu.js"></script>
     <script src="js/cliente-scroll.js"></script>
     <script src="js/cliente-ui.js"></script>
