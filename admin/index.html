@@ -25,7 +25,7 @@
     <script src="js/admin-usuarios.js" defer></script>
     <script src="js/admin-mesoneros.js" defer></script>
     <script src="js/admin-delivery.js" defer></script>
-    <script src="js/admin-secciones.js" defer></script>
+    <script src="js/admin-secciones.js?v=1792799455" defer></script>
     <script src="js/admin-qr.js?v=1792782062" defer></script>
     <script src="js/admin-reportes.js" defer></script>
     <script src="js/admin-platillo-estrella.js" defer></script>
@@ -369,6 +369,15 @@
                                 <i class="fas fa-plus"></i> Crear
                             </button>
                         </div>
+                        <!-- Platillos sin sección: cada uno con su botón para resolverlo.
+                             Un aviso que no lleva a una acción es solo un reproche. -->
+                        <div id="adminHuerfanosWrap" style="margin-bottom:.8rem">
+                            <div style="font-size:.78rem;font-weight:600;opacity:.75;margin-bottom:.4rem">
+                                <i class="fas fa-unlink" style="color:#ef4444"></i> Sin sección
+                            </div>
+                            <div id="adminHuerfanosLista"></div>
+                        </div>
+
                         <div id="adminSeccionesLista"></div>
                     </div>
                 </details>

@@ -191,11 +191,50 @@
      * es largo. La barra lateral necesita el nombre corto, así que se respeta
      * el nombre que ya se mostraba para no cambiar la vista en el paso 2.
      */
+    /**
+     * ¿La sección se puede mostrar ahora?
+     *
+     * Dos motivos para ocultarla:
+     *   - el admin la marcó como no visible
+     *   - está fuera de su horario (ej: Tragos antes de las 11 o después de
+     *     la 1 de la mañana, por el horario legal de expendio de alcohol)
+     *
+     * El horario puede cruzar la medianoche (11:00 a 01:00). En ese caso
+     * "hasta" es menor que "desde", y la condición se invierte.
+     */
+    function _seccionVisibleAhora(s, ahora) {
+        if (s.visible === false) return false;
+
+        if (!s.hora_desde || !s.hora_hasta) return true;
+
+        var minutosAhora = ahora.getHours() * 60 + ahora.getMinutes();
+        var d = _aMinutos(s.hora_desde);
+        var h = _aMinutos(s.hora_hasta);
+        if (d === null || h === null) return true;
+
+        if (d === h) return true;                 // todo el día
+        if (d < h) return minutosAhora >= d && minutosAhora < h;
+        // Cruza la medianoche: 11:00 -> 01:00
+        return minutosAhora >= d || minutosAhora < h;
+    }
+
+    function _aMinutos(hhmm) {
+        if (!hhmm) return null;
+        var partes = String(hhmm).split(':');
+        var hh = parseInt(partes[0], 10);
+        var mm = parseInt(partes[1] || '0', 10);
+        if (isNaN(hh) || isNaN(mm)) return null;
+        return hh * 60 + mm;
+    }
+
     function _obtenerSecciones() {
         var deBase = (window.Saki.state.secciones || []);
         if (!deBase.length) return categoriasPredefinidas;
 
-        var madres = deBase.filter(function (s) { return !s.madre_id; });
+        var ahora = new Date();
+        var madres = deBase
+            .filter(function (s) { return !s.madre_id; })
+            .filter(function (s) { return _seccionVisibleAhora(s, ahora); });
         return madres.map(function (s) {
             var hijas = deBase
                 .filter(function (h) { return h.madre_id === s.id; })

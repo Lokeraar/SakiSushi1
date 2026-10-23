@@ -62,6 +62,7 @@
 
             window._huerfanos = data || [];
             window.pintarAlertaHuerfanos(window._huerfanos);
+            window.renderizarHuerfanosResolubles();
             return window._huerfanos;
         } catch (e) {
             console.warn('[secciones] no se pudieron cargar los huérfanos:', e.message);
@@ -384,6 +385,134 @@
             madres.map(function (m) {
                 return '<option value="' + escap(m.id) + '">' + escap(m.nombre) + '</option>';
             }).join('');
+    };
+
+    // ============================================================
+    // Resolver huérfanos: asignarle sección a un platillo
+    // ============================================================
+
+    window.abrirAsignarSeccion = async function (platilloId, nombrePlatillo) {
+        const madres = (window._secciones || [])
+            .filter(function (s) { return !s.madre_id; })
+            .sort(function (a, b) { return a.orden - b.orden; });
+
+        if (!madres.length) {
+            window.mostrarToast('❌ No hay secciones cargadas', 'error');
+            return;
+        }
+
+        // Desplegable armado a mano para no depender de librerías de diálogo.
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.id = 'modalAsignarSeccion';
+        overlay.innerHTML =
+            '<div class="confirm-dialog" style="max-width:380px">' +
+              '<h3 style="margin-bottom:.3rem"><i class="fas fa-unlink"></i> Sin sección</h3>' +
+              '<p style="font-size:.85rem;opacity:.8;margin-bottom:1rem">' +
+                'Asignale una sección a <strong>' + escap(nombrePlatillo) + '</strong> para que ' +
+                'vuelva a aparecer en la carta del cliente.' +
+              '</p>' +
+              '<label style="display:block;font-size:.78rem;opacity:.7;margin-bottom:.3rem">Sección</label>' +
+              '<select id="asignarCategoria" style="width:100%;padding:.55rem .7rem;border-radius:8px;' +
+                'border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.25);color:inherit;margin-bottom:.7rem">' +
+                madres.map(function (m) {
+                    return '<option value="' + escap(m.nombre) + '">' + escap(m.nombre) + '</option>';
+                }).join('') +
+              '</select>' +
+              '<label style="display:block;font-size:.78rem;opacity:.7;margin-bottom:.3rem">' +
+                'Subsección (opcional)' +
+              '</label>' +
+              '<select id="asignarSubcategoria" style="width:100%;padding:.55rem .7rem;border-radius:8px;' +
+                'border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.25);color:inherit;margin-bottom:1rem">' +
+                '<option value="">Sin subsección</option>' +
+              '</select>' +
+              '<div class="confirm-dialog-buttons">' +
+                '<button class="btn-cancel" onclick="document.getElementById(\'modalAsignarSeccion\').remove()">Cancelar</button>' +
+                '<button class="btn-confirm" id="asignarConfirmar">Asignar</button>' +
+              '</div>' +
+            '</div>';
+
+        document.body.appendChild(overlay);
+
+        const selCat = document.getElementById('asignarCategoria');
+        const selSub = document.getElementById('asignarSubcategoria');
+
+        function refrescarSubs() {
+            const cat = selCat.value;
+            const madre = madres.find(function (m) { return m.nombre === cat; });
+            const hijas = madre
+                ? (window._secciones || []).filter(function (h) { return h.madre_id === madre.id; })
+                                           .sort(function (a, b) { return a.orden - b.orden; })
+                : [];
+            selSub.innerHTML = '<option value="">Sin subsección</option>' +
+                hijas.map(function (h) {
+                    return '<option value="' + escap(h.nombre) + '">' + escap(h.nombre) + '</option>';
+                }).join('');
+        }
+
+        selCat.addEventListener('change', refrescarSubs);
+        refrescarSubs();
+
+        document.getElementById('asignarConfirmar').addEventListener('click', async function () {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Asignando...';
+
+            try {
+                const { data, error } = await window.supabaseClient.rpc('asignar_seccion_a_platillo', {
+                    p_platillo_id: platilloId,
+                    p_categoria: selCat.value,
+                    p_subcategoria: selSub.value || null
+                });
+                if (error) throw error;
+
+                if (data && data.success) {
+                    overlay.remove();
+                    const quedan = data.huerfanos_restantes;
+                    window.mostrarToast(
+                        '✅ Asignado a "' + data.categoria + '".' +
+                        (quedan > 0 ? ' Quedan ' + quedan + ' sin sección.' : ' Ya no hay platillos sin sección.'),
+                        'success'
+                    );
+                    await window.cargarSeccionesAdmin();
+                    if (window.cargarMenu) await window.cargarMenu();
+                    window.resaltarHuerfanosEnLista();
+                } else {
+                    window.mostrarToast('❌ ' + ((data && data.error) || 'No se pudo asignar'), 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Asignar';
+                }
+            } catch (e) {
+                window.mostrarToast('❌ ' + (e.message || e), 'error');
+                btn.disabled = false;
+                btn.textContent = 'Asignar';
+            }
+        });
+    };
+
+    /** Lista de huérfanos con un botón para resolver cada uno. */
+    window.renderizarHuerfanosResolubles = function () {
+        const cont = document.getElementById('adminHuerfanosLista');
+        if (!cont) return;
+
+        const lista = window._huerfanos || [];
+        if (!lista.length) {
+            cont.innerHTML = '<p style="opacity:.6;font-size:.82rem;margin:0">' +
+                'No hay platillos sin sección.</p>';
+            return;
+        }
+
+        cont.innerHTML = lista.map(function (h) {
+            return '<div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;' +
+              'border:1px solid rgba(239,68,68,.35);border-radius:8px;margin-bottom:.35rem;font-size:.85rem">' +
+              '<i class="fas fa-unlink" style="color:#ef4444;font-size:.8rem"></i>' +
+              '<span style="flex:1">' + escap(h.nombre) + '</span>' +
+              '<span style="font-size:.72rem;opacity:.6">' + escap(h.categoria || '—') + '</span>' +
+              '<button class="btn-primary" style="padding:.2rem .5rem;font-size:.75rem" ' +
+                'onclick="window.abrirAsignarSeccion(\'' + escap(h.id) + '\', \'' +
+                escap(h.nombre).replace(/'/g, "\\'") + '\')">Asignar</button>' +
+              '</div>';
+        }).join('');
     };
 
     // ---------- util ----------
