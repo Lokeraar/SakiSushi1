@@ -127,12 +127,37 @@
             }
             return Promise.resolve();
         }
+        // Se lee la VISTA, no la tabla: trae `precio_vigente`, `oferta_activa`
+        // y `descuento_pct` ya resueltos por el servidor. El navegador no
+        // calcula fechas ni descuentos, así el cliente y el cajero ven lo
+        // mismo siempre.
         return window.supabaseClient
-            .from('menu')
+            .from('menu_con_oferta')
             .select('*')
             .then(function(resp) {
                 if (resp.error) throw resp.error;
-                S.state.menuItems = resp.data || [];
+
+                // NORMALIZACIÓN DE PRECIOS
+                //
+                // La vista `menu_con_oferta` devuelve `precio_normal` en vez de
+                // `precio`, y agrega `precio_vigente`. Pero media aplicación
+                // (carrito, personalizador, totales) sigue buscando `item.precio`.
+                //
+                // En vez de parchear ocho lugares —y olvidarse del noveno—, se
+                // deja el dato como lo espera el resto:
+                //
+                //   precio              -> el que se cobra (oferta si está vigente)
+                //   precio_normal       -> el de siempre, para mostrarlo tachado
+                //
+                // Así la oferta baja el precio SOLO en la tarjeta (donde se
+                // muestra el tachado), y todo lo demás sigue funcionando igual.
+                S.state.menuItems = (resp.data || []).map(function (m) {
+                    var precioCobrar = (m.precio_vigente != null) ? m.precio_vigente : m.precio_normal;
+                    return Object.assign({}, m, {
+                        precio: precioCobrar,
+                        precio_normal: (m.precio_normal != null) ? m.precio_normal : m.precio_vigente
+                    });
+                });
                 // Preload images into cache
                 if (window._precargarImagenes) window._precargarImagenes(S.state.menuItems);
             })

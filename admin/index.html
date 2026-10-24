@@ -19,7 +19,8 @@
     <script src="js/admin-ui.js" defer></script>
     <script src="js/admin-tasa-aviso.js" defer></script>
     <script src="../Cliente/js/cliente-imagenes.js?v=1792844774"></script>
-    <script src="js/admin-menu.js?v=1792844774" defer></script>
+    <script src="js/admin-ofertas.js?v=1792867143"></script>
+    <script src="js/admin-menu.js?v=1792867143" defer></script>
     <script src="js/admin-inventario.js" defer></script>
     <script src="js/admin-usuarios.js" defer></script>
     <script src="js/admin-mesoneros.js" defer></script>
@@ -408,6 +409,16 @@
                             <div id="adminHuerfanosLista"></div>
                         </div>
 
+                        <!-- Ofertas con reloj: se ven todas de un vistazo, con su estado.
+                             El admin no tiene que abrir platillo por platillo para saber
+                             qué está activo, qué venció y qué está programado. -->
+                        <div id="adminOfertasWrap" style="margin-bottom:.8rem">
+                            <div style="font-size:.78rem;font-weight:600;opacity:.75;margin-bottom:.4rem">
+                                <i class="fas fa-tag" style="color:#FF9800"></i> Ofertas
+                            </div>
+                            <div id="adminOfertasLista"></div>
+                        </div>
+
                         <div id="adminSeccionesLista"></div>
                     </div>
                 </details>
@@ -596,6 +607,59 @@
                     <div class="form-group" id="subcategoriaContainer" style="display:none"><label>Subcategoría</label><select id="platilloSubcategoria"><option value="">Ninguna</option></select></div>
                     <div class="form-row" style="align-items:center"><div class="form-group"><label>Precio (USD)</label><input type="number" step="0.01" id="platilloPrecio" required placeholder="0.00" oninput="window._previewPrecioBs()"><div id="platilloPrecioBsPreview" style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem"></div></div><div class="form-group" style="flex:0 0 auto"><label>Disponible</label><label style="display:flex;align-items:center;gap:.5rem;margin-top:.5rem;cursor:pointer"><input type="checkbox" id="platilloDisponibleCheck" checked style="accent-color:var(--success);width:16px;height:16px"><span id="platilloDisponibleLabel" style="font-size:.82rem;font-weight:600;color:var(--success)">Sí</span></label><select id="platilloDisponible" style="display:none"><option value="true">Sí</option><option value="false">No</option></select></div></div>
                     <div class="form-group"><label>Descripción</label><textarea id="platilloDescripcion" rows="2" placeholder="Ej: Incluye 8 piezas de salmón..."></textarea></div>
+
+                    <!-- ============================================================
+                         Oferta con reloj
+                         ============================================================
+                         El admin solo carga TRES datos: el precio rebajado, y
+                         desde/hasta cuándo. El porcentaje lo calcula la base,
+                         así nunca queda un cartel que diga "-20%" cuando en
+                         realidad es -15%.
+
+                         Si los datos están vacíos, el plato se muestra a su
+                         precio normal y no pasa nada.
+
+                         La oferta se apaga SOLA cuando llega la hora: el
+                         admin no tiene que acordarse de quitarla. Y queda
+                         guardada (apagada) para poder repetirla el año que
+                         viene sin volver a cargarla. -->
+                    <div class="form-group" style="border:1px solid rgba(255,152,0,.35);background:rgba(255,152,0,.06);border-radius:10px;padding:.7rem .85rem">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.45rem">
+                            <label style="margin:0;display:flex;align-items:center;gap:.4rem">
+                                <i class="fas fa-tag" style="color:#FF9800"></i> Oferta (opcional)
+                            </label>
+                            <button type="button" id="quitarOfertaBtn" class="btn-secondary"
+                                    style="display:none;padding:.2rem .55rem;font-size:.74rem"
+                                    onclick="window._quitarOfertaPlatillo()">
+                                <i class="fas fa-times"></i> Quitar oferta
+                            </button>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="margin:0">
+                                <label style="font-size:.78rem">Precio de oferta (USD)</label>
+                                <input type="number" step="0.01" id="platilloPrecioOferta"
+                                       placeholder="Ej: 9.09" oninput="window._previewOferta()"
+                                       style="width:100%">
+                            </div>
+                            <div class="form-group" style="margin:0">
+                                <label style="font-size:.78rem">Desde</label>
+                                <input type="datetime-local" id="platilloOfertaDesde"
+                                       oninput="window._previewOferta()" style="width:100%">
+                            </div>
+                            <div class="form-group" style="margin:0">
+                                <label style="font-size:.78rem">Hasta</label>
+                                <input type="datetime-local" id="platilloOfertaHasta"
+                                       oninput="window._previewOferta()" style="width:100%">
+                            </div>
+                        </div>
+                        <div id="ofertaPreview" style="font-size:.76rem;margin-top:.35rem;color:var(--text-muted)">
+                            Sin oferta: el plato se muestra a su precio normal.
+                        </div>
+                        <div style="font-size:.7rem;opacity:.6;margin-top:.3rem">
+                            Si dejás "Desde" y "Hasta" vacíos, la oferta no vence.
+                            Se apaga sola al llegar la hora.
+                        </div>
+                    </div>
                     <div class="form-group"><label>Ingredientes del Platillo</label><div id="ingredientesContainer"></div><button type="button" class="btn-secondary" onclick="window.agregarIngredienteRow()" style="margin-top:.5rem"><i class="fas fa-plus"></i> Agregar Ingrediente</button></div>
                     <div id="stockCalculadoWrap" style="display:none;margin-top:.5rem;padding:.6rem .85rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:.82rem;color:#166534"><i class="fas fa-layer-group" style="margin-right:.35rem"></i><span id="stockCalculadoText">Agrega ingredientes para calcular</span></div>
                 </form>

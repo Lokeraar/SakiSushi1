@@ -110,7 +110,36 @@
         // Se muestra el estado tambien cuando esta agotado: antes quedaba vacio y el
         // cliente no entendia por que no habia boton de agregar.
         const stockInfo = `<div class="stock-info"><i class="fas fa-box ${sc}"></i><span>${agotado ? 'Agotado' : stock + ' disponibles'}</span></div>`;
-        return `<div class="menu-card${agotado?' agotado':''}" data-id="${item.id}"><div class="menu-card-image" style="background-image:url('${img}')"${agotado?'':` onclick="abrirPreview('${item.id}')"`}>${badge}</div><div class="menu-card-content"><div class="menu-card-header"><div style="display:flex;align-items:center"><button class="favorite-btn ${fav}" onclick="event.stopPropagation();toggleFavorito('${item.id}')" data-id="${item.id}" data-tooltip="${fav?'Quitar de favoritos':'Agregar a favoritos'}"><i class="fas fa-star"></i></button><h3 class="menu-card-title">${item.nombre}</h3></div><span class="menu-card-price">${window.Saki.utils.formatBs(window.Saki.utils.usdToBs(item.precio))}</span></div><p class="menu-card-description">${item.descripcion||''}</p><div class="menu-card-footer">${footer}</div>${stockInfo}</div></div>`;
+
+        // ---- Precio: con oferta o normal ----
+        //
+        // El precio y el descuento YA vienen calculados por el servidor
+        // (`precio_vigente` y `descuento_pct`). El navegador no hace cuentas
+        // de fechas: si lo hiciera, un cliente con la hora mal configurada
+        // vería la oferta cuando ya terminó.
+        //
+        // El tachado va SOLO acá, en la tarjeta. En el resto de la app
+        // (carrito, confirmación) se muestra únicamente el precio con
+        // descuento, para no llenar la pantalla de números.
+        let bloquePrecio;
+        if (item.oferta_activa && item.precio_normal != null) {
+            const normalBs = window.Saki.utils.formatBs(window.Saki.utils.usdToBs(item.precio_normal));
+            const ofertaBs = window.Saki.utils.formatBs(window.Saki.utils.usdToBs(item.precio_vigente));
+            bloquePrecio =
+                '<span class="menu-card-price">' +
+                  '<span style="display:block;font-size:.72rem;color:var(--text-secondary);' +
+                  'text-decoration:line-through;font-weight:400">' + normalBs + '</span>' +
+                  '<span style="display:inline-flex;align-items:center;gap:.3rem">' +
+                    '<span style="color:#4ade80">' + ofertaBs + '</span>' +
+                    '<span style="background:#ef4444;color:#fff;font-size:.62rem;font-weight:700;' +
+                    'padding:.05rem .3rem;border-radius:4px">-' + item.descuento_pct + '%</span>' +
+                  '</span>' +
+                '</span>';
+        } else {
+            bloquePrecio = '<span class="menu-card-price">' + window.Saki.utils.formatBs(window.Saki.utils.usdToBs(
+                item.oferta_activa ? item.precio_vigente : item.precio)) + '</span>';
+        }
+        return `<div class="menu-card${agotado?' agotado':''}" data-id="${item.id}"><div class="menu-card-image" style="background-image:url('${img}')"${agotado?'':` onclick="abrirPreview('${item.id}')"`}>${badge}</div><div class="menu-card-content"><div class="menu-card-header"><div style="display:flex;align-items:center"><button class="favorite-btn ${fav}" onclick="event.stopPropagation();toggleFavorito('${item.id}')" data-id="${item.id}" data-tooltip="${fav?'Quitar de favoritos':'Agregar a favoritos'}"><i class="fas fa-star"></i></button><h3 class="menu-card-title">${item.nombre}</h3></div>${bloquePrecio}</div><p class="menu-card-description">${item.descripcion||''}</p><div class="menu-card-footer">${footer}</div>${stockInfo}</div></div>`;
     }
 
     // Function to generate pagination HTML

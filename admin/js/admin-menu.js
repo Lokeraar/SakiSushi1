@@ -316,6 +316,7 @@
         window.limpiarErroresInput();
         window.cargarCategoriasSelect();
         window.platilloEditandoId = null;
+        if (window.cargarOfertaEnModal) window.cargarOfertaEnModal(null);
         
         // Configurar eventos del modal para el nuevo platillo
         setupPlatilloModalEvents();
@@ -502,6 +503,8 @@
         // No establecer directamente el valor de subcategoría aquí, se hará en cargarSubcategoriasSelect
         document.getElementById('platilloPrecio').value = platillo.precio || '';
         document.getElementById('platilloDescripcion').value = platillo.descripcion || '';
+        // Bloque de oferta: se llena con lo que ya tenga guardado el platillo.
+        if (window.cargarOfertaEnModal) window.cargarOfertaEnModal(platillo);
         document.getElementById('platilloDisponible').value = platillo.disponible ? 'true' : 'false';
         const _chkD = document.getElementById('platilloDisponibleCheck');
         const _lblD = document.getElementById('platilloDisponibleLabel');
@@ -874,11 +877,27 @@
             if (error) throw error;
             
             // Éxito - mensaje específico según acción
+            //
+            // La oferta se guarda DESPUÉS del platillo, porque necesita que el
+            // platillo ya exista: en un platillo nuevo no hay id hasta acá.
+            var idParaOferta = window.platilloEditandoId;
+            if (!idParaOferta && platilloData) {
+                // Platillo nuevo: buscarlo por nombre para colgarle la oferta.
+                const { data: nuevo } = await window.supabaseClient
+                    .from('menu').select('id').eq('nombre', platilloData.nombre)
+                    .order('created_at', { ascending: false }).limit(1);
+                if (nuevo && nuevo.length) idParaOferta = nuevo[0].id;
+            }
+            if (idParaOferta && window.guardarOfertaDelPlatillo) {
+                await window.guardarOfertaDelPlatillo(idParaOferta);
+            }
+
             window.cerrarModal('platilloModal');
             window.limpiarImagenPreview();
             window.platilloEditandoId = null;
             await window.cargarInventario(); // Recargar inventario primero para actualizar stock
             await window.cargarMenu(); // Luego recargar menú con el nuevo stock calculado
+            if (window.cargarOfertasAdmin) await window.cargarOfertasAdmin();
             const mensajeExito = window.platilloEditandoId ? 'Platillo editado con éxito' : 'Platillo creado con éxito';
             window.mostrarToast('✅ ' + mensajeExito, 'success');
             

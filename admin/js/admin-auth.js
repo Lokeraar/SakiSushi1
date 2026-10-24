@@ -186,6 +186,7 @@
                     // Las secciones de la carta: alimentan el aviso de
                     // platillos huérfanos que aparece en Inicio.
                     if (typeof window.cargarSeccionesAdmin === 'function') await window.cargarSeccionesAdmin();
+                    if (typeof window.cargarOfertasAdmin === 'function') await window.cargarOfertasAdmin();
                     await window.cargarReportes();
                     await window.cargarPedidosRecientes();
                     if (typeof window.cargarMesoneros === 'function') await window.cargarMesoneros();
