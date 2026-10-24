@@ -296,8 +296,7 @@
         if (!validarFormularioDelivery()) return;
         if (!S.state.carrito || S.state.carrito.length === 0) return;
 
-        var btn = document.getElementById('confirmDeliveryOrder');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
+        return window.conAccionUnica('confirmDeliveryOrder', function () {
 
         var costoEnvio = _preciosPorParroquia[deliveryFormData.parroquia] || 0;
         var items = S.state.carrito.map(function(i) {
@@ -362,9 +361,8 @@
             if (window.mostrarToast) window.mostrarToast('✅ Pedido delivery registrado', 'success');
         }).catch(function(err) {
             if (window.mostrarToast) window.mostrarToast('❌ Error: ' + (err.message || err), 'error');
-        }).finally(function() {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Pedido'; }
         });
+        }, { texto: '<i class="fas fa-check"></i> Confirmar Pedido', textoCargando: 'Enviando...' });
     }
     window.confirmarPedidoDelivery = confirmarPedidoDelivery;
     S.modules.delivery.confirmarPedidoDelivery = confirmarPedidoDelivery;
@@ -384,8 +382,7 @@
             return;
         }
 
-        var btn = document.getElementById('confirmReserva');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
+        return window.conAccionUnica('confirmReserva', function () {
 
         var items = S.state.carrito.map(function (i) {
             // OJO: el carrito tiene DOS ids.
@@ -459,9 +456,8 @@
             }
         }).catch(function (err) {
             if (window.mostrarToast) window.mostrarToast('❌ ' + (err.message || err), 'error');
-        }).finally(function () {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Reserva'; }
         });
+        }, { texto: '<i class="fas fa-check"></i> Confirmar Reserva', textoCargando: 'Enviando...' });
     }
     window.confirmarPedidoReserva = confirmarPedidoReserva;
     S.modules.delivery.confirmarPedidoReserva = confirmarPedidoReserva;

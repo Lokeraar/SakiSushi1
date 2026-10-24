@@ -82,30 +82,27 @@
 
     function confirmarPedidoMesa() {
         if (!S.state.carrito || S.state.carrito.length === 0) return;
-        var btn = document.getElementById('confirmMesaOrder');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
 
-        var pedido = crearPedidoBase('mesa');
-
-        crearPedidoTransaccional(pedido)
-            .then(function(resp) {
-                if (resp.error) throw resp.error;
-                if (window.agregarPedidoAHistorial) window.agregarPedidoAHistorial(pedido);
-                S.state.carrito = [];
-                if (window.guardarCarrito) window.guardarCarrito();
-                if (window.actualizarCarritoUI) window.actualizarCarritoUI();
-                if (window.actualizarCarritoBadge) window.actualizarCarritoBadge();
-                if (window.precalcularStockMenu) window.precalcularStockMenu();
-                if (window.mostrarToast) window.mostrarToast('✅ Pedido enviado a la cocina', 'success');
-                document.getElementById('confirmMesaModal').classList.remove('active');
-                if (window.detenerSeguimientoScroll) window.detenerSeguimientoScroll();
-            })
-            .catch(function(err) {
-                if (window.mostrarToast) window.mostrarToast('❌ Error al crear pedido: ' + (err.message || err), 'error');
-            })
-            .finally(function() {
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Hacer Pedido'; }
-            });
+        // Freno único: bloquea el botón, muestra el spinner, ignora toques
+        // repetidos mientras haya algo en curso, y lo rehabilita si falla.
+        // Antes se bloqueaba a mano, pero cualquier otro modal que olvidara
+        // hacerlo mandaba pedidos duplicados a la cocina.
+        return window.conAccionUnica('confirmMesaOrder', function () {
+            var pedido = crearPedidoBase('mesa');
+            return crearPedidoTransaccional(pedido)
+                .then(function(resp) {
+                    if (resp.error) throw resp.error;
+                    if (window.agregarPedidoAHistorial) window.agregarPedidoAHistorial(pedido);
+                    S.state.carrito = [];
+                    if (window.guardarCarrito) window.guardarCarrito();
+                    if (window.actualizarCarritoUI) window.actualizarCarritoUI();
+                    if (window.actualizarCarritoBadge) window.actualizarCarritoBadge();
+                    if (window.precalcularStockMenu) window.precalcularStockMenu();
+                    if (window.mostrarToast) window.mostrarToast('✅ Pedido enviado a la cocina', 'success');
+                    document.getElementById('confirmMesaModal').classList.remove('active');
+                    if (window.detenerSeguimientoScroll) window.detenerSeguimientoScroll();
+                });
+        }, { texto: '<i class="fas fa-check"></i> Hacer Pedido', textoCargando: 'Enviando...' });
     }
     window.confirmarPedidoMesa = confirmarPedidoMesa;
     S.modules.pedidos.confirmarPedidoMesa = confirmarPedidoMesa;

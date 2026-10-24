@@ -92,20 +92,115 @@
     window.agregarAlCarrito = agregarAlCarrito;
     S.modules.carrito.agregarAlCarrito = agregarAlCarrito;
 
+    /**
+     * Guarda el carrito en el teléfono del cliente.
+     *
+     * ANTES: el `catch` estaba vacío. Si el guardado fallaba, el carrito
+     * seguía andando pero NO sobrevivía a cerrar el navegador. El cliente se
+     * enteraba en el peor momento: volvía y estaba vacío.
+     *
+     * AHORA: tres cosas, sin molestar al cliente.
+     *
+     *   1. REINTENTO. Muchos fallos son momentáneos (el teléfono estaba
+     *      ocupado con otra cosa). Un segundo intento resuelve la mayoría.
+     *
+     *   2. DISTINGUIR LA CAUSA. No es lo mismo que el espacio esté lleno
+     *      (se puede limpiar) que estar en modo privado (no hay arreglo). Se
+     *      intenta liberar espacio y reintentar solo en el primer caso.
+     *
+     *   3. NO AVISAR. Decisión del dueño: no ser intrusivo. El reintento y la
+     *      limpieza resuelven el problema en silencio. Solo si TODO falla se
+     *      deja una marca en `window._carritoNoGuardado` para que otra parte
+     *      de la app decida si conviene decir algo.
+     */
     function guardarCarrito() {
+        var data = { items: S.state.carrito, timestamp: Date.now() };
+        var json;
         try {
-            var data = { items: S.state.carrito, timestamp: Date.now() };
-            localStorage.setItem('saki_carrito', JSON.stringify(data));
-            // Fase 1: cada cambio del carrito REINICIA el plazo de 20 minutos.
-            // Si el carrito queda vacío, se deja de vigilar.
-            if (window.reiniciarContadorCarrito) {
-                if (S.state.carrito && S.state.carrito.length > 0) {
-                    window.reiniciarContadorCarrito();
-                } else if (window.detenerVigilanciaCarrito) {
-                    window.detenerVigilanciaCarrito();
-                }
+            json = JSON.stringify(data);
+        } catch (e) {
+            // Esto no es falta de espacio: es un dato que no se puede
+            // serializar. No hay reintento que lo arregle.
+            window._carritoNoGuardado = { motivo: 'serializacion', detalle: e.message };
+            return;
+        }
+
+        var guardado = _intentarGuardar(json);
+        if (guardado.ok) {
+            window._carritoNoGuardado = null;
+        } else {
+            // ---- Reintento 1: puede ser momentáneo ----
+            guardado = _intentarGuardar(json);
+        }
+
+        if (!guardado.ok) {
+            // ---- ¿Es falta de espacio? Entonces se limpia lo viejo ----
+            if (_pareceFaltaDeEspacio(guardado.err)) {
+                _liberarEspacioViejo();
+                guardado = _intentarGuardar(json);
             }
-        } catch(e) {}
+        }
+
+        if (!guardado.ok) {
+            window._carritoNoGuardado = {
+                motivo: _pareceFaltaDeEspacio(guardado.err) ? 'espacio' : 'no-disponible',
+                detalle: guardado.err && guardado.err.message
+            };
+            console.warn('[carrito] no se pudo guardar:', window._carritoNoGuardado);
+        }
+
+        // Fase 1: cada cambio del carrito REINICIA el plazo de 20 minutos.
+        // Si el carrito queda vacío, se deja de vigilar.
+        if (window.reiniciarContadorCarrito) {
+            if (S.state.carrito && S.state.carrito.length > 0) {
+                window.reiniciarContadorCarrito();
+            } else if (window.detenerVigilanciaCarrito) {
+                window.detenerVigilanciaCarrito();
+            }
+        }
+    }
+
+    /** Un intento de escritura. Devuelve {ok, err} en vez de lanzar. */
+    function _intentarGuardar(json) {
+        try {
+            localStorage.setItem('saki_carrito', json);
+            return { ok: true };
+        } catch (e) {
+            return { ok: false, err: e };
+        }
+    }
+
+    /**
+     * ¿El error es por falta de espacio?
+     *
+     * Los navegadores no coinciden en el nombre: Chrome usa
+     * QuotaExceededError con código 22, Firefox 1014, Safari 22 o 1014.
+     * Se mira el nombre y el código, no el mensaje (que cambia con el idioma).
+     */
+    function _pareceFaltaDeEspacio(err) {
+        if (!err) return false;
+        return err.name === 'QuotaExceededError' ||
+               err.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+               err.code === 22 || err.code === 1014;
+    }
+
+    /**
+     * Borra del teléfono lo que ya no sirve para hacer lugar.
+     *
+     * Solo toca claves propias del carrito y datos viejos del menú. NUNCA
+     * toca la sesión del mesonero ni la del admin: borrar eso sacaría a la
+     * gente de su cuenta sin avisar.
+     */
+    function _liberarEspacioViejo() {
+        var borrables = [
+            'saki_carrito_timer',      // contador de la fase 1: se recalcula
+            'saki_reserva_data',       // formulario de reserva a medio llenar
+            'saki_delivery_data',      // formulario de delivery a medio llenar
+            'saki_ultima_categoria'    // última sección mirada: es cosmético
+        ];
+        borrables.forEach(function (k) {
+            try { localStorage.removeItem(k); } catch (e) {}
+        });
     }
     window.guardarCarrito = guardarCarrito;
     S.modules.carrito.guardarCarrito = guardarCarrito;
@@ -182,6 +277,66 @@
     }
     window.borrarGrupoNivel2 = borrarGrupoNivel2;
     S.modules.carrito.borrarGrupoNivel2 = borrarGrupoNivel2;
+
+    /**
+     * Etiqueta CORTA para la fila del carrito.
+     *
+     * Antes decía siempre "Personalizado", así que dos platos distintos se
+     * veían igual y había que abrirlos para distinguirlos. Ahora dice qué
+     * cambió: "Sin cebolla · Sin aguacate" o "Con arroz extra".
+     */
+    function _etiquetaCorta(item) {
+        var sin = (item.ingredientesQuitados || []).length;
+        var con = (item.ingredientesAgregados || []).length;
+        if (sin === 0 && con === 0) return null;   // plato completo
+
+        var partes = [];
+        if (sin > 0) partes.push('Sin ' + item.ingredientesQuitados.join(', '));
+        if (con > 0) partes.push('Con ' + item.ingredientesAgregados.map(function (a) {
+            return a.nombre || a;
+        }).join(', '));
+        return partes.join(' · ');
+    }
+
+    /**
+     * Detalle COMPLETO, que se abre al tocar el nombre del plato.
+     *
+     * Muestra el plato entero marcando qué se queda y qué no, para que el
+     * cliente no tenga que recordar qué traía originalmente. Es la opción
+     * que eligió el dueño: "✓ Arroz · ✗ Cebolla · ✓ Cangrejo".
+     */
+    function _detalleCompleto(item, nombrePlato) {
+        var quitados = item.ingredientesQuitados || [];
+        var agregados = (item.ingredientesAgregados || []).map(function (a) { return a.nombre || a; });
+
+        // La receta real del plato, si el estado global la tiene a mano.
+        var plato = (S.state.menuItems || []).find(function (m) { return m.id === item.platilloId; });
+        var receta = [];
+        if (plato && plato.ingredientes) {
+            Object.keys(plato.ingredientes).forEach(function (k) {
+                receta.push(plato.ingredientes[k].nombre);
+            });
+        }
+
+        if (!receta.length && !quitados.length && !agregados.length) {
+            return '<div style="font-size:.78rem;opacity:.7">' + (nombrePlato || 'Completo') + '</div>';
+        }
+
+        var lineas = receta.map(function (n) {
+            var fuera = quitados.indexOf(n) !== -1;
+            return '<div style="font-size:.75rem;display:flex;gap:.35rem;align-items:center;' +
+                (fuera ? 'opacity:.5;text-decoration:line-through' : '') + '">' +
+                '<span style="color:' + (fuera ? '#ef4444' : '#4ade80') + '">' +
+                (fuera ? '✗' : '✓') + '</span><span>' + n + '</span></div>';
+        }).join('');
+
+        var extras = agregados.map(function (n) {
+            return '<div style="font-size:.75rem;display:flex;gap:.35rem;align-items:center;color:#4ade80">' +
+                '<span>+</span><span>' + n + '</span></div>';
+        }).join('');
+
+        return lineas + extras;
+    }
 
     function agruparItemsJerarquicamente() {
         var grupos = {};
@@ -261,11 +416,27 @@
                         '<div class="header-details"><span><i class="fas fa-dollar-sign"></i> ' + S.utils.formatBs(totalSub) + '</span></div></div>' +
                         '<div class="nivel3-container' + (subOpen ? ' expanded' : '') + '">';
                     sub.items.forEach(function(item, ii) {
+                        // Etiqueta corta: dice QUÉ cambió, no la palabra fija
+                        // "Personalizado". Dos platos distintos se distinguen
+                        // sin abrirlos.
+                        var corta = _etiquetaCorta(item);
+                        var detalleId = 'det_' + item.id;
                         html += '<div class="nivel3-item">' +
                             '<div class="item-image" style="background-image:url(\'' + (item.imagen || 'https://via.placeholder.com/40') + '\')"></div>' +
                             '<div class="item-info">' +
-                            '<div><span class="item-number">#' + (ii + 1) + '</span><span class="item-name">' + (item.personalizacion || grupo.nombre) + '</span></div>' +
-                            '<div class="personalizacion"><i class="fas fa-cog"></i> ' + (item.ingredientesQuitados && item.ingredientesQuitados.length > 0 ? 'Sin: ' + item.ingredientesQuitados.join(', ') : 'Completo') + '</div>' +
+                            // El nombre es tocable: abre el detalle completo
+                            // (la receta marcada ✓/✗) sin salir del carrito.
+                            '<div><span class="item-number">#' + (ii + 1) + '</span>' +
+                            '<span class="item-name item-name-tocable" role="button" tabindex="0" ' +
+                            'style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px" ' +
+                            'onclick="window._toggleDetalleItem(\'' + detalleId + '\')">' +
+                            (item.personalizacion || grupo.nombre) + '</span></div>' +
+                            (corta
+                              ? '<div class="personalizacion"><i class="fas fa-cog"></i> ' + corta + '</div>'
+                              : '<div class="personalizacion"><i class="fas fa-check"></i> Completo</div>') +
+                            '<div id="' + detalleId + '" style="display:none;margin-top:.3rem;' +
+                            'border-left:2px solid rgba(255,255,255,.15);padding-left:.5rem">' +
+                            _detalleCompleto(item, grupo.nombre) + '</div>' +
                             '</div>' +
                             '<div class="item-precio">' + S.utils.formatBs(item.precio * item.cantidad) + '</div>' +
                             '<button class="btn-remove-item" data-id="' + item.id + '"><i class="fas fa-times"></i></button></div>';
@@ -285,6 +456,19 @@
             html += '</div></div>';
         });
 
+        // Nivel 1 del borrado: vaciar el carrito ENTERO.
+        //
+        // Faltaba. Había un "borrar grupo" por plato, pero ninguno para
+        // vaciar todo: el cliente que se arrepiente de todo tenía que borrar
+        // plato por plato.
+        html += '<div class="cart-vaciar-wrap" style="padding:.5rem .8rem 0">' +
+            '<button id="btnVaciarCarrito" class="btn-vaciar-carrito" ' +
+            'style="width:100%;background:rgba(239,68,68,.12);color:#ff6b6b;' +
+            'border:1px solid rgba(239,68,68,.35);border-radius:8px;padding:.5rem;' +
+            'font-size:.82rem;font-weight:600;cursor:pointer;display:flex;' +
+            'align-items:center;justify-content:center;gap:.4rem">' +
+            '<i class="fas fa-trash-alt"></i> Vaciar carrito</button></div>';
+
         // Scroll indicator cascade (flechas para bajar a botones de acción)
         html += '<div class="scroll-indicator-cascade" onclick="window.irABotonesAccion()">' +
             '<i class="fas fa-chevron-down cascade-arrow"></i>' +
@@ -293,6 +477,19 @@
             '<div class="cascade-text"><i class="fas fa-arrow-down"></i> Ir a opciones</div></div>' +
             '</div>'; // close cart-items-inner
         cartItems.innerHTML = html;
+
+        // Vaciar todo: pide confirmación porque no se puede deshacer.
+        var btnVaciar = document.getElementById('btnVaciarCarrito');
+        if (btnVaciar) {
+            btnVaciar.addEventListener('click', function () {
+                var unidades = (S.state.carrito || []).reduce(function (a, i) {
+                    return a + (i.cantidad || 1);
+                }, 0);
+                var platos = (S.state.carrito || []).length;
+
+                _confirmarVaciar(platos, unidades);
+            });
+        }
 
         // Cart footer
         if (cartFooter) {
@@ -331,6 +528,52 @@
     }
     window.actualizarCarritoUI = actualizarCarritoUI;
     S.modules.carrito.actualizarCarritoUI = actualizarCarritoUI;
+
+    /**
+     * Confirmación para vaciar, hecha a mano.
+     *
+     * `mostrarConfirmacionPremium` existe en el admin pero NO en el Cliente:
+     * llamarla desde acá habría fallado en silencio y el botón no haría nada.
+     * Se arma un diálogo propio con las mismas clases que ya usa la app.
+     */
+    function _confirmarVaciar(platos, unidades) {
+        var overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.id = 'confirmVaciarOverlay';
+        overlay.innerHTML =
+            '<div class="confirm-dialog" style="max-width:330px">' +
+              '<div style="font-size:2rem;line-height:1">🗑️</div>' +
+              '<h3>Vaciar carrito</h3>' +
+              '<p style="font-size:.85rem;opacity:.8;margin-bottom:1rem">' +
+                'Se quitan ' + platos + ' plato' + (platos === 1 ? '' : 's') +
+                ' (' + unidades + ' unidad' + (unidades === 1 ? '' : 'es') + ').' +
+                '<br>Esto no se puede deshacer.' +
+              '</p>' +
+              '<div class="confirm-dialog-buttons">' +
+                '<button class="btn-cancel" id="vaciarCancelar">Cancelar</button>' +
+                '<button class="btn-confirm" id="vaciarConfirmar">Vaciar</button>' +
+              '</div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+
+        document.getElementById('vaciarCancelar').addEventListener('click', function () {
+            overlay.remove();
+        });
+
+        document.getElementById('vaciarConfirmar').addEventListener('click', function () {
+            overlay.remove();
+            if (window.vaciarCarrito) window.vaciarCarrito();
+            if (window.mostrarToast) window.mostrarToast('🗑️ Carrito vaciado', 'success');
+            if (window.detenerSeguimientoScroll) window.detenerSeguimientoScroll();
+        });
+    }
+
+    /** Abre o cierra el detalle de un ítem al tocar su nombre. */
+    window._toggleDetalleItem = function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+    };
 
     function getCarrito() {
         return S.state.carrito || [];
