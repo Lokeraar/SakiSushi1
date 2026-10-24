@@ -118,7 +118,15 @@
     }
 
     function cargarMenuSiPosible() {
-        if (!window.supabaseClient) return Promise.resolve();
+        // Sin cliente de Supabase no hay datos posibles. Antes se salía en
+        // silencio y la carta quedaba vacía aunque hubiera una copia local
+        // disponible: por eso sin internet no aparecía NADA.
+        if (!window.supabaseClient) {
+            if (window.usarDatosDeEjemplo) {
+                return window.usarDatosDeEjemplo('no hay cliente de Supabase');
+            }
+            return Promise.resolve();
+        }
         return window.supabaseClient
             .from('menu')
             .select('*')
@@ -131,6 +139,12 @@
             .catch(function(err) {
                 console.warn('Error cargando menú:', err);
                 S.state.menuItems = [];
+                // Cascada: si Supabase falla y estamos en local, se usan los
+                // datos de ejemplo. Fuera de local esto NO hace nada: el
+                // cliente real debe estar online para ver la carta.
+                if (window.usarDatosDeEjemplo) {
+                    window.usarDatosDeEjemplo('no se pudo cargar el menú');
+                }
             });
     }
 
@@ -143,7 +157,12 @@
     // Si esta consulta falla, el sistema sigue andando con la lista de respaldo
     // que quedó en cliente-menu.js. Es feo pero no deja al cliente sin carta.
     function cargarSeccionesSiPosible() {
-        if (!window.supabaseClient) return Promise.resolve();
+        if (!window.supabaseClient) {
+            if (window.usarDatosDeEjemplo) {
+                return window.usarDatosDeEjemplo('no hay cliente de Supabase');
+            }
+            return Promise.resolve();
+        }
         return window.supabaseClient
             .from('secciones')
             .select('id, nombre, madre_id, orden, icono, visible, hora_desde, hora_hasta')
@@ -155,11 +174,19 @@
             .catch(function(err) {
                 console.warn('Error cargando secciones, se usa la lista de respaldo:', err);
                 S.state.secciones = [];
+                if (window.usarDatosDeEjemplo) {
+                    window.usarDatosDeEjemplo('no se pudieron cargar las secciones');
+                }
             });
     }
 
     function cargarInventarioSiPosible() {
-        if (!window.supabaseClient) return Promise.resolve();
+        if (!window.supabaseClient) {
+            if (window.usarDatosDeEjemplo) {
+                return window.usarDatosDeEjemplo('no hay cliente de Supabase');
+            }
+            return Promise.resolve();
+        }
         return window.supabaseClient
             .from('inventario')
             .select('*')
@@ -169,6 +196,9 @@
             })
             .catch(function(err) {
                 console.warn('Error cargando inventario:', err);
+                if (window.usarDatosDeEjemplo) {
+                    window.usarDatosDeEjemplo('no se pudo cargar el inventario');
+                }
                 S.state.inventario = [];
             });
     }
