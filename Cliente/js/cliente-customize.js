@@ -60,6 +60,9 @@
             return {
                 id: ingId,
                 nombre: ingInfo.nombre || ing?.nombre || ingId,
+                // La foto del ingrediente viene del inventario (`inventario.imagen`).
+                // Si no hay foto, el modal se arregla sin ella: nunca deja un hueco.
+                imagen: (ing && ing.imagen) ? ing.imagen : '',
                 cantidad: cant,
                 unidad: ingInfo.unidad || (ing && ing.unidad_base) || '',
                 principal: ingInfo.principal === true,
@@ -120,6 +123,19 @@
                               'background:transparent;color:var(--customize-text);font-size:.9rem;cursor:pointer;padding:0"';
 
                 html += '<div style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid var(--customize-border)">' +
+                    // Miniatura del ingrediente. Sin foto no se muestra nada:
+                    // se prefiere un renglón pelado antes que un cuadrado gris.
+                    (ing.imagen
+                        // SIN loading="lazy": la lista de ingredientes arranca
+                        // oculta (display:none) y el navegador NUNCA empieza a
+                        // bajar una imagen perezosa que está dentro de algo no
+                        // visible. Medido en pantalla: naturalWidth 0 en las 5
+                        // filas. Son miniaturas de 34 px ya en caché: no hay
+                        // nada que ganar difiriéndolas.
+                        ? '<img src="' + ing.imagen + '" alt="" ' +
+                          'style="width:34px;height:34px;flex-shrink:0;border-radius:8px;object-fit:cover;' +
+                          'background:#fff;border:1px solid var(--customize-border)">'
+                        : '') +
                     '<div style="flex:1;min-width:0">' +
                       '<div style="color:var(--customize-text);font-size:.9rem">' + ing.nombre +
                         (ing.principal ? ' <span style="color:var(--accent);font-size:.66rem">(define el plato)</span>' : '') +
