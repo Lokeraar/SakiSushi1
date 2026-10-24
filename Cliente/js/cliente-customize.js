@@ -211,6 +211,16 @@
      * 25 g de salmón, un extra son otros 25 g, y se cobra la porción.
      * Así lo definió el dueño.
      */
+    /** ¿Poner `idx` en extra dejaría TODOS los ingredientes en extra? */
+    function _seriaExtraDeTodo(idx) {
+        if (!_ingredientesActuales.length) return false;
+        for (var i = 0; i < _ingredientesActuales.length; i++) {
+            var estado = (i === idx) ? 'extra' : (_estadosIng[i] || 'normal');
+            if (estado !== 'extra') return false;
+        }
+        return true;
+    }
+
     window.cambiarEstadoIngrediente = function (idx, accion) {
         var actual = _estadosIng[idx] || 'normal';
         var quitar = _ingredientesActuales[idx];
@@ -221,6 +231,32 @@
         if (accion === 'quitar' && quitar.principal) return;
 
         var nuevo = (actual === accion) ? 'normal' : accion;
+
+        // AVISO ANTES DEL SALTO DE PRECIO.
+        //
+        // Pedir extra de TODOS los ingredientes equivale a otro plato. El
+        // precio no salta de a porciones: salta al doble del plato completo.
+        // Medido en el Dragon Roll: 4 extras cuestan ~Bs. 14.000 y el quinto
+        // lleva el plato a Bs. 23.024 de golpe.
+        //
+        // Sin aviso, el cliente ve el precio duplicarse al tocar el último
+        // boton y abandona. Se le explica antes, con los numeros a la vista.
+        if (nuevo === 'extra' && _seriaExtraDeTodo(idx)) {
+            var precioPlato = Math.round(S.utils.usdToBs(currentCustomizeItem.precio || 0));
+            var precioDoble = precioPlato * 2;
+            var seguir = confirm(
+                'Esto convierte el pedido en DOS platos:\n\n' +
+                'Pediste extra de todos los ingredientes de ' +
+                (currentCustomizeItem.nombre || 'este plato') + ', y eso equivale ' +
+                'a un plato mas, no a un plato agrandado.\n\n' +
+                'Precio: ' + S.utils.formatBs(precioPlato * _currentQty) +
+                '  ->  ' + S.utils.formatBs(precioDoble * _currentQty) + '\n\n' +
+                'La cocina va a preparar ' + (_currentQty * 2) + ' platos.\n' +
+                '¿Seguir?'
+            );
+            if (!seguir) return;
+        }
+
         _estadosIng[idx] = nuevo;
 
         var etiqueta = document.getElementById('estado_ing_' + idx);
