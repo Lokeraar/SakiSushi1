@@ -41,14 +41,38 @@
         var ingredientes = Object.entries(ingredientesObj).map(function(e) {
             var ingId = e[0], ingInfo = e[1];
             var ing = (S.state.inventario || []).find(function(i) { return i.id === ingId; });
+            // EL PRECIO DE LA PORCIÓN, NO EL DEL KILO ENTERO.
+            //
+            // `precio_unitario` es lo que vale UN kilo (o UNA unidad) del
+            // ingrediente. El plato no lleva el kilo: lleva 0,1 kg, 0,02 kg.
+            //
+            // Antes se usaba el precio entero para descontar, y eso rompía
+            // las cuentas: destildando las huevas (35,00 el kilo) del Dragon
+            // Roll (12,99), el precio caía a 0,01. Medido en pantalla: el
+            // plato pasaba de Bs. 11.512 a Bs. 8,86.
+            //
+            // Ahora se usa la porción: cantidad × precio unitario.
+            var cant = parseFloat(ingInfo.cantidad);
+            if (isNaN(cant) || cant <= 0) cant = 1;
+            var precioUnidad = parseFloat(ing && ing.precio_unitario);
+            if (isNaN(precioUnidad)) precioUnidad = parseFloat(ingInfo.precio_extra) || 0;
+
             return {
                 id: ingId,
                 nombre: ingInfo.nombre || ing?.nombre || ingId,
-                cantidad: ingInfo.cantidad || 1,
+                cantidad: cant,
+                unidad: ingInfo.unidad || (ing && ing.unidad_base) || '',
                 principal: ingInfo.principal === true,
-                precio_extra: parseFloat(ing?.precio_unitario || ingInfo.precio_extra || 0)
+                precio_unidad: precioUnidad,
+                // Lo que vale esta porción dentro del plato: es lo que se
+                // descuenta al quitarla y lo que se cobra al duplicarla.
+                precio_porcion: Math.round(cant * precioUnidad * 100) / 100
             };
         });
+        _ingredientesActuales = ingredientes;
+        _estadosIng = {};
+        ingredientes.forEach(function (_, i) { _estadosIng[i] = 'normal'; });
+
         var precioBase = item.precio || 0;
 
         var html = '<div style="margin-bottom:1rem">' +
@@ -70,19 +94,46 @@
             '<div class="completo-option" id="personalizadoOption" onclick="window.selectPersonalizado()">' +
             '<div style="display:flex;align-items:center;gap:.8rem">' +
             '<div class="completo-circle" id="personalizadoCircle"></div>' +
-            '<div><strong style="color:var(--text-primary)">Personalizar ingredientes</strong><br><small style="color:var(--text-secondary)">Elige qué ingredientes quitar</small></div>' +
+            '<div><strong style="color:var(--text-primary)">Personalizar ingredientes</strong><br><small style="color:var(--text-secondary)">Quitar alguno, o pedir extra</small></div>' +
             '</div></div></div>' +
             '<div id="ingredientesList" style="display:none">';
 
         if (ingredientes.length > 0) {
             html += '<label style="font-weight:600;color:var(--text-primary);display:block;margin-bottom:.5rem">Ingredientes:</label>';
+            // Tres estados por ingrediente: quitarlo, dejarlo, o duplicarlo.
+            //
+            // Antes era un tilde: puesto = el plato lo lleva, destildado = no.
+            // No había forma de AÑADIR. Y los principales venían bloqueados.
+            //
+            // El dueño pidió que los principales también se puedan duplicar:
+            // "más anguila" en un Dragon Roll es legítimo aunque la anguila
+            // defina el plato.
             ingredientes.forEach(function(ing, idx) {
-                var label = ing.nombre;
-                if (ing.principal) label += ' <span style="color:var(--accent);font-size:.7rem">(Principal - fijo)</span>';
-                var disabled = ing.principal ? 'disabled' : '';
-                html += '<div style="display:flex;align-items:center;gap:.6rem;padding:.4rem 0;border-bottom:1px solid var(--customize-border)">' +
-                    '<input type="checkbox" id="ing_' + idx + '" value="' + ing.nombre + '" data-precio="' + ing.precio_extra + '" checked ' + disabled + ' style="width:18px;height:18px" onchange="window.calcularPrecioPersonalizado()">' +
-                    '<label for="ing_' + idx + '" style="flex:1;cursor:pointer;color:var(--customize-text);font-size:.9rem">' + label + '</label>' +
+                var cantTxt = ing.cantidad + (ing.unidad ? ' ' + ing.unidad : '');
+                var precioTxt = ing.precio_porcion > 0
+                    ? ' <span style="color:var(--text-secondary);font-size:.72rem">(' +
+                      (ing.principal ? 'fijo' : '-' + S.utils.formatBs(S.utils.usdToBs(ing.precio_porcion))) +
+                      ' · extra +' + S.utils.formatBs(S.utils.usdToBs(ing.precio_porcion)) + ')</span>'
+                    : '';
+
+                var btnBase = 'style="width:30px;height:30px;border-radius:50%;border:1px solid var(--customize-border);' +
+                              'background:transparent;color:var(--customize-text);font-size:.9rem;cursor:pointer;padding:0"';
+
+                html += '<div style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid var(--customize-border)">' +
+                    '<div style="flex:1;min-width:0">' +
+                      '<div style="color:var(--customize-text);font-size:.9rem">' + ing.nombre +
+                        (ing.principal ? ' <span style="color:var(--accent);font-size:.66rem">(define el plato)</span>' : '') +
+                      '</div>' +
+                      '<div style="font-size:.72rem;opacity:.75">' + cantTxt + precioTxt + '</div>' +
+                    '</div>' +
+                    '<button ' + btnBase + ' data-ing="' + idx + '" data-estado="quitar" ' +
+                      'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'quitar\')" ' +
+                      'title="Quitar">−</button>' +
+                    '<span id="estado_ing_' + idx + '" style="width:52px;text-align:center;font-size:.74rem;' +
+                      'font-weight:600;color:var(--customize-text)">Normal</span>' +
+                    '<button ' + btnBase + ' data-ing="' + idx + '" data-estado="extra" ' +
+                      'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'extra\')" ' +
+                      'title="Duplicar la cantidad">×2</button>' +
                     '</div>';
             });
         }
@@ -108,15 +159,25 @@
     var _currentQty = 1;
     var _isCompleto = true;
     var _quitados = [];
+    // { indice: 'normal' | 'quitar' | 'extra' }
+    var _estadosIng = {};
+    // La lista de ingredientes del plato abierto, con su porción y precio.
+    var _ingredientesActuales = [];
 
     function selectCompleto() {
         _isCompleto = true;
+        // Volver a "Completo" borra cualquier extra o quitado anterior.
+        Object.keys(_estadosIng).forEach(function (k) { _estadosIng[k] = 'normal'; });
+        Object.keys(_estadosIng).forEach(function (k) {
+            var e = document.getElementById('estado_ing_' + k);
+            if (e) { e.textContent = 'Normal'; e.style.color = ''; }
+        });
         document.getElementById('completoOption').classList.add('activo');
         document.getElementById('completoCircle').classList.add('activo');
         document.getElementById('personalizadoOption').classList.remove('activo');
         document.getElementById('personalizadoCircle').classList.remove('activo');
         document.getElementById('ingredientesList').style.display = 'none';
-        document.querySelectorAll('#ingredientesList input[type=checkbox]').forEach(function(cb) { cb.checked = true; });
+
         _quitados = [];
         calcularPrecioPersonalizado();
     }
@@ -143,24 +204,71 @@
     window.actualizarCantidadPersonalizacion = actualizarCantidadPersonalizacion;
     S.modules.customize.actualizarCantidadPersonalizacion = actualizarCantidadPersonalizacion;
 
+    /**
+     * Cambia un ingrediente entre quitarlo, dejarlo o duplicarlo.
+     *
+     * "Extra" significa la MISMA cantidad que ya lleva el plato: si lleva
+     * 25 g de salmón, un extra son otros 25 g, y se cobra la porción.
+     * Así lo definió el dueño.
+     */
+    window.cambiarEstadoIngrediente = function (idx, accion) {
+        var actual = _estadosIng[idx] || 'normal';
+        var quitar = _ingredientesActuales[idx];
+        if (!quitar) return;
+
+        // Un ingrediente principal define el plato: se puede duplicar, pero
+        // no quitar (sin la anguila, un Dragon Roll no es un Dragon Roll).
+        if (accion === 'quitar' && quitar.principal) return;
+
+        var nuevo = (actual === accion) ? 'normal' : accion;
+        _estadosIng[idx] = nuevo;
+
+        var etiqueta = document.getElementById('estado_ing_' + idx);
+        if (etiqueta) {
+            etiqueta.textContent = nuevo === 'quitar' ? 'Sin' : (nuevo === 'extra' ? '×2' : 'Normal');
+            etiqueta.style.color = nuevo === 'quitar' ? '#ef4444' : (nuevo === 'extra' ? '#4ade80' : '');
+        }
+        calcularPrecioPersonalizado();
+    };
+
     function calcularPrecioPersonalizado() {
         if (!currentCustomizeItem) return;
+
         _quitados = [];
         var descuento = 0;
-        document.querySelectorAll('#ingredientesList input[type=checkbox]').forEach(function(cb) {
-            if (!cb.checked) {
-                _quitados.push(cb.value);
-                descuento += parseFloat(cb.dataset.precio) || 0;
+        var recargo = 0;
+        var extras = 0;
+
+        Object.keys(_estadosIng).forEach(function (k) {
+            var i = parseInt(k, 10);
+            var ing = _ingredientesActuales[i];
+            if (!ing) return;
+            var estado = _estadosIng[k];
+
+            if (estado === 'quitar') {
+                _quitados.push(ing.nombre);
+                descuento += ing.precio_porcion;
+            } else if (estado === 'extra') {
+                recargo += ing.precio_porcion;
+                extras++;
             }
         });
+
         // Si el restaurante decidió que quitar no abarata, el descuento se
         // ignora por completo: el plato se cobra igual.
         var descuentoAplicado = _descuentaAlQuitar() ? descuento : 0;
-        var precioUSD = Math.max(0.01, (currentCustomizeItem.precio || 0) - descuentoAplicado);
+
+        var precioUSD = Math.max(0.01,
+            (currentCustomizeItem.precio || 0) - descuentoAplicado + recargo);
+
         var precioBs = S.utils.usdToBs(precioUSD);
         var total = precioBs * _currentQty;
         var priceEl = document.getElementById('customizePrice');
-        if (priceEl) priceEl.textContent = S.utils.formatBs(precioBs) + ' x ' + _currentQty + ' = ' + S.utils.formatBs(total);
+        if (priceEl) {
+            var detalle = '';
+            if (extras > 0) detalle = ' <span style="font-size:.72rem;color:#4ade80">(+' + extras + ' extra' + (extras > 1 ? 's' : '') + ')</span>';
+            priceEl.innerHTML = S.utils.formatBs(precioBs) + ' x ' + _currentQty + ' = ' + S.utils.formatBs(total) + detalle;
+        }
     }
     window.calcularPrecioPersonalizado = calcularPrecioPersonalizado;
     S.modules.customize.calcularPrecioPersonalizado = calcularPrecioPersonalizado;
@@ -169,31 +277,89 @@
         if (!currentCustomizeItem) return;
         var item = currentCustomizeItem;
         var descuento = 0;
+        var recargo = 0;
         var quitados = [];
-        document.querySelectorAll('#ingredientesList input[type=checkbox]').forEach(function(cb) {
-            if (!cb.checked) {
-                quitados.push(cb.value);
-                descuento += parseFloat(cb.dataset.precio) || 0;
+        var agregados = [];
+
+        Object.keys(_estadosIng).forEach(function (k) {
+            var i = parseInt(k, 10);
+            var ing = _ingredientesActuales[i];
+            if (!ing) return;
+            var estado = _estadosIng[k];
+            if (estado === 'quitar') {
+                quitados.push(ing.nombre);
+                descuento += ing.precio_porcion;
+            } else if (estado === 'extra') {
+                agregados.push({ nombre: ing.nombre, cantidad: ing.cantidad, unidad: ing.unidad });
+                recargo += ing.precio_porcion;
             }
         });
+
         var descuentoAplicado = _descuentaAlQuitar() ? descuento : 0;
-        var precioUSD = Math.max(0.01, (item.precio || 0) - descuentoAplicado);
+        var precioUSD = Math.max(0.01, (item.precio || 0) - descuentoAplicado + recargo);
         var precioBs = S.utils.usdToBs(precioUSD);
 
-        for (var i = 0; i < _currentQty; i++) {
-            var instancia = {
-                id: S.utils.generarId('cart_'),
-                platilloId: item.id,
-                nombre: item.nombre,
-                imagen: item.imagen,
-                precio: precioBs,
-                cantidad: 1,
-                personalizacion: _isCompleto ? null : ('Personalizado #' + (i + 1)),
-                ingredientesQuitados: quitados.slice(),
-                tipo: _isCompleto ? 'completo' : 'personalizado',
-                ts: Date.now()
-            };
-            S.state.carrito.push(instancia);
+        var hayExtra = agregados.length > 0;
+        var etiqueta;
+        if (_isCompleto && !hayExtra) {
+            etiqueta = null;
+        } else {
+            // La etiqueta dice QUÉ cambió, no la palabra fija "Personalizado".
+            var partes = [];
+            if (quitados.length) partes.push('Sin ' + quitados.join(', '));
+            if (hayExtra) partes.push('Con extra de ' + agregados.map(function (a) { return a.nombre; }).join(', '));
+            etiqueta = partes.join(' · ');
+        }
+
+        // REGLA DEL DUEÑO: pedir extra de TODOS los ingredientes equivale a
+        // otro plato completo. En vez de un plato "con todo duplicado", se
+        // agregan DOS unidades del plato normal. Es más claro en el carrito
+        // y además es lo que la cocina va a preparar de verdad.
+        var todosEnExtra = _ingredientesActuales.length > 0 &&
+            Object.keys(_estadosIng).length === _ingredientesActuales.length &&
+            _ingredientesActuales.every(function (_, i) { return _estadosIng[i] === 'extra'; });
+
+        if (todosEnExtra) {
+            var precioNormalBs = S.utils.usdToBs(item.precio || 0);
+            for (var u = 0; u < (_currentQty * 2); u++) {
+                S.state.carrito.push({
+                    id: S.utils.generarId('cart_'),
+                    platilloId: item.id,
+                    nombre: item.nombre,
+                    imagen: item.imagen,
+                    precio: precioNormalBs,
+                    cantidad: 1,
+                    personalizacion: null,
+                    ingredientesQuitados: [],
+                    ingredientesAgregados: [],
+                    tipo: 'completo',
+                    ts: Date.now()
+                });
+            }
+            if (window.mostrarToast) {
+                window.mostrarToast('✅ ' + item.nombre + ' × ' + (_currentQty * 2) +
+                    ' (pediste extra de todo: son ' + (_currentQty * 2) + ' platos)', 'success');
+            }
+        } else {
+            for (var i = 0; i < _currentQty; i++) {
+                var instancia = {
+                    id: S.utils.generarId('cart_'),
+                    platilloId: item.id,
+                    nombre: item.nombre,
+                    imagen: item.imagen,
+                    precio: precioBs,
+                    cantidad: 1,
+                    personalizacion: etiqueta,
+                    ingredientesQuitados: quitados.slice(),
+                    ingredientesAgregados: agregados.slice(),
+                    tipo: (quitados.length === 0 && !hayExtra) ? 'completo' : 'personalizado',
+                    ts: Date.now()
+                };
+                S.state.carrito.push(instancia);
+            }
+            if (window.mostrarToast) {
+                window.mostrarToast('✅ ' + item.nombre + ' agregado al carrito', 'success');
+            }
         }
 
         guardarCarrito();
@@ -207,6 +373,8 @@
         _currentQty = 1;
         _isCompleto = true;
         _quitados = [];
+        _estadosIng = {};
+        _ingredientesActuales = [];
     }
     window.agregarPersonalizadoAlCarrito = agregarPersonalizadoAlCarrito;
     S.modules.customize.agregarPersonalizadoAlCarrito = agregarPersonalizadoAlCarrito;
