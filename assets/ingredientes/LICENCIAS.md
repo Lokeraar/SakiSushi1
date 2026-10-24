@@ -59,60 +59,64 @@ resultados.
 
 ## Fuente 4 — Wikimedia Commons (2 fotos)
 
-Acá hay que prestar atención: **una exige crédito**.
+Las dos son **CC0** (dominio público). No exigen crédito ni imponen condición
+alguna.
 
 | Archivo | Archivo original | Licencia | Autor | ¿Exige crédito? |
 |---|---|---|---|---|
-| `anguila.webp` | `Kabayaki grilled eel.jpg` | **CC0** (dominio público) | Fumikas Sagisavas | No |
-| `huevas.webp` | `Tobiko sur blini.jpg` | **CC BY-SA 4.0** | Thomon | **Sí** |
+| `anguila.webp` | `Kabayaki grilled eel.jpg` | **CC0** | Fumikas Sagisavas | No |
+| `huevas.webp` | `Ikura salmon roe Hokkaido 02.jpg` | **CC0** | KQuhen | No |
 
-### Estado actual de las obligaciones
+### Estado de las licencias
 
-De las 15 fotos, **una sola** exige crédito: `huevas.webp`, de Thomon, bajo
-CC BY-SA 4.0.
+**Ninguna de las 15 fotos exige crédito.**
 
-Las otras 14 (11 de Spoonacular, 1 de TheMealDB, 1 de Pexels, y la anguila que
-es CC0) no obligan a nada.
+- 11 de Spoonacular — licencia de su catálogo de ingredientes
+- 1 de TheMealDB — licencia de su biblioteca
+- 1 de Pexels — Pexels License (no exige atribución)
+- 2 de Wikimedia Commons — CC0 (dominio público)
 
-### Qué implica CC BY-SA 4.0
+El sitio no necesita ningún renglón de créditos por las imágenes de
+ingredientes.
 
-Significa dos cosas:
+### Cómo se llegó acá
 
-1. **Atribución**: hay que nombrar al autor en algún lado visible.
-2. **Compartir igual**: si se modifica la foto y se redistribuye, la versión
-   modificada tiene que salir con la misma licencia.
+Había dos fotos con CC BY-SA 4.0 que obligaban a nombrar al autor:
 
-Acá las fotos fueron **recortadas y reconvertidas**. Eso ya es una modificación,
-así que la licencia CC BY-SA se mantiene sobre las versiones recortadas.
+- **mayonesa**: se reemplazó por una de Pexels.
+- **huevas**: se reemplazó por esta de Wikimedia, CC0.
 
-### Cómo se cumple, en la práctica
-
-Hay dos caminos, y la decisión no es técnica sino del dueño:
-
-**Opción A — cumplir la licencia.** Agregar un crédito discreto dentro de la
-app, por ejemplo en el pie de página o en un "Créditos de imágenes" accesible
-desde el menú. Alcanza con nombrar autor y licencia.
-
-**Opción B — reemplazar la foto.** Buscar tobiko bajo CC0 o de producción
-propia. Ya se hizo con la mayonesa: se reemplazó por una de Pexels y esa
-obligación desapareció. Con las huevas no se encontró reemplazo mejor: Pexels
-no tiene tobiko aislado y Wikimedia solo tenía esa opción limpia.
-
-Nada de esto bloquea el desarrollo: las 15 fotos ya están listas y
-funcionando. Queda **una** decisión pendiente antes de publicar al público:
-qué hacer con el crédito de las huevas.
-
-**Opción C, la más simple**: las fotos de ingredientes son miniaturas de 34 px
-dentro de un modal. Un renglón de crédito en el pie de página cuesta nada y
-cierra el tema.
+Las dos sustituciones se eligieron porque **la licencia no impone
+condiciones**, no porque las anteriores fueran malas fotos.
 
 ## Lo que se descartó y por qué
 
-- **Openverse**: devolvía anguilas vivas en el mar, no filetes para sushi.
-  Además empezó a limitar las peticiones.
+Bancos probados para las huevas, que fue lo más difícil:
+
 - **TheMealDB**: de sus 992 ingredientes no tiene ni huevas ni anguila, en
   ninguna variante de nombre.
+- **Spoonacular**: su `caviar` es caviar negro, no tobiko naranja.
+- **Pexels**: 94 fotos revisadas. Su buscador **no distingue huevas de fruta**;
+  "caviar orange" devuelve naranjas y "masago" devuelve peces vivos. La única
+  rescatable era un plato de sushi armado con copas de vino de fondo.
 - **pngimg.com**: requiere el id numérico de cada imagen, no se puede adivinar
   por nombre.
-- **Spoonacular** para huevas y mayonesa japonesa: no las tiene. Su `caviar`
-  es caviar negro (no tobiko naranja) y su `mayonnaise` son frascos genéricos.
+- **Bancos con publicidad en el HTML** (foodiesfeed, burst, stocksnap,
+  kaboompics, picjumbo, reshot): al buscar devuelven banners de Shutterstock y
+  Envato, no fotos propias.
+- **pixabay, unsplash, picryl, rawpixel, freeimages**: bloquean el acceso
+  (401, 403 o vacío).
+
+### Qué funcionó: Openverse filtrando por CC0
+
+Openverse agrega fotos de Flickr y Wikimedia con el filtro de licencia puesto
+en la URL. Buscando `ikura` con `license=cc0` apareció la foto elegida.
+
+Dos detalles técnicos que costaron tiempo:
+
+- **Flickr exige `Referer: https://www.flickr.com/`** para dejar descargar.
+  Sin ese encabezado la descarga llega vacía (0 bytes).
+- Filtrado por `by` o `by-sa` no alcanza para un restaurante: hay fotos con
+  `by-nc-sa`, que **prohíben el uso comercial**. Este sitio vende comida, así
+  que la única licencia que deja todo resuelto sin letra chica es **CC0**.
+
