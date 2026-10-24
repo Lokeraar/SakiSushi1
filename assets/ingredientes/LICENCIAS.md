@@ -32,15 +32,47 @@ Se sirven desde `img.spoonacular.com/ingredients_500x500/`.
 |---|---|
 | `arroz.webp` | `/images/ingredients/Rice.png` |
 
-## Fuente 3 — Wikimedia Commons (3 fotos)
+## Fuente 3 — Pexels (1 foto)
 
-Acá hay que prestar atención: **dos exigen crédito**.
+Se sumó buscando justamente evitar una obligación de crédito. Pexels no exige
+atribución.
+
+| Archivo | Foto |
+|---|---|
+| `mayonesa.webp` | Frasco de mayonesa japonesa (Kewpie), foto `31621556` |
+
+La foto original traía el frasco junto a una tabla con pan y papas. Se recortó
+cerrado sobre el frasco para que se lea como ingrediente, igual que las demás.
+
+**Nota sobre cómo se accedió**: la API de Pexels pide clave (devuelve 401), así
+que se usó la búsqueda pública del sitio. Al descargar con `curl` hay que pasar
+`-L`: sin eso la respuesta llega vacía (0 bytes) y parece que no hubiera
+resultados.
+
+### Qué se buscó y no sirvió
+
+- `tobiko`, `masago`, `caviar orange`, `fish eggs`, `salmon roe`: Pexels **no
+  distingue huevas de fruta**. "caviar orange" devuelve naranjas; "masago"
+  devuelve peces vivos.
+- La única foto de huevas rescatable (`4973825`) es un plato de sushi armado,
+  con copas de vino de fondo: peor que la de Wikimedia.
+
+## Fuente 4 — Wikimedia Commons (2 fotos)
+
+Acá hay que prestar atención: **una exige crédito**.
 
 | Archivo | Archivo original | Licencia | Autor | ¿Exige crédito? |
 |---|---|---|---|---|
 | `anguila.webp` | `Kabayaki grilled eel.jpg` | **CC0** (dominio público) | Fumikas Sagisavas | No |
 | `huevas.webp` | `Tobiko sur blini.jpg` | **CC BY-SA 4.0** | Thomon | **Sí** |
-| `mayonesa.webp` | `Mayonnaise - Japan.jpg` | **CC BY-SA 4.0** | Susan Slater | **Sí** |
+
+### Estado actual de las obligaciones
+
+De las 15 fotos, **una sola** exige crédito: `huevas.webp`, de Thomon, bajo
+CC BY-SA 4.0.
+
+Las otras 14 (11 de Spoonacular, 1 de TheMealDB, 1 de Pexels, y la anguila que
+es CC0) no obligan a nada.
 
 ### Qué implica CC BY-SA 4.0
 
@@ -61,13 +93,18 @@ Hay dos caminos, y la decisión no es técnica sino del dueño:
 app, por ejemplo en el pie de página o en un "Créditos de imágenes" accesible
 desde el menú. Alcanza con nombrar autor y licencia.
 
-**Opción B — reemplazar esas dos fotos.** Buscar tobiko y mayonesa japonesa
-bajo CC0 o de producción propia. Es lo más limpio legalmente y evita tener que
-mantener un crédito, pero hay que encontrar reemplazos que combinen con el
-resto.
+**Opción B — reemplazar la foto.** Buscar tobiko bajo CC0 o de producción
+propia. Ya se hizo con la mayonesa: se reemplazó por una de Pexels y esa
+obligación desapareció. Con las huevas no se encontró reemplazo mejor: Pexels
+no tiene tobiko aislado y Wikimedia solo tenía esa opción limpia.
 
-Nada de esto bloquea el desarrollo: las fotos ya están listas y funcionando.
-Es una decisión a resolver antes de publicar el sitio al público.
+Nada de esto bloquea el desarrollo: las 15 fotos ya están listas y
+funcionando. Queda **una** decisión pendiente antes de publicar al público:
+qué hacer con el crédito de las huevas.
+
+**Opción C, la más simple**: las fotos de ingredientes son miniaturas de 34 px
+dentro de un modal. Un renglón de crédito en el pie de página cuesta nada y
+cierra el tema.
 
 ## Lo que se descartó y por qué
 
