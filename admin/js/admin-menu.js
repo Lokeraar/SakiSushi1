@@ -817,8 +817,13 @@
         
         // Si hay un archivo seleccionado, subirlo al storage (prioridad)
         if (currentImagenFile) {
-            window.mostrarToast('📤 Subiendo imagen...', 'info');
-            const resultado = await window.subirImagenPlatillo(currentImagenFile, 'imagenes-platillos');
+            window.mostrarToast('📤 Optimizando y subiendo imagen...', 'info');
+            // Se convierte a WebP y se achica ANTES de subir.
+            // Una foto de celular de 4 MB sale pesando ~150 KB: el admin no
+            // gasta datos subiendo megabytes y el cliente no los baja después.
+            // Si el navegador no puede convertir, se sube el original.
+            const subir = window.subirImagenPlatilloOptimizada || window.subirImagenPlatillo;
+            const resultado = await subir(currentImagenFile, 'imagenes-platillos');
             if (resultado.success) {
                 imagenUrl = resultado.url;
                 currentImagenUrl = resultado.url; // Actualizar para futuras referencias

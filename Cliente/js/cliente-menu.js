@@ -73,10 +73,15 @@
     // Function to preload images (called when menuItems are loaded)
     function _precargarImagenes(items) {
         items.forEach(item => {
-            if (item.imagen && !_imageCache.has(item.imagen)) {
-                _imageCache.add(item.imagen);
+            if (!item.imagen) return;
+            // Se precarga la MISMA dirección que se va a mostrar después.
+            // Antes se precargaba el original de 5 MB y la tarjeta usaba otra,
+            // así que el navegador bajaba las dos: el doble de datos.
+            var url = window.optimizarUrlImagen ? window.optimizarUrlImagen(item.imagen) : item.imagen;
+            if (!_imageCache.has(url)) {
+                _imageCache.add(url);
                 const img = new Image();
-                img.src = item.imagen;
+                img.src = url;
             }
         });
     }
@@ -90,7 +95,12 @@
         const agotado = stock <= 0 || item.disponible === false;
         const sc = agotado ? 'sold-out' : (stock < 5 ? 'low' : 'available');
         const fav = window.Saki.state.favoritos && window.Saki.state.favoritos.includes(item.id) ? 'active' : '';
-        const img = item.imagen || 'https://via.placeholder.com/400x300?text=Sushi';
+        // La foto se pide en tamaño de tarjeta y en WebP.
+        // Sin esto, Unsplash entrega el original de 5,4 MB (medido: 13 s de
+        // descarga) que se vuelve a bajar en cada repintado del menú.
+        const img = window.optimizarUrlImagen
+            ? window.optimizarUrlImagen(item.imagen || 'https://via.placeholder.com/400x300?text=Sushi')
+            : (item.imagen || 'https://via.placeholder.com/400x300?text=Sushi');
         const badge = agotado
             ? '<div class="menu-card-sold-overlay"><span>🚫 Agotado</span></div>'
             : (sc === 'low' ? '<div class="menu-card-badge low"><i class="fas fa-exclamation-triangle"></i> Últimas</div>' : '');
@@ -310,13 +320,16 @@
                 // nombre ('Sushi'): nunca coincidían y la sección salía vacía.
                 const nombreFiltro = item.dataset.filtro || categoria;
                 renderizarMenuPaginado(categoria === 'todos' ? null : nombreFiltro);
-                // Close sidebar on mobile if needed
-                if (window.innerWidth <= 992) {
-                    // We'll close the category sidebar by removing the 'open' class if present
-                    const categorySidebar = document.getElementById('categorySidebar');
-                    if (categorySidebar) {
-                        categorySidebar.classList.remove('open');
-                    }
+                // Cerrar el panel de categorías de verdad.
+                //
+                // Antes solo se quitaba la clase 'open' del sidebar, pero NO
+                // se apagaba el oscurecido (`#overlay`). El resultado: al
+                // elegir una sección, la carta cambiaba pero quedaba tapada
+                // por una capa negra borrosa que no se iba hasta tocar el
+                // contenido. Medido en el video del dueño: 10,25 segundos
+                // seguidos de pantalla oscurecida.
+                if (window.innerWidth <= 992 && window.cerrarMenuCategorias) {
+                    window.cerrarMenuCategorias();
                 }
             });
         });
@@ -344,12 +357,10 @@
                 const madreEl = document.querySelector(`.category-item[data-categoria="${categoria}"]`);
                 const nombreMadre = (madreEl && madreEl.dataset.filtro) || categoria;
                 renderizarMenuPaginado(nombreMadre, subcategoria);
-                // Close sidebar on mobile if needed
-                if (window.innerWidth <= 992) {
-                    const categorySidebar = document.getElementById('categorySidebar');
-                    if (categorySidebar) {
-                        categorySidebar.classList.remove('open');
-                    }
+                // Mismo defecto que en la sección madre: se cerraba el
+                // sidebar pero no el oscurecido.
+                if (window.innerWidth <= 992 && window.cerrarMenuCategorias) {
+                    window.cerrarMenuCategorias();
                 }
             });
         });

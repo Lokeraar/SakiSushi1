@@ -232,7 +232,13 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             background:rgba(0,0,0,.5);
             z-index:800;
             display:none;
-            backdrop-filter:blur(3px);
+            /* SIN backdrop-filter, a propósito.
+               Un desenfoque a pantalla completa obliga al teléfono a
+               re-procesar TODA la pantalla cada vez que algo se repinta
+               detrás: al cambiar de sección, al agregar un plato, al
+               desplazarse. Es una de las causas de que la carta se sienta
+               lenta en un móvil de gama media.
+               El oscurecido solo ya cumple la función de destacar el panel. */
         }
         .overlay.active{display:block}
 
@@ -1277,7 +1283,13 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             border:1px solid rgba(255,255,255,.1);
             display:flex;
             flex-direction:column;
-            backdrop-filter:blur(5px);
+            /* SIN backdrop-filter, a propósito.
+               Cada tarjeta desenfocaba lo que tenía detrás, y eso se
+               recalcula en CADA repintado y en CADA movimiento de scroll.
+               Con 6 tarjetas en pantalla son 6 desenfoques por cuadro; con
+               60 platos cargados, la carta se arrastra.
+               El fondo semitransparente ya da el mismo efecto visual sin el
+               costo. Es una de las causas de la lentitud que reportó el dueño. */
             height:100%;
             will-change:transform;
             transform:translateZ(0);
@@ -2944,7 +2956,8 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-accion-unica.js?v=1792802980"></script>
     <script src="js/cliente-mesonero.js?v=1792781521"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
-    <script src="js/cliente-menu.js?v=1792796353"></script>
+    <script src="js/cliente-imagenes.js?v=1792843217"></script>
+    <script src="js/cliente-menu.js?v=1792843531"></script>
     <script src="js/cliente-scroll.js"></script>
     <script src="js/cliente-ui.js?v=1792808939"></script>
     <script src="js/cliente-notificaciones.js"></script>
@@ -2952,7 +2965,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito-timer.js"></script>
     <script src="js/cliente-carrito-dialogo.js"></script>
     <script src="js/cliente-customize.js?v=1792810056"></script>
-    <script src="js/cliente-preview.js"></script>
+    <script src="js/cliente-preview.js?v=1792843562"></script>
     <script src="js/cliente-historial.js"></script>
     <script src="js/cliente-pedidos.js"></script>
     <script src="js/cliente-delivery.js?v=1792785715"></script>

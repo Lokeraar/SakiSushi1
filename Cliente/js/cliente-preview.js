@@ -17,7 +17,12 @@
         if (!modal || !body) return;
 
         var precioBs = S.utils.usdToBs(item.precio || 0);
+        // La vista ampliada necesita más ancho que la tarjeta, pero nunca el
+        // original: acá se sirve a 1200 en lugar de 5 MB.
         var imagen = item.imagen || 'https://via.placeholder.com/400x250?text=Sin+Imagen';
+        if (window.optimizarUrlImagen && item.imagen) {
+            imagen = window.optimizarUrlImagen(item.imagen).replace(/([?&])w=\d+/, '$1w=1200');
+        }
         // ingredientes en DB es objeto {id: {nombre, cantidad}}, convertimos a array
         var ingredientesObj = item.ingredientes || {};
         var ingredientes = Object.entries(ingredientesObj).map(function(e) {
