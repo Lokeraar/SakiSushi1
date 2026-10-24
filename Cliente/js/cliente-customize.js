@@ -7,6 +7,26 @@
 
     var currentCustomizeItem = null;
 
+    /**
+     * ¿Quitar un ingrediente devuelve plata?
+     *
+     * Lo decide el restaurante desde el admin (`config.descuento_al_quitar`).
+     * Por defecto SÍ, que es como funcionaba antes.
+     *
+     * El dueño lo quiere configurable porque hay dos casos legítimos:
+     *   - devolver: un cliente con alergia saca un ingrediente y paga menos.
+     *     Casi ningún restaurante lo hace, y él lo quiere como diferenciación.
+     *   - no devolver: el plato ya está armado, la cocina gasta lo mismo.
+     *
+     * Si el valor no llegó (sin conexión), se asume TRUE: es el
+     * comportamiento histórico y el menos sorpresivo.
+     */
+    function _descuentaAlQuitar() {
+        var v = (S.state.config && S.state.config.descuento_al_quitar);
+        if (v === undefined || v === null) return true;
+        return v === true;
+    }
+
     function abrirPersonalizacion(platilloId) {
         var item = (S.state.menuItems || []).find(function(i) { return i.id == platilloId; });
         if (!item) return;
@@ -133,7 +153,10 @@
                 descuento += parseFloat(cb.dataset.precio) || 0;
             }
         });
-        var precioUSD = Math.max(0.01, (currentCustomizeItem.precio || 0) - descuento);
+        // Si el restaurante decidió que quitar no abarata, el descuento se
+        // ignora por completo: el plato se cobra igual.
+        var descuentoAplicado = _descuentaAlQuitar() ? descuento : 0;
+        var precioUSD = Math.max(0.01, (currentCustomizeItem.precio || 0) - descuentoAplicado);
         var precioBs = S.utils.usdToBs(precioUSD);
         var total = precioBs * _currentQty;
         var priceEl = document.getElementById('customizePrice');
@@ -153,7 +176,8 @@
                 descuento += parseFloat(cb.dataset.precio) || 0;
             }
         });
-        var precioUSD = Math.max(0.01, (item.precio || 0) - descuento);
+        var descuentoAplicado = _descuentaAlQuitar() ? descuento : 0;
+        var precioUSD = Math.max(0.01, (item.precio || 0) - descuentoAplicado);
         var precioBs = S.utils.usdToBs(precioUSD);
 
         for (var i = 0; i < _currentQty; i++) {

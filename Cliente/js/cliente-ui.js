@@ -241,9 +241,25 @@
         var cancelCustomize = document.getElementById('cancelCustomize');
         if (cancelCustomize) cancelCustomize.addEventListener('click', function() { document.getElementById('customizeModal').classList.remove('active'); });
 
+        // El botón "Añadir" del modal pasa por el freno único.
+        //
+        // No es porque tarde: verificado, agrega en 33 ms. Es porque sin
+        // freno, un segundo toque antes de que el modal se cierre mete el
+        // plato DOS VECES, y ese es justo el problema que reportó el dueño
+        // en los modales de confirmar.
         var addToCartModal = document.getElementById('addToCartFromModal');
         if (addToCartModal) addToCartModal.addEventListener('click', function() {
-            if (window.agregarPersonalizadoAlCarrito) window.agregarPersonalizadoAlCarrito();
+            window.conAccionUnica(addToCartModal, function () {
+                if (window.agregarPersonalizadoAlCarrito) window.agregarPersonalizadoAlCarrito();
+                // El modal se cierra en la misma función, así que no hace
+                // falta esperar nada: se devuelve resuelto para que el freno
+                // libere el botón enseguida.
+                return Promise.resolve();
+            }, {
+                texto: '<i class="fas fa-cart-plus"></i> Añadir',
+                textoCargando: 'Añadiendo...',
+                silencioso: true
+            });
         });
 
         var closeCustomizeBtn = document.getElementById('closeCustomizeModal');

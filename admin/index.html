@@ -249,6 +249,37 @@
                                 </span>
                             </div>
                         </div>
+                        <!-- ============================================================
+                             Descuento al quitar ingredientes
+                             ============================================================
+                             Decisión de negocio, no técnica. Hay dos casos legítimos:
+
+                               ENCENDIDO: el cliente con alergia saca un ingrediente
+                               y paga menos. Casi ningún restaurante lo hace; es el
+                               factor de diferenciación que quiere el dueño.
+
+                               APAGADO: el plato ya está armado y la cocina gasta
+                               el mismo trabajo, así que se cobra completo igual.
+
+                             Se guarda con el mismo botón que la tasa. -->
+                        <div style="border-top:1px solid rgba(255,255,255,.12);margin-top:.9rem;padding-top:.9rem">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem">
+                                <div style="flex:1">
+                                    <div style="font-weight:600;font-size:.92rem;margin-bottom:.15rem">
+                                        Descontar al quitar ingredientes
+                                    </div>
+                                    <div style="font-size:.78rem;opacity:.7;line-height:1.35">
+                                        Si está activo, el cliente paga menos cuando saca un ingrediente
+                                        al personalizar (se le devuelve el precio de venta de ese ingrediente).
+                                        Si está apagado, el plato se cobra completo aunque saque la mitad.
+                                    </div>
+                                </div>
+                                <label class="toggle-switch" style="flex-shrink:0">
+                                    <input type="checkbox" id="descuentoAlQuitar">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="tcb-save-wrap">
                             <button class="btn-primary tcb-save-btn" id="saveAllButton"><i class="fas fa-save"></i> Guardar cambios en tasa</button>
                         </div>

@@ -97,6 +97,14 @@
         const semEl = document.getElementById('aumentoSemanalToggle');
         if (semEl) semEl.checked = window.configGlobal.aumento_semanal || false;
         document.getElementById('tasaEfectivaDisplay').textContent = (window.configGlobal.tasa_efectiva || 400).toFixed(2);
+
+        // Interruptor de descuento al quitar ingredientes. Si la columna no
+        // llegó (versión vieja), se muestra encendido: es el comportamiento
+        // histórico y el menos sorpresivo.
+        var chkDescuento = document.getElementById('descuentoAlQuitar');
+        if (chkDescuento) {
+            chkDescuento.checked = window.configGlobal.descuento_al_quitar !== false;
+        }
         document.getElementById('aumentoAcumuladoDisplay').textContent = (window.configGlobal.aumento_acumulado || 0).toFixed(2) + '%';
         if (window.configGlobal.aumento_desde && document.getElementById('aumentoDesde'))
             document.getElementById('aumentoDesde').value = window.configGlobal.aumento_desde.split('T')[0];
@@ -233,6 +241,8 @@
                 aumento_desde:     (document.getElementById('aumentoDesde') && document.getElementById('aumentoDesde').value) || null,
                 aumento_hasta:     (!document.getElementById('aumentoIndefinido')?.checked && document.getElementById('aumentoHasta')?.value) || null,
                 aumento_indefinido: document.getElementById('aumentoIndefinido')?.checked || false,
+                // Decisión de negocio: ¿quitar un ingrediente abarata el plato?
+                descuento_al_quitar: document.getElementById('descuentoAlQuitar')?.checked ?? true,
                 ultima_actualizacion: new Date().toISOString()
             }).eq('id', 1);
             
@@ -240,6 +250,9 @@
             await window._actualizarVentasHoyNeto();
             await window._actualizarDeliverysHoy();
             
+            window.configGlobal.descuento_al_quitar =
+                document.getElementById('descuentoAlQuitar')?.checked ?? true;
+
             const tasaDisplay = document.getElementById('tasaEfectivaDisplay');
             if (tasaDisplay) {
                 tasaDisplay.textContent = (window.configGlobal.tasa_efectiva || 0).toFixed(2);

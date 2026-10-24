@@ -350,6 +350,17 @@ window.cargarConfiguracion = async function() {
         // desde el panel del admin, no acá.
         window.configGlobal.tasa_origen = window.configGlobal.tasa_origen || 'config';
 
+        // Se copia también a Saki.state.config, que es donde lo busca el
+        // personalizador. Sin esto, el interruptor del admin se guardaba en
+        // la base pero el cliente seguía usando el valor por defecto: el
+        // dueño lo apagaría y no pasaría nada.
+        window.Saki = window.Saki || {};
+        window.Saki.state = window.Saki.state || {};
+        window.Saki.state.config = {
+            ...(window.Saki.state.config || {}),
+            descuento_al_quitar: window.configGlobal.descuento_al_quitar !== false
+        };
+
         console.log('✅ Configuración cargada.', {
             tasa_efectiva: window.configGlobal.tasa_efectiva,
             origen: window.configGlobal.tasa_origen
