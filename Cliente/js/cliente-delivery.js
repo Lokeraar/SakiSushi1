@@ -43,12 +43,25 @@
         // y vuelve a entrar, el plazo sigue corriendo desde donde estaba.
         iniciarTimerSiNoCorre('delivery', 20);
         restaurarDatosFormulario();
+
+        // Mismo motivo que en reserva: el panel del carrito abierto y vacío
+        // tapaba la pantalla mientras el modal se preparaba.
+        if (window.cerrarCarrito) window.cerrarCarrito();
+
         modal.classList.add('active');
     }
     window.iniciarProcesoDelivery = iniciarProcesoDelivery;
     S.modules.delivery.iniciarProcesoDelivery = iniciarProcesoDelivery;
 
     function iniciarProcesoReserva() {
+        // Se cierra el panel del carrito ANTES de abrir el modal.
+        //
+        // Sin esto quedaba el panel abierto y vacío tapando la pantalla
+        // mientras el modal se preparaba: el cliente veía un rectángulo sin
+        // contenido y sentía que la app no respondía. Medido en el video del
+        // dueño: 4,5 segundos así, con la pantalla casi en negro.
+        if (window.cerrarCarrito) window.cerrarCarrito();
+
         document.getElementById('reservaModal').classList.add('active');
         iniciarTimerSiNoCorre('reserva', 20);
         restaurarDatosFormulario();
