@@ -106,12 +106,34 @@
                 ? '<span class="tbp-chip tbp-chip-respaldo" title="La fuente principal no respondió y se usó esta">' + fuente + '</span>'
                 : '<span class="tbp-chip">' + fuente + '</span>';
 
+            // Aviso de antigüedad. No bloquea nada ni pide confirmación: es
+            // información. Pero tiene que estar, porque el admin necesita
+            // saber si el número que ve es de hoy o de la semana pasada.
+            var avisoViejo = '';
+            var rev = _datos.revision || {};
+            if (rev.captura_fallo_hoy) {
+                avisoViejo =
+                    '<div class="tbp-aviso-viejo tbp-aviso-fallo">' +
+                        '<i class="fas fa-plug-circle-xmark"></i> ' +
+                        'Hoy no se pudo capturar ninguna fuente. Lo de abajo es la última tasa que tenemos.' +
+                    '</div>';
+            } else if (rev.dato_viejo) {
+                avisoViejo =
+                    '<div class="tbp-aviso-viejo">' +
+                        '<i class="fas fa-clock"></i> ' +
+                        'El BCV no publicó nada nuevo: este dato tiene ' +
+                        (rev.antiguedad_dias === 1 ? 'un día' : rev.antiguedad_dias + ' días') +
+                        '. No hay nada que decidir hoy.' +
+                    '</div>';
+            }
+
             html +=
                 '<div class="tbp-caja">' +
                     '<div class="tbp-titulo">' +
                         '<i class="fas fa-building-columns"></i> Lo que publicó el BCV' +
                         chipOrigen +
                     '</div>' +
+                    avisoViejo +
                     '<div class="tbp-fila-principal">' +
                         '<div class="tbp-valor">' + Number(bcv.valor).toFixed(2) + '</div>' +
                         '<div class="tbp-fecha">' +
@@ -353,8 +375,34 @@
 
         var baseActual = Number((_datos.aplicada || {}).tasa_cambio || 0);
 
-        // Confirmación explícita. El adelanto tiene un texto distinto porque
-        // es una decisión con consecuencia, no un simple cambio de número.
+        // Se pregunta UNA VEZ, y solo cuando la respuesta no es obvia.
+        //
+        // Quien decide cuánta fricción hace falta es la base
+        // (`_nivel_confirmacion_tasa`), no este archivo. Acá solo se respeta:
+        //
+        //   0 -> aplicar y nada más (es redondeo o el usuario ya escribió el
+        //        número a mano; preguntar otra vez sería preguntar dos veces
+        //        lo mismo)
+        //   1 -> una confirmación
+        //   2 -> una confirmación acá, y la base va a pedir la segunda si el
+        //        salto es brusco
+        //
+        // El adelanto de la fecha valor siempre cae en nivel 1: no es fricción,
+        // es una decisión con consecuencia y tiene que quedar registrada.
+        var salto = baseActual > 0
+            ? Math.abs(valor - baseActual) / baseActual * 100
+            : 0;
+        var nivel = 0;
+        if (origen === 'proxima')                    nivel = 1;
+        else if (baseActual > 0 && salto >= 0.5)     nivel = (salto > 50 ? 2 : 1);
+        if (origen === 'manual' && salto <= 50)      nivel = 0;
+
+        if (nivel === 0) {
+            // Sin diálogo: el toast de resultado alcanza y sobra.
+            await enviarTasa(valor, origen, fechaValor, false);
+            return;
+        }
+
         var texto;
         if (origen === 'proxima') {
             texto =

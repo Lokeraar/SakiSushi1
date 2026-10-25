@@ -4338,3 +4338,24 @@ html.dark-theme .status-inactivo {
     .tbp-conf-fila { flex-wrap: wrap; }
     .tbp-btn-mini  { width: 100%; }
 }
+
+/* Aviso de antigüedad del dato: informa sin bloquear ni pedir confirmación. */
+.tbp-aviso-viejo {
+    display: flex;
+    align-items: flex-start;
+    gap: .45rem;
+    margin: .35rem 0 .5rem;
+    padding: .45rem .6rem;
+    border-radius: 8px;
+    background: rgba(255, 152, 0, .1);
+    border: 1px solid rgba(255, 152, 0, .3);
+    font-size: .85rem;
+    line-height: 1.4;
+    color: var(--text-dark);
+}
+.tbp-aviso-viejo i { color: var(--warning); margin-top: .12rem; flex-shrink: 0; }
+.tbp-aviso-fallo {
+    background: rgba(239, 68, 68, .1);
+    border-color: rgba(239, 68, 68, .35);
+}
+.tbp-aviso-fallo i { color: #ef4444; }

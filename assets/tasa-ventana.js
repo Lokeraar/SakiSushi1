@@ -110,6 +110,23 @@
         var difPct    = Number(e.diferencia_porcentaje || 0);
         var esIgual   = Math.abs(difBs) < 0.01;
 
+        // Aviso de antigüedad: si el dato no es de hoy, se dice antes que nada.
+        // No es una confirmación extra, es una línea de contexto.
+        var avisoViejo = '';
+        if (e.captura_fallo_hoy) {
+            avisoViejo =
+                '<div class="tv-aviso tv-aviso-fallo">' +
+                    'Hoy no se pudo capturar el BCV. Esta es la última tasa que tenemos.' +
+                '</div>';
+        } else if (e.dato_viejo) {
+            avisoViejo =
+                '<div class="tv-aviso">' +
+                    'El BCV no publicó nada nuevo: este dato tiene ' +
+                    (Number(e.antiguedad_dias) === 1 ? 'un día' : e.antiguedad_dias + ' días') +
+                    '.' +
+                '</div>';
+        }
+
         // ── Encabezado, distinto si ya se revisó ──
         var titulo = e.ya_revisada
             ? 'La tasa del día ya fue revisada'
@@ -194,6 +211,7 @@
                     '<p>' + sub + '</p>' +
                 '</div>' +
                 '<div class="tv-body">' +
+                    avisoViejo +
                     bloqueBcv +
                     '<div class="tv-botones">' + botones + '</div>' +
                     (bcv

@@ -186,3 +186,21 @@
     .tv-head h3 { font-size: 1.05rem; }
     .tv-btn-txt { font-size: .95rem; }
 }
+
+/* Aviso de antigüedad del dato: contexto, no fricción. */
+.tv-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: .45rem;
+    padding: .5rem .7rem;
+    border-radius: 9px;
+    background: rgba(255, 152, 0, .12);
+    border: 1px solid rgba(255, 152, 0, .32);
+    font-size: .88rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, .85);
+}
+.tv-aviso-fallo {
+    background: rgba(239, 68, 68, .14);
+    border-color: rgba(239, 68, 68, .4);
+}
