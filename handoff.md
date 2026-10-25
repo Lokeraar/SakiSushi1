@@ -44,16 +44,37 @@ El cron disparaba la petición con pg_net, la respuesta quedaba en
 existía y ningún job la llamaba. Ahora `resolver_captura_tasa()` corre cada
 3 minutos entre las 21:00 y 21:29 UTC.
 
-### TRAMPA: Realtime necesita el GRANT, no solo la policy
+### TRAMPA GORDA: Realtime se autenticaba siempre como `anon`
 
-Sin `GRANT SELECT` sobre la tabla, el canal de Realtime se suscribe, responde
-`joined`, y **no llega nunca un evento**. La policy sola no alcanza:
+El websocket de Realtime **no usa** el header `Authorization` de
+`global.headers`: ese header viaja solo en las consultas REST. Como el cliente
+se crea con `persistSession: false`, no hay sesión de GoTrue de dónde sacar el
+token, y Realtime cae **siempre** al rol `anon`.
 
-```sql
-has_table_privilege('authenticated','tasa_revision_diaria','SELECT')  -- era false
+**El síntoma engaña:** el canal responde `joined`, el servidor registra la
+suscripción, y **no llega nunca un evento**. Medido en `realtime.subscription`:
+las 11 suscripciones del admin figuraban con `claims_role = anon`.
+
+Consecuencia: **toda policy de RLS que exija un rol es inalcanzable para
+Realtime**, aunque el GRANT y la policy estén bien.
+
+Solución (una línea en `supabase-config.js`):
+```js
+accessToken: jwtToken ? async () => jwtToken : undefined
 ```
+Con eso `realtime.accessToken()` pasa de 46 chars (la publishable key) a 960
+(el JWT), y la base registra `claims_role = 'authenticated'`.
 
-Corregido. Si algún día una tabla nueva no replica, revisar esto primero.
+**Cómo diagnosticarlo en 5 segundos:**
+```sql
+select entity::regclass as tabla, claims_role from realtime.subscription order by created_at desc;
+```
+Si dice `anon` con el usuario logueado, es esto. No es RLS, ni la publicación,
+ni el GRANT — aunque el GRANT también haga falta.
+
+Nota de honestidad: en el commit `40880d3` se afirmó que el `GRANT` faltante
+era la causa. Era adyacente, no la raíz. El `GRANT` sigue siendo necesario,
+pero sin el JWT del lado del cliente no sirve de nada.
 
 ### La contraseña del cajero
 
@@ -62,9 +83,10 @@ Corregido. Si algún día una tabla nueva no replica, revisar esto primero.
 
 ### LO QUE SIGUE, en orden
 
-1. **Confirmar la réplica entre dos equipos reales.** El GRANT faltante está
-   corregido y un JWT de cajero lee la tabla por REST, pero el motor de prueba
-   (lightpanda) no completa páginas nuevas: deja los canales en `joining`.
+1. **Confirmar la réplica entre dos equipos reales.** La causa raíz ya está
+   corregida y medida (`claims_role = authenticated`), pero falta verla en vivo:
+   el motor de prueba deja las páginas en `readyState = loading`. Hacen falta
+   dos navegadores reales, uno en el admin y otro en el Cajero.
 2. **Verificar que la cadena dispara sola** mañana a las 5 pm (corre de lunes
    a viernes).
 3. **Decidir el camino de la captura**: la base usa `pg_net` directo contra
