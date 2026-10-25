@@ -4066,3 +4066,177 @@ html.dark-theme .status-inactivo {
     border-top-color: #1a1a2e;
     pointer-events: none;
 }
+/* ============================================================
+   PANEL DE LA TASA (admin-tasa-panel.js)
+   ============================================================
+   Muestra de dónde salió la tasa, a qué fecha corresponde y cuál es la
+   próxima publicada. El objetivo es que el admin pueda desmentir el número
+   sin abrir el Instagram del BCV.
+
+   Tipografía: cuerpo 1rem (16px equivalente), nada por debajo de .8rem,
+   que acá es texto de apoyo y no lectura principal.
+   ============================================================ */
+.tbp-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    margin-bottom: .8rem;
+}
+.tbp-caja {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid rgba(128,128,128,.3);
+    border-radius: 12px;
+    padding: .75rem .95rem;
+}
+.tbp-caja.tbp-ok      { border-left-color: #4ade80; }
+.tbp-caja.tbp-alerta  { border-left-color: var(--warning); background: rgba(255,152,0,.06); }
+.tbp-caja.tbp-proxima { border-left-color: #4fc3f7; background: rgba(79,195,247,.06); }
+.tbp-caja.tbp-vacia   { border-left-color: var(--warning); }
+
+.tbp-titulo {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    flex-wrap: wrap;
+    font-size: .82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    margin-bottom: .45rem;
+}
+.tbp-titulo i { color: var(--accent); }
+
+.tbp-chip {
+    font-size: .74rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    padding: .1rem .45rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,.1);
+    color: var(--text-dark);
+    border: 1px solid rgba(255,255,255,.15);
+}
+.tbp-chip-respaldo { background: rgba(255,152,0,.18); color: #ffb74d; border-color: rgba(255,152,0,.35); }
+.tbp-chip-umbral   { background: transparent; color: var(--text-muted); }
+
+.tbp-fila-principal {
+    display: flex;
+    align-items: baseline;
+    gap: .8rem;
+    flex-wrap: wrap;
+}
+.tbp-valor {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    line-height: 1.1;
+}
+.tbp-fecha { font-size: .95rem; color: var(--text-dark); }
+.tbp-tenue { color: var(--text-muted); font-size: .85rem; }
+.tbp-nota  { font-size: .88rem; color: var(--text-dark); opacity: .85; line-height: 1.5; margin-top: .35rem; }
+.tbp-nota strong { font-weight: 700; }
+
+.tbp-pregunta { font-size: 1rem; font-weight: 600; color: var(--text-dark); line-height: 1.5; }
+.tbp-difprox  { font-size: .88rem; color: var(--text-dark); opacity: .8; margin-top: .3rem; }
+
+.tbp-botones {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-top: .7rem;
+}
+.tbp-btn {
+    flex: 1 1 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .15rem;
+    padding: .55rem .7rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(255,255,255,.06);
+    color: var(--text-dark);
+    font-family: 'Montserrat', sans-serif;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+}
+.tbp-btn:hover  { background: rgba(255,255,255,.12); }
+.tbp-btn:active { transform: scale(.985); }
+.tbp-btn-sub { font-size: .8rem; opacity: .7; font-weight: 500; }
+.tbp-btn-vigente  { border-color: rgba(74,222,128,.5); }
+.tbp-btn-proxima  { border-color: rgba(79,195,247,.5); }
+.tbp-btn-manual   { border-color: rgba(255,255,255,.2); }
+
+.tbp-aviso {
+    margin-top: .6rem;
+    padding-top: .5rem;
+    border-top: 1px solid rgba(255,255,255,.1);
+    font-size: .82rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.tbp-pie { display: flex; justify-content: flex-end; }
+.tbp-btn-link {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: 'Montserrat', sans-serif;
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: .3rem .2rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+}
+.tbp-btn-link:hover { text-decoration: underline; }
+
+/* ---- Historial ---- */
+.tbh-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .88rem;
+    color: #e8eaf0;
+}
+.tbh-tabla thead th {
+    text-align: left;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: rgba(255,255,255,.5);
+    padding: .4rem .5rem;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+    font-weight: 700;
+}
+.tbh-tabla tbody td {
+    padding: .5rem;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    vertical-align: top;
+}
+.tbh-num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.tbh-motivo { font-size: .82rem; color: rgba(255,255,255,.65); line-height: 1.4; max-width: 240px; }
+.tbh-chip {
+    display: inline-block;
+    font-size: .74rem;
+    font-weight: 700;
+    padding: .1rem .4rem;
+    border-radius: 5px;
+    margin-right: .25rem;
+}
+.tbh-aplicada   { background: rgba(74,222,128,.18);  color: #4ade80; }
+.tbh-pendiente  { background: rgba(79,195,247,.18);  color: #4fc3f7; }
+.tbh-descartada { background: rgba(158,158,158,.2);  color: #bdbdbd; }
+.tbh-adelanto   { background: rgba(255,152,0,.2);    color: #ffb74d; }
+
+@media (max-width: 600px) {
+    .tbp-valor { font-size: 1.4rem; }
+    .tbp-btn   { flex: 1 1 100%; }
+    .tbh-motivo { max-width: 120px; }
+    .tbh-tabla  { font-size: .82rem; }
+}

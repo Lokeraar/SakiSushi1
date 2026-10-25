@@ -18,6 +18,7 @@
     <script src="js/admin-helpers.js?v=1792797329" defer></script>
     <script src="js/admin-ui.js" defer></script>
     <script src="js/admin-tasa-aviso.js" defer></script>
+    <script src="js/admin-tasa-panel.js?v=1793000001" defer></script>
     <script src="../Cliente/js/cliente-imagenes.js?v=1792844774"></script>
     <script src="js/admin-cierre.js?v=1792890407"></script>
     <script src="js/admin-ofertas.js?v=1792867143"></script>
@@ -223,6 +224,20 @@
                             <div class="tcb-sublabel">aumento total</div>
                         </div>
                     </div>
+                    <!-- ============================================================
+                         EL CUADRO DE LA TASA
+                         ============================================================
+                         Muestra la tasa del BCV con su FECHA VALOR y su origen,
+                         la diferencia con lo que se está cobrando, y la próxima
+                         publicada si ya existe, para que el admin elija.
+
+                         Todo lo pinta admin-tasa-panel.js desde `tasa_panel()`.
+                         Acá va vacío a propósito: si la migración 23 no está
+                         aplicada, el bloque se oculta solo y el panel sigue
+                         funcionando como antes.
+                         ============================================================ -->
+                    <div id="tasaBcvPanel" class="tbp-wrap" style="display:none"></div>
+
                     <div class="tcb-controls">
                         <div class="tcb-toggle-card">
                             <div class="tcb-toggle-top">
