@@ -28,13 +28,45 @@ window.inicializarSupabaseCliente = (jwtToken = null) => {
                 apikey: window.SUPABASE_ANON_KEY,
                 Authorization: `Bearer ${jwtToken || window.SUPABASE_ANON_KEY}`
             } 
-        }
+        },
+        // `accessToken` es la vía oficial de supabase-js v2 para tokens
+        // provistos externamente: Realtime lo consulta ANTES de abrir el
+        // websocket y lo envía como su propio `access_token`. Sin esto, con
+        // `persistSession: false` no hay sesión de GoTrue y Realtime cae
+        // siempre al rol `anon` (ver `realtime.subscription`).
+        // En el cliente anónimo se deja undefined: usa la publishable key.
+        accessToken: jwtToken ? async () => jwtToken : undefined
     };
     window.supabaseClient = window.supabase.createClient(
         window.SUPABASE_URL,
         window.SUPABASE_ANON_KEY,
         options
     );
+
+    // ⚠️ TRAMPA QUE COSTÓ HORAS: `global.headers` NO aplica a Realtime.
+    //
+    // El `Authorization: Bearer <jwt>` de `global.headers` viaja en las
+    // consultas REST, pero el websocket de Realtime se autentica por su
+    // cuenta. Como el cliente se crea con `persistSession: false`, no hay
+    // sesión de GoTrue de dónde sacar el token, y Realtime cae siempre al
+    // rol `anon`.
+    //
+    // El síntoma engaña: el canal responde `joined`, el servidor registra la
+    // suscripción, y NO llega nunca un evento. Verificado en
+    // `realtime.subscription`: las 11 suscripciones del admin figuraban con
+    // `claims_role = anon` aunque el usuario estuviera logueado con rol admin.
+    //
+    // Consecuencia: toda policy de RLS que exija algo distinto de `true` es
+    // inalcanzable para Realtime, aunque el GRANT y la policy estén bien.
+    if (jwtToken && window.supabaseClient.realtime) {
+        try {
+            window.supabaseClient.realtime.setAuth(jwtToken);
+            console.log('🔑 Realtime autenticado con el JWT del usuario');
+        } catch (e) {
+            console.warn('No se pudo autenticar Realtime con el JWT:', e.message);
+        }
+    }
+
     console.log(jwtToken ? '✅ Cliente Supabase con JWT' : '🔓 Cliente Supabase anónimo');
     return window.supabaseClient;
 };

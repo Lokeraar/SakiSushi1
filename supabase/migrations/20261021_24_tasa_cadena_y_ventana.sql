@@ -789,3 +789,35 @@ DROP POLICY IF EXISTS tasa_intento_lectura ON public.tasa_intento;
 CREATE POLICY tasa_intento_lectura ON public.tasa_intento
     FOR SELECT TO authenticated
     USING (COALESCE(public.es_cajero_o_admin(), false));
+
+-- ============================================================
+-- NOTA IMPORTANTE — Realtime necesita el JWT del lado del CLIENTE
+-- ============================================================
+--
+-- Agregar la tabla a la publicación y dar el GRANT NO alcanza. El websocket
+-- de Supabase Realtime se autentica por su cuenta y NO usa el header
+-- `Authorization` de `global.headers` (ese header viaja solo en las consultas
+-- REST).
+--
+-- Como `supabase-config.js` crea el cliente con `persistSession: false`, no
+-- hay sesión de GoTrue de dónde sacar el token, y Realtime cae siempre al rol
+-- `anon`. El síntoma engaña de lo lindo: el canal responde `joined`, el
+-- servidor registra la suscripción, y NO llega nunca un evento.
+--
+-- Verificado en realtime.subscription: todas las suscripciones del admin
+-- figuraban con `claims_role = 'anon'` aunque el usuario estuviera logueado.
+--
+-- La solución es del lado del navegador: la opción `accessToken` de
+-- supabase-js v2, que Realtime consulta antes de abrir el websocket:
+--
+--     accessToken: jwtToken ? async () => jwtToken : undefined
+--
+-- Con eso, `await cliente.realtime.accessToken()` pasa de 46 caracteres (la
+-- publishable key) a 960 (el JWT), y la base registra
+-- `claims_role = 'authenticated'`.
+--
+-- CONSECUENCIA PARA EL FUTURO: cualquier policy de RLS que exija un rol es
+-- inalcanzable para Realtime hasta que el cliente mande el JWT. Si una tabla
+-- nueva "no replica" y el canal dice `joined`, revisar primero esto:
+--
+--     select entity::regclass, claims_role from realtime.subscription;
