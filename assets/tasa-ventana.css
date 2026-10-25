@@ -1,0 +1,188 @@
+/* ============================================================
+   tasa-ventana.css — La ventana del primer admin o cajero del día
+   ============================================================
+   La comparten el panel del admin y el Cajero. Vive en assets/ para no
+   duplicarla: son dos apps distintas que muestran lo mismo.
+
+   Tipografía: el número grande va en 1.8rem y el cuerpo en 1rem. Es una
+   ventana que alguien lee de pie, en el mostrador, antes de abrir. Nada por
+   debajo de .85rem salvo las etiquetas de apoyo.
+   ============================================================ */
+
+.tv-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, .72);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+
+.tv-modal {
+    width: 100%;
+    max-width: 460px;
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid rgba(255, 255, 255, .13);
+    box-shadow: 0 12px 44px rgba(0, 0, 0, .55);
+    animation: tv-entrar .18s ease-out;
+}
+
+@keyframes tv-entrar {
+    from { opacity: 0; transform: translateY(10px) scale(.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.tv-head {
+    padding: 1.15rem 1.25rem .85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, .09);
+}
+.tv-head h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.25;
+}
+.tv-head p {
+    margin: .35rem 0 0;
+    font-size: .92rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, .6);
+}
+
+.tv-body {
+    padding: 1rem 1.25rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: .7rem;
+}
+
+.tv-caja {
+    background: rgba(255, 255, 255, .05);
+    border: 1px solid rgba(255, 255, 255, .09);
+    border-left: 3px solid rgba(255, 255, 255, .22);
+    border-radius: 12px;
+    padding: .8rem .95rem;
+    text-align: center;
+}
+.tv-caja.tv-ok     { border-left-color: #4ade80; }
+.tv-caja.tv-alerta { border-left-color: #FF9800; background: rgba(255, 152, 0, .07); }
+.tv-caja.tv-vacia  { border-left-color: #FF9800; }
+
+.tv-titulo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    flex-wrap: wrap;
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: rgba(255, 255, 255, .55);
+    margin-bottom: .35rem;
+}
+
+.tv-chip {
+    font-size: .74rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    padding: .1rem .45rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, .1);
+    border: 1px solid rgba(255, 255, 255, .16);
+    color: #e8eaf0;
+}
+
+.tv-valor {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.tv-fecha {
+    font-size: .95rem;
+    color: #e8eaf0;
+    margin-top: .2rem;
+}
+.tv-tenue { color: rgba(255, 255, 255, .5); font-size: .88rem; }
+
+.tv-nota {
+    font-size: .92rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, .82);
+}
+.tv-nota strong { font-weight: 800; color: #fff; }
+
+.tv-botones {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    margin-top: .2rem;
+}
+
+.tv-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .1rem;
+    width: 100%;
+    padding: .7rem .85rem;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, .16);
+    background: rgba(255, 255, 255, .07);
+    color: #fff;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .18s, transform .1s;
+    text-align: center;
+}
+.tv-btn:hover  { background: rgba(255, 255, 255, .13); }
+.tv-btn:active { transform: scale(.99); }
+
+.tv-btn-txt {
+    font-size: 1rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+}
+.tv-btn-sub {
+    font-size: .85rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, .55);
+}
+
+.tv-btn-mantener { border-color: rgba(74, 222, 128, .55); background: rgba(74, 222, 128, .1); }
+.tv-btn-mantener:hover { background: rgba(74, 222, 128, .17); }
+.tv-btn-bcv { border-color: rgba(255, 152, 0, .55); background: rgba(255, 152, 0, .1); }
+.tv-btn-bcv:hover { background: rgba(255, 152, 0, .17); }
+
+.tv-link {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, .45);
+    font-family: inherit;
+    font-size: .88rem;
+    cursor: pointer;
+    padding: .35rem 0 0;
+    text-decoration: underline;
+}
+.tv-link:hover { color: rgba(255, 255, 255, .7); }
+
+@media (max-width: 420px) {
+    .tv-modal { border-radius: 16px; }
+    .tv-valor { font-size: 1.6rem; }
+    .tv-head h3 { font-size: 1.05rem; }
+    .tv-btn-txt { font-size: .95rem; }
+}

@@ -200,6 +200,88 @@
                 '</div>';
         }
 
+        // ── Bloque 3b: ¿ya se revisó hoy? ──
+        var rev = _datos.revision || {};
+        if (rev.ya_revisada) {
+            var etiquetas = {
+                mantener:     'Se mantuvo la tasa',
+                aplicar_bcv:  'Se aplicó la del BCV',
+                aplicar_otra: 'Se aplicó una tasa a mano',
+                sin_captura:  'No había tasa del BCV'
+            };
+            html +=
+                '<div class="tbp-caja tbp-revisada">' +
+                    '<div class="tbp-titulo"><i class="fas fa-lock"></i> Tasa del día ya revisada</div>' +
+                    '<div class="tbp-nota">' +
+                        (etiquetas[rev.accion] || 'Revisada') + ' por <strong>' +
+                        (rev.revisada_por || 'alguien') + '</strong>.' +
+                    '</div>' +
+                    '<button class="tbp-btn-link" style="margin-top:.4rem" onclick="window.abrirVentanaTasa(true)">' +
+                        '<i class="fas fa-rotate"></i> Revisar de nuevo' +
+                    '</button>' +
+                '</div>';
+        }
+
+        // ── Bloque 3c: respaldos esperando confirmación ──
+        //
+        // Una captura de respaldo entra como 'pendiente' porque su fecha valor
+        // no es la del BCV. Si no se muestra acá queda invisible: no es
+        // vigente (esa filtra estado 'aplicada') ni próxima (esa filtra fecha
+        // futura). "Hay una tasa esperando que alguien la confirme" es
+        // información que el admin necesita.
+        var porConfirmar = _datos.por_confirmar || [];
+        if (porConfirmar.length) {
+            var filasCon = porConfirmar.map(function (c) {
+                return '<div class="tbp-conf-fila">' +
+                    '<div class="tbp-conf-datos">' +
+                        '<strong>' + Number(c.valor).toFixed(2) + '</strong> ' +
+                        '<span class="tbp-tenue">(' + fechaEnPalabras(c.fecha_valor) + ')</span>' +
+                        '<div class="tbp-conf-fuente">' + (c.fuente || '—') + '</div>' +
+                    '</div>' +
+                    '<button class="tbp-btn tbp-btn-mini" ' +
+                        'data-id="' + c.id + '" ' +
+                        'data-valor="' + Number(c.valor) + '" ' +
+                        'data-fecha="' + c.fecha_valor + '" ' +
+                        'onclick="window.confirmarTasaRespaldo(this)">Confirmar</button>' +
+                '</div>';
+            }).join('');
+
+            html +=
+                '<div class="tbp-caja tbp-alerta">' +
+                    '<div class="tbp-titulo"><i class="fas fa-circle-question"></i> ' +
+                        'Tasas de respaldo esperando confirmación</div>' +
+                    '<div class="tbp-nota">La fuente principal no respondió y se usó un respaldo. ' +
+                        'Su fecha valor no es la del BCV, así que no se aplica sola.</div>' +
+                    '<div class="tbp-conf-lista">' + filasCon + '</div>' +
+                '</div>';
+        }
+
+        // ── Bloque 3d: cómo fue la captura de hoy ──
+        var cadena = _datos.cadena_hoy || [];
+        if (cadena.length) {
+            var eslabones = cadena.map(function (c) {
+                var icono = c.estado === 'ok' ? 'fa-circle-check'
+                          : c.estado === 'fallido' ? 'fa-circle-xmark'
+                          : 'fa-clock';
+                var cls = c.estado === 'ok' ? 'tbp-es-ok'
+                        : c.estado === 'fallido' ? 'tbp-es-fallo'
+                        : 'tbp-es-curso';
+                return '<div class="tbp-eslabon ' + cls + '">' +
+                    '<i class="fas ' + icono + '"></i>' +
+                    '<span class="tbp-es-nombre">' + (c.fuente || '—') + '</span>' +
+                    '<span class="tbp-es-hora">' + (c.hora || '') + '</span>' +
+                    (c.detalle ? '<span class="tbp-es-detalle">' + c.detalle + '</span>' : '') +
+                '</div>';
+            }).join('');
+
+            html +=
+                '<div class="tbp-caja">' +
+                    '<div class="tbp-titulo"><i class="fas fa-diagram-project"></i> ' +
+                        'Cómo fue la captura de hoy</div>' +
+                    '<div class="tbp-eslabones">' + eslabones + '</div>' +
+                '</div>';
+        }
+
         // ── Bloque 4: acceso al historial ──
         var cuantas = (_datos.capturas || []).length;
         html +=
@@ -341,6 +423,89 @@
     }
 
     // ============================================================
+    // Confirmar una tasa de respaldo
+    // ============================================================
+    //
+    // El respaldo trae el número pero no la fecha valor del BCV. Confirmarla
+    // es decir "yo verifiqué que esta es la que rige". Se aplica con el mismo
+    // camino único de siempre (`aplicar_tasa_elegida`) y queda con el motivo
+    // escrito en la captura.
+    window.confirmarTasaRespaldo = async function (btn) {
+        if (!btn) return;
+
+        var id     = btn.getAttribute('data-id');
+        var valor  = Number(btn.getAttribute('data-valor'));
+        var fecha  = btn.getAttribute('data-fecha');
+
+        if (!(valor > 0)) {
+            window.mostrarToast('Esa tasa no es un número válido', 'error');
+            return;
+        }
+
+        var texto =
+            'Vas a aplicar la tasa de respaldo: ' + valor.toFixed(2) + ' Bs por dólar.\n\n' +
+            'Viene de una fuente secundaria, así que su fecha valor (' +
+            fechaEnPalabras(fecha) + ') NO es la del BCV.\n\n' +
+            'Confirmá solo si verificaste el número contra la publicación oficial.\n\n' +
+            '¿Aplicar?';
+
+        if (!confirm(texto)) return;
+
+        try {
+            var r = await window.supabaseClient.rpc('aplicar_tasa_elegida', {
+                p_valor:       valor,
+                p_origen:      'manual',
+                p_fecha_valor: fecha,
+                p_confirmar:   false
+            });
+
+            if (r.error) {
+                window.mostrarToast('❌ ' + r.error.message, 'error');
+                return;
+            }
+
+            var d = r.data || {};
+
+            // Guarda contra el dedazo: la función se niega a un salto mayor al
+            // 50% sin confirmación explícita.
+            if (d.requiere_confirmacion) {
+                if (!confirm('⚠️ ' + d.error + '\n\n¿Confirmás que es intencional?')) return;
+                var r2 = await window.supabaseClient.rpc('aplicar_tasa_elegida', {
+                    p_valor:       valor,
+                    p_origen:      'manual',
+                    p_fecha_valor: fecha,
+                    p_confirmar:   true
+                });
+                if (r2.error) {
+                    window.mostrarToast('❌ ' + r2.error.message, 'error');
+                    return;
+                }
+                d = r2.data || {};
+            }
+
+            if (!d.success) {
+                window.mostrarToast('❌ ' + (d.error || 'No se pudo aplicar'), 'error');
+                return;
+            }
+
+            window.mostrarToast(
+                '💱 Tasa de respaldo confirmada: ' + Number(d.tasa_aplicada).toFixed(2) +
+                '. El precio al cliente sale con ' + Number(d.tasa_efectiva).toFixed(2) + '.',
+                'success'
+            );
+
+            if (window.cargarConfiguracion) await window.cargarConfiguracion();
+            if (window.actualizarTasaUI)    window.actualizarTasaUI();
+            await window.cargarTasaPanel();
+            if (window.renderizarMenu)      window.renderizarMenu();
+
+        } catch (e) {
+            console.error('Error confirmando respaldo:', e);
+            window.mostrarToast('❌ Error de conexión', 'error');
+        }
+    };
+
+    // ============================================================
     // Historial
     // ============================================================
     window.abrirHistorialTasa = function () {
@@ -417,6 +582,14 @@
             window.cargarConfiguracionInicial = async function () {
                 await original.apply(this, arguments);
                 await window.cargarTasaPanel();
+
+                // La ventana del día. Es lo primero que ve el admin al entrar:
+                // la tasa del BCV con su fecha valor, y la decisión de una vez.
+                if (typeof window.arrancarVentanaTasa === 'function') {
+                    try { await window.arrancarVentanaTasa(); } catch (e) {
+                        console.warn('ventana de tasa:', e.message);
+                    }
+                }
             };
         }
 
