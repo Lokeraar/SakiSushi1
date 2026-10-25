@@ -10,15 +10,81 @@
 
 ### Últimos commits
 
-`5a43ae0` → `22ffe1a` → `b6d9a74` → `d265f20` → `4a038c5` → `35b9131`
+`34d5161` (panel de tasa) → `40880d3` (cadena de respaldos + ventana del día)
 
-### Migraciones aplicadas (01 a 22)
+### Migraciones aplicadas (01 a 24)
 
-Nuevas desde el corte anterior: **19** (porcentaje de oferta entero),
-**20** (cierre del local), **21** (restaurar `es_admin()`), **22** (tasa BCV con
-fecha valor). La 03 es inaplicable.
+Nuevas desde el corte anterior: **23** (panel de la tasa: `tasa_panel()`,
+`aplicar_tasa_elegida()`, `pedidos_tasa_historica`) y **24** (cadena de
+respaldos, `tasa_intento`, `tasa_revision_diaria`). La 03 sigue siendo
+inaplicable.
 
 ### Lo cerrado en esta tanda
+
+| Tema | Estado | Verificado |
+|---|---|---|
+| Panel de la tasa | Muestra el valor del BCV, su **fecha valor** en palabras y el origen tal cual. Diferencia en Bs, % y por cada 100 USD | En pantalla, local y producción |
+| Elegir la tasa | Botones *Usar la vigente* / *Usar la próxima* / *Poner otra a mano*. El adelanto queda registrado con motivo | Ciclo completo, `adelanto = true` en la base |
+| Cadena de respaldos | `dolarapi` → `er-api` → `currency-api`. Un respaldo **nunca** queda `aplicada` | Las tres fuentes, con respuestas reales |
+| Ventana del día | El primero (admin **o** cajero) decide una vez: *Mantener esta tasa: X* | Login real de las dos cuentas |
+| Historial de capturas | Modal con estado y motivo de cada captura | En pantalla |
+
+### DEFECTO CERRADO: la captura automática no guardaba nada
+
+La migración 22 dejó el circuito a medias. Medido al empezar:
+
+```
+cron que procesa respuestas : 0
+respuestas descargadas       : 1
+capturas automáticas         : 0
+```
+
+El cron disparaba la petición con pg_net, la respuesta quedaba en
+`net._http_response`, y **nadie la procesaba**. `procesar_respuesta_tasa()`
+existía y ningún job la llamaba. Ahora `resolver_captura_tasa()` corre cada
+3 minutos entre las 21:00 y 21:29 UTC.
+
+### TRAMPA: Realtime necesita el GRANT, no solo la policy
+
+Sin `GRANT SELECT` sobre la tabla, el canal de Realtime se suscribe, responde
+`joined`, y **no llega nunca un evento**. La policy sola no alcanza:
+
+```sql
+has_table_privilege('authenticated','tasa_revision_diaria','SELECT')  -- era false
+```
+
+Corregido. Si algún día una tabla nueva no replica, revisar esto primero.
+
+### La contraseña del cajero
+
+`cajero1` / **`123456`**. No es `cajero123` ni ninguna variante. El admin es
+`admin` / `admin123`.
+
+### LO QUE SIGUE, en orden
+
+1. **Confirmar la réplica entre dos equipos reales.** El GRANT faltante está
+   corregido y un JWT de cajero lee la tabla por REST, pero el motor de prueba
+   (lightpanda) no completa páginas nuevas: deja los canales en `joining`.
+2. **Verificar que la cadena dispara sola** mañana a las 5 pm (corre de lunes
+   a viernes).
+3. **Decidir el camino de la captura**: la base usa `pg_net` directo contra
+   las tres URLs; la Edge Function `tasa-bcv-scraper` tiene su propia cadena y
+   nadie la llama. Dos caminos para lo mismo es deuda.
+4. Comprobar que la ventana no molesta en un segundo ingreso del mismo día.
+
+### Decisiones del dueño que no hay que re-preguntar
+
+- La etiqueta de la fuente dice **el origen real** (`dolarapi.com`), no
+  "respaldo".
+- La próxima se puede elegir a mano aunque no rija todavía, **y queda
+  registrado** que fue una decisión.
+- La ventana la puede confirmar **cualquiera con rol admin o cajero**.
+- Si se cierra sin decidir, **no insiste en todo el día**.
+
+
+<!-- tabla anterior conservada como histórico -->
+
+### Lo cerrado en la tanda del 24/10
 
 | Tema | Estado | Verificado |
 |---|---|---|
