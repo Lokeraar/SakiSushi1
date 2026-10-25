@@ -1,8 +1,97 @@
 # Handoff — Saki Sushi 1
 
-> Documento de continuidad. Fecha de corte: **22 de octubre de 2026**.
+> Documento de continuidad. Fecha de corte: **24 de octubre de 2026**.
 > Todo lo aquí escrito fue verificado contra la base real y el código, no
 > inferido. Si algo no se pudo probar, se dice explícitamente.
+
+---
+
+## 0. Estado al 24/10/2026 — leer primero
+
+### Últimos commits
+
+`5a43ae0` → `22ffe1a` → `b6d9a74` → `d265f20` → `4a038c5` → `35b9131`
+
+### Migraciones aplicadas (01 a 22)
+
+Nuevas desde el corte anterior: **19** (porcentaje de oferta entero),
+**20** (cierre del local), **21** (restaurar `es_admin()`), **22** (tasa BCV con
+fecha valor). La 03 es inaplicable.
+
+### Lo cerrado en esta tanda
+
+| Tema | Estado | Verificado |
+|---|---|---|
+| Ofertas con reloj | `menu_con_oferta`, `oferta_vigente()`, panel admin, tarjeta del cliente con tachado y `-30%` entero. Se apaga SOLA al vencer | En pantalla y por HTTP |
+| 15 fotos de ingredientes | Spoonacular (11), TheMealDB (1), Pexels (1), Wikimedia CC0 (2) | 15 de 15 cargan a 420px |
+| Licencias | **Ninguna de las 15 exige crédito** | Documentado en `assets/ingredientes/LICENCIAS.md` |
+| Despiece del platillo | Miniatura 34×34 por ingrediente en el modal | En pantalla |
+| Wifi real | `MERCUSYS_64BD` / `47421202` en `config`. Llega por `wifi_publico()`; un anónimo que pide la tabla `config` recibe 0 filas | En pantalla |
+| PINes de mesonero | Ana 6718 · Carlos 5002 · José 1713 · Luis 9771 · María 5537 | Los 5 reconocen su PIN |
+| Tasa | 886,23 = oficial **vigente** (fecha valor viernes 23/10) | — |
+| Cierre del local | Candado en la base + panel admin + franja en el cliente | Ciclo completo en pantalla |
+| Captura BCV | `tasa_bcv` con fecha valor, cron 5pm/7am, `pg_net` | Contra internet real |
+
+### DEFECTO CRÍTICO corregido (migración 21)
+
+`es_admin()` llamaba a `_t()`, y `_t()` devolvía `'admin'` **fijo**. Cualquier
+anónimo era administrador: todo lo protegido con `es_admin()` estaba abierto.
+Era un mock de pruebas olvidado, anterior a este trabajo.
+
+Restaurado a `rol_actual() = 'admin'`, `_t()` borrada, y la migración **falla a
+propósito** si alguien vuelve a dejar ese agujero.
+
+### TRAMPA confirmada: la tasa necesita su FECHA VALOR
+
+Posts del BCV (Instagram, sábado 24/10/2026):
+
+| Valor | Fecha Valor |
+|---|---|
+| 887,30200000 | **Martes 27** ← el más nuevo |
+| 886,22710000 | **Viernes 23** ← el anterior |
+
+Ese sábado la tasa **vigente** era la del viernes. Pero `open.er-api.com` ya
+devolvía 887,302 (la del martes): usarla habría adelantado cinco días una tasa
+que no regía.
+
+**Regla:** ninguna tasa se guarda sin fecha valor, y una fecha valor **futura
+nunca se aplica**. Implementado en `registrar_tasa_bcv()` y verificado.
+
+### Trampa de pg_net
+
+`net._http_response` **no tiene columna `url`**. Se consulta por `id`, el mismo
+que devuelve `net.http_get()`. Es asíncrono: no se puede esperar la respuesta
+en la misma sentencia.
+
+### Configuración de Engram corregida
+
+`.zshrc` tenía `ENGRAM_PROJECT="${ENGRAM_PROJECT:-home}"`, que anula la
+detección por carpeta y manda todas las memorias a un solo proyecto. Quitado
+(respaldo en `~/.zshrc.bak-engram`). Aplica desde la próxima terminal.
+
+### LO QUE SIGUE, en orden
+
+1. **Panel del admin para la tasa**: mostrar la aplicada, su **fecha valor**, de
+   qué fuente vino y si fue respaldo. Un humano tiene que poder desmentirla
+   abriendo el Instagram del BCV.
+2. **Cadena de respaldos** cuando `dolarapi` falle, registrando de dónde vino y
+   avisando cuando no sea la principal.
+3. **Ventana del primer admin o cajero del día**, con la opción
+   "Mantener esta tasa: X", y replicación para cerrarla en las demás
+   computadoras cuando uno confirma.
+4. Verificar que **cambiar la tasa no altera lo ya cobrado**.
+
+### Decisiones del dueño que no hay que re-preguntar
+
+- El aumento diario y el acumulado **siguen corriendo aunque el local cierre**.
+- La oferta vencida mientras el cliente arma el carrito **se mantiene**: el
+  precio se congela al agregar.
+- El cierre **solo lo activa y desactiva el rol admin**. El cajero no.
+- El **mesonero no define la tasa**: solo se identifica por PIN para que el
+  pedido quede a su nombre.
+- El mensaje del cierre **lo escribe el admin**, no va hardcodeado.
+- Entorno de **desarrollo**: el cliente definirá sus propias imágenes y pedirá
+  renombres y cambios de estilo al pasar a producción.
 
 ---
 
