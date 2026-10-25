@@ -76,6 +76,38 @@ Nota de honestidad: en el commit `40880d3` se afirmó que el `GRANT` faltante
 era la causa. Era adyacente, no la raíz. El `GRANT` sigue siendo necesario,
 pero sin el JWT del lado del cliente no sirve de nada.
 
+### CÓMO PROBAR UI EN ESTE DISPOSITIVO (cinco trampas que cuestan horas)
+
+**1. El CLI `agent-browser` ignora `--cdp` y levanta su propio lightpanda.**
+Todas las pruebas de navegador de una sesión entera fueron contra lightpanda sin
+saberlo. Lo delata el user agent: `X11; Linux x86_64` es lightpanda; `Android 10;
+K` es Chrome real. Usar el cliente propio
+`/data/data/com.termux/files/usr/tmp/cdp-eval.mjs <puerto> <urlContiene> <expr>`.
+
+**2. `~/.agent-browser/config.json` fuerza lightpanda** (`"engine": "lightpanda"`)
+y gana sobre cualquier bandera o variable de entorno.
+
+**3. Se puede manejar Chrome real** con el proxy de siempre, que acepta
+`--package` y `--port`:
+```bash
+root-do "python3 ~/.local/bin/cdp-proxy.py --package com.android.chrome --port 9223 >> /data/local/tmp/cdp9223.log 2>&1 &"
+```
+Requiere Chrome abierto. Comprobar: `su -c "grep -ci devtools /proc/net/unix"`.
+
+**4. LA MÁS IMPORTANTE: una pestaña oculta (`visibilityState: hidden`) congela
+TODO.** Los WebSockets quedan en `CONNECTING` para siempre, sin error, sin
+timeout, sin reintento; el callback de `subscribe` nunca corre. Los `setTimeout`
+se estiran (2639 ms para un timer de 2000). **Traer Chrome al frente antes de
+medir**, con `am start -n com.android.chrome/com.google.android.apps.chrome.Main`,
+y verificar `visibilityState` después de cada acción.
+
+**5. Los JWT vencen rápido.** `InvalidJWTToken: Token has expired`. Generar uno
+nuevo justo antes de cada prueba; no guardarlo entre reinicios.
+
+**El dispositivo se reinicia cada pocos minutos** (limitación de hardware del
+dueño). Tras cada reinicio hay que reconstruir: servidor (con bucle que lo
+revive), Chrome, puente CDP y token.
+
 ### La contraseña del cajero
 
 `cajero1` / **`123456`**. No es `cajero123` ni ninguna variante. El admin es
@@ -83,10 +115,9 @@ pero sin el JWT del lado del cliente no sirve de nada.
 
 ### LO QUE SIGUE, en orden
 
-1. **Confirmar la réplica entre dos equipos reales.** La causa raíz ya está
-   corregida y medida (`claims_role = authenticated`), pero falta verla en vivo:
-   el motor de prueba deja las páginas en `readyState = loading`. Hacen falta
-   dos navegadores reales, uno en el admin y otro en el Cajero.
+1. ~~Confirmar la réplica entre dos equipos reales~~ — **HECHO**. Verificado en
+   Chrome real de Android: la ventana se cierra sola y avisa
+   `🔒 Cajero Principal ya revisó la tasa del día: 886.23`.
 2. **Verificar que la cadena dispara sola** mañana a las 5 pm (corre de lunes
    a viernes).
 3. **Decidir el camino de la captura**: la base usa `pg_net` directo contra
