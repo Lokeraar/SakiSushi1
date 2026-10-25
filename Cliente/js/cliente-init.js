@@ -289,9 +289,16 @@
     // invocaciones atrapan el rechazo: si algo falla dentro, sin este catch
     // quedaría un unhandled rejection y el arranque se cortaría en silencio.
     function _arrancar() {
-        inicializarCliente().catch(function(e) {
-            console.error('Error al inicializar el Cliente:', e);
-        });
+        inicializarCliente()
+            .then(function () {
+                // El cierre del local se consulta DESPUÉS de que el cliente ya
+                // está armado: primero la carta (que tiene que verse siempre),
+                // y recién entonces el aviso de que hoy no se puede pedir.
+                if (window.iniciarCierreCliente) return window.iniciarCierreCliente();
+            })
+            .catch(function (e) {
+                console.error('Error al inicializar el Cliente:', e);
+            });
     }
 
     if (document.readyState === 'loading') {

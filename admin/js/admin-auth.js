@@ -187,6 +187,7 @@
                     // platillos huérfanos que aparece en Inicio.
                     if (typeof window.cargarSeccionesAdmin === 'function') await window.cargarSeccionesAdmin();
                     if (typeof window.cargarOfertasAdmin === 'function') await window.cargarOfertasAdmin();
+                    if (typeof window.cargarEstadoCierre === 'function') await window.cargarEstadoCierre();
                     await window.cargarReportes();
                     await window.cargarPedidosRecientes();
                     if (typeof window.cargarMesoneros === 'function') await window.cargarMesoneros();
