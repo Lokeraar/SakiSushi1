@@ -67,12 +67,6 @@
         return 'hace ' + n + ' días';
     }
 
-    function formatoBs(n) {
-        return (typeof window.formatBs === 'function')
-            ? window.formatBs(n)
-            : 'Bs ' + Number(n || 0).toFixed(2);
-    }
-
     // ============================================================
     // Consultar si hay que mostrar la ventana
     // ============================================================
@@ -116,9 +110,6 @@
 
         var bcv       = e.bcv;
         var aplicada  = Number(e.aplicada || 0);
-        var difBs     = Number(e.diferencia_bolivares || 0);
-        var difPct    = Number(e.diferencia_porcentaje || 0);
-        var esIgual   = Math.abs(difBs) < 0.01;
 
         // Aviso de antigüedad: si el dato no es de hoy, se dice antes que nada.
         // No es una confirmación extra, es una línea de contexto.
@@ -150,9 +141,10 @@
         // de pedir la acción.
         var titulo = 'Establezca la tasa del día';
 
+        // Sin subtítulo, por pedido del dueño: el encabezado va solo.
         var sub = e.ya_revisada
             ? 'Revisada por ' + (e.revisada_por || 'alguien') + '. Puede cambiarla igual.'
-            : 'Sin la tasa confirmada no se puede abrir el panel.';
+            : '';
 
         // ── Bloque del BCV ──
         var bloqueBcv;
@@ -177,18 +169,6 @@
                     '</div>' +
                     '<div class="tv-fuente">' +
                         'Fuente: <strong>' + (bcv.fuente || 'origen desconocido') + '</strong>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="tv-caja ' + (esIgual ? 'tv-ok' : 'tv-alerta') + '">' +
-                    '<div class="tv-titulo">' +
-                        (esIgual ? 'Está igual a la que cobrás' : 'Hay diferencia con la que cobrás') +
-                    '</div>' +
-                    '<div class="tv-nota">' +
-                        'Estás cobrando <strong>' + aplicada.toFixed(2) + '</strong>.' +
-                        (esIgual
-                            ? ' Es la misma tasa: la diferencia es de redondeo.'
-                            : ' Diferencia de <strong>' + formatoBs(Math.abs(difBs)) +
-                              '</strong> por dólar (' + Math.abs(difPct).toFixed(2) + '%).') +
                     '</div>' +
                 '</div>';
         }
@@ -215,7 +195,6 @@
         botones +=
             '<button class="tv-btn tv-btn-mantener" onclick="window._decidirTasaVentana(\'mantener\')">' +
                 '<span class="tv-btn-txt"><i class="fas fa-check"></i> ' + etiquetaConservar + '</span>' +
-                '<span class="tv-btn-sub">La última tasa conocida. El precio no cambia.</span>' +
             '</button>';
 
         // ── Opción 2: la próxima conocida ──
@@ -235,7 +214,7 @@
                         Number(proxima.valor).toFixed(2) + '</span>' +
                     '<span class="tv-btn-sub">Publicada para el ' +
                         fechaEnPalabras(proxima.fecha_valor) +
-                        ' (' + cuandoSera(proxima.dias_adelante) + '). Se cobra desde ya.</span>' +
+                        ' (' + cuandoSera(proxima.dias_adelante) + ')</span>' +
                 '</button>';
         }
 
@@ -243,7 +222,6 @@
         botones +=
             '<button class="tv-btn tv-btn-otra" onclick="window._decidirTasaVentana(\'aplicar_otra\')">' +
                 '<span class="tv-btn-txt"><i class="fas fa-pen"></i> Introducir manualmente</span>' +
-                '<span class="tv-btn-sub">Se registra como carga manual, con la fecha de hoy.</span>' +
             '</button>';
 
         // ── Armar ──
@@ -262,7 +240,7 @@
                     bloqueBcv +
                     '<div class="tv-botones">' + botones + '</div>' +
                     '<div class="tv-bloqueo">' +
-                        'Sin confirmar la tasa del día no se puede usar el panel.' +
+                        'Introduciendo la tasa ya se puede usar el panel' +
                     '</div>' +
                 '</div>' +
             '</div>';
