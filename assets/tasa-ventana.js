@@ -224,6 +224,31 @@
 
         document.body.appendChild(overlay);
 
+        // BLOQUEO DURO. El modal tapa con z-index, pero eso no impide que el
+        // teclado, un Tab o un script alcancen lo que está detrás. Se marca
+        // como `inert` todo el resto del body: lo saca del árbol de foco y de
+        // las tecnologías de asistencia, y ningún clic llega.
+        bloquearFondo(overlay);
+
+        // Y mientras esté abierto, el foco se queda adentro.
+        overlay.addEventListener('keydown', function (ev) {
+            if (ev.key !== 'Tab') return;
+            var foco = overlay.querySelectorAll('button:not([disabled])');
+            if (!foco.length) { ev.preventDefault(); return; }
+            var primero = foco[0], ultimo = foco[foco.length - 1];
+            if (ev.shiftKey && document.activeElement === primero) {
+                ev.preventDefault(); ultimo.focus();
+            } else if (!ev.shiftKey && document.activeElement === ultimo) {
+                ev.preventDefault(); primero.focus();
+            }
+        });
+
+        // El primer botón se lleva el foco: Enter trabaja de una.
+        setTimeout(function () {
+            var b = overlay.querySelector('button');
+            if (b) b.focus();
+        }, 60);
+
         // SIN SALIDA: tocar fuera NO cierra. Es a propósito.
         //
         // Sin tasa confirmada el restaurante no debería operar: los precios se
@@ -244,6 +269,45 @@
     };
 
     // ============================================================
+    // Bloqueo del fondo
+    // ============================================================
+    //
+    // `inert` es lo que hace el trabajo: deja el elemento y sus hijos fuera del
+    // foco, de los clics y de los lectores de pantalla. No cambia el aspecto,
+    // así que el panel se sigue viendo detrás, oscurecido por el overlay.
+    //
+    // Se aplica a los hijos del body (no al body, que contiene al modal) y se
+    // recuerda cuáles ya venían inert para no soltarlos de más al cerrar.
+    var _inertPrevios = [];
+
+    function bloquearFondo(overlay) {
+        _inertPrevios = [];
+        var hijos = document.body.children;
+        for (var i = 0; i < hijos.length; i++) {
+            var el = hijos[i];
+            if (el === overlay) continue;
+            _inertPrevios.push({ el: el, yaEra: el.hasAttribute('inert') });
+            try { el.setAttribute('inert', ''); } catch (e) {}
+            // Respaldo para navegadores sin `inert`: nada clickeable.
+            el.style.pointerEvents = 'none';
+        }
+        // El scroll de la página tampoco: no tiene sentido moverse por una
+        // pantalla que no se puede usar.
+        document.documentElement.style.overflow = 'hidden';
+    }
+
+    function liberarFondo() {
+        _inertPrevios.forEach(function (r) {
+            if (!r.yaEra) {
+                try { r.el.removeAttribute('inert'); } catch (e) {}
+                r.el.style.pointerEvents = '';
+            }
+        });
+        _inertPrevios = [];
+        document.documentElement.style.overflow = '';
+    }
+
+    // ============================================================
     // Cerrar sin decidir
     // ============================================================
     // Se conserva el nombre por compatibilidad, pero ya NO es una salida libre:
@@ -251,6 +315,7 @@
     window._cerrarVentanaTasa = function () {
         var o = document.getElementById(_idVentana);
         if (o) o.remove();
+        liberarFondo();
 
         // Se recuerda SOLO en esta sesión del navegador. No se escribe en la
         // base: "lo veo después" no es una decisión y no debe quedar
@@ -386,6 +451,7 @@
         // Cerrar y refrescar
         var o = document.getElementById(_idVentana);
         if (o) o.remove();
+        liberarFondo();
 
         // La decisión ya quedó escrita, así que `necesita_revision` va a dar
         // false y la ventana no vuelve a abrirse en toda la sesión. Pero la
@@ -450,6 +516,7 @@
                         if (!o) return;
 
                         o.remove();
+                        liberarFondo();
                         if (window.mostrarToast) {
                             window.mostrarToast(
                                 '🔒 ' + (fila.revisada_por || 'Otro equipo') +
