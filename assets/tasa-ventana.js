@@ -113,17 +113,19 @@
         // Aviso de antigüedad: si el dato no es de hoy, se dice antes que nada.
         // No es una confirmación extra, es una línea de contexto.
         var avisoViejo = '';
+        var fuenteTxt = (bcv && bcv.fuente) ? bcv.fuente : 'fuente desconocida';
+
         if (e.captura_fallo_hoy) {
             avisoViejo =
                 '<div class="tv-aviso tv-aviso-fallo">' +
-                    'Hoy no se pudo capturar el BCV. Esta es la última tasa que tenemos.' +
+                    'Este es el BCV de ' + fuenteTxt + ' del ' +
+                    fechaEnPalabras(e.fecha_valor || (bcv && bcv.fecha_valor)) +
+                    ', ¿lo eliges?' +
                 '</div>';
         } else if (e.dato_viejo) {
             avisoViejo =
                 '<div class="tv-aviso">' +
-                    'El BCV no publicó nada nuevo: este dato tiene ' +
-                    (Number(e.antiguedad_dias) === 1 ? 'un día' : e.antiguedad_dias + ' días') +
-                    '.' +
+                    'La tasa sigue siendo la de ayer, BCV no publicó nueva' +
                 '</div>';
         }
 

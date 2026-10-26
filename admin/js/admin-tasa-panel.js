@@ -111,19 +111,23 @@
             // saber si el número que ve es de hoy o de la semana pasada.
             var avisoViejo = '';
             var rev = _datos.revision || {};
+            var fuenteTxt = (bcv && bcv.fuente) ? bcv.fuente : 'fuente desconocida';
+
             if (rev.captura_fallo_hoy) {
+                // No se pudo capturar hoy: se nombra la fuente y la fecha del
+                // dato que se está mostrando, y se pregunta si es el que quiere.
                 avisoViejo =
                     '<div class="tbp-aviso-viejo tbp-aviso-fallo">' +
                         '<i class="fas fa-plug-circle-xmark"></i> ' +
-                        'Hoy no se pudo capturar ninguna fuente. Lo de abajo es la última tasa que tenemos.' +
+                        'Este es el BCV de ' + fuenteTxt + ' del ' +
+                        fechaEnPalabras(rev.fecha_valor || (bcv && bcv.fecha_valor)) +
+                        ', ¿lo eliges?' +
                     '</div>';
             } else if (rev.dato_viejo) {
                 avisoViejo =
                     '<div class="tbp-aviso-viejo">' +
                         '<i class="fas fa-clock"></i> ' +
-                        'El BCV no publicó nada nuevo: este dato tiene ' +
-                        (rev.antiguedad_dias === 1 ? 'un día' : rev.antiguedad_dias + ' días') +
-                        '. No hay nada que decidir hoy.' +
+                        'La tasa sigue siendo la de ayer, BCV no publicó nueva' +
                     '</div>';
             }
 
@@ -156,9 +160,9 @@
 
             var texto;
             if (dif.es_igual || dif.signo === 'igual') {
-                // Diferencia menor a un centavo por dólar: es el redondeo del
-                // formulario (el admin escribe 886,23 y el BCV publica
-                // 886,2271). Avisar acá enseña a ignorar el panel.
+                // A 2 decimales es la misma tasa: el BCV publica 886,2271 y se
+                // cobra 886,23 porque es lo que entra en config. Avisar acá
+                // enseña a ignorar el panel.
                 texto = 'Estás cobrando la tasa del BCV. La diferencia es de redondeo.';
             } else if (dif.signo === 'falta') {
                 texto = 'Estás cobrando por debajo del BCV: faltan <strong>' + formatoBs(dif.bolivares) +
