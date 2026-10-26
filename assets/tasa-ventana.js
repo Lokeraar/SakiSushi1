@@ -241,9 +241,46 @@
 
         // Se recuerda SOLO en esta sesión del navegador. No se escribe en la
         // base: "lo veo después" no es una decisión y no debe quedar
-        // registrada como si lo fuera. Pero tampoco debe reaparecer cada vez
-        // que la persona cambie de sección.
-        try { sessionStorage.setItem('saki_ventana_tasa_cerrada', '1'); } catch (err) {}
+        // registrado como si lo fuera.
+        //
+        // Pero con un límite de tiempo. Antes esta bandera duraba toda la
+        // sesión, y eso era peor que no tenerla: si el admin la cerraba a las
+        // 7 am diciendo "lo veo después", no la volvía a ver nunca, ni a las 3
+        // pm. Se quedaba sin revisar la tasa por haber pospuesto una vez.
+        //
+        // Ahora se recuerda 90 minutos, y una sola vez. Al vencer, si la base
+        // sigue diciendo que hay algo que decidir, vuelve a aparecer.
+        try {
+            sessionStorage.setItem('saki_ventana_tasa_cerrada', String(Date.now()));
+            sessionStorage.setItem('saki_ventana_tasa_veces',
+                String(Number(sessionStorage.getItem('saki_ventana_tasa_veces') || 0) + 1));
+        } catch (err) {}
+    };
+
+    // ¿La cerró hace poco, y todavía vale la pena no volver a mostrarla?
+    //
+    // OJO CON LA LÓGICA (esto estuvo mal y es fácil de repetir): esta función
+    // devuelve true cuando hay que NO mostrar. Entonces "dejar de insistir"
+    // significa bloquear MÁS, no menos.
+    //
+    //   veces < 3  -> silencio de 90 minutos, después vuelve a aparecer
+    //   veces >= 3 -> se calla por el resto del día
+    //
+    // Al revés sería al revés: a la tercera postergación volvería a saltar,
+    // que es exactamente lo que el admin no quiere.
+    function cerradaHacePoco() {
+        try {
+            var sello = Number(sessionStorage.getItem('saki_ventana_tasa_cerrada'));
+            if (!sello) return false;
+
+            var veces = Number(sessionStorage.getItem('saki_ventana_tasa_veces') || 0);
+            if (veces >= 3) return true;   // ya pospuso bastante: no molestar más hoy
+
+            var MINUTOS = 90;
+            return (Date.now() - sello) < MINUTOS * 60 * 1000;
+        } catch (err) {
+            return false;
+        }
     };
 
     // ============================================================
@@ -333,9 +370,25 @@
             console.warn('confirmar_revision_tasa:', r3.error.message);
         }
 
-        // ── Cerrar y refrescar ──
+        // Cerrar y refrescar
         var o = document.getElementById(_idVentana);
         if (o) o.remove();
+
+        // La decisión ya quedó escrita, así que `necesita_revision` va a dar
+        // false y la ventana no vuelve a abrirse en toda la sesión. Pero la
+        // bandera de "cerrada" se pone también acá: si la base fallara al
+        // registrar (sin red, por ejemplo), el admin no tiene que volver a ver
+        // el mismo cartel en cada cambio de sección.
+        // La decisión ya quedó escrita, así que `necesita_revision` va a dar
+        // false y la ventana no vuelve a abrirse. Pero se marca igual: si la
+        // base fallara al registrar (sin red, por ejemplo), el admin no tiene
+        // que volver a ver el mismo cartel en cada cambio de sección. Y se
+        // cuentan las veces para que `cerradaHacePoco` no lo trate como un
+        // "lo veo después".
+        try {
+            sessionStorage.setItem('saki_ventana_tasa_cerrada', String(Date.now()));
+            sessionStorage.setItem('saki_ventana_tasa_veces', '3');
+        } catch (err) {}
 
         if (window.mostrarToast) {
             var msj = accion === 'mantener'
@@ -413,9 +466,9 @@
     window.arrancarVentanaTasa = async function (opciones) {
         opciones = opciones || {};
         try {
-            if (!opciones.forzar && sessionStorage.getItem('saki_ventana_tasa_cerrada') === '1') {
-                // Ya la cerró en esta pestaña. Se consulta igual el estado
-                // para que el panel muestre si otro equipo la revisó.
+            if (!opciones.forzar && cerradaHacePoco()) {
+                // La cerró hace poco. Se consulta igual el estado para que el
+                // panel muestre si otro equipo la revisó.
                 window.escucharRevisionTasaCompartida();
                 return;
             }
