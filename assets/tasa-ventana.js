@@ -49,6 +49,24 @@
         return dias[d.getDay()] + ' ' + dd + '/' + mm;
     }
 
+    // ── Nombre de la fuente, legible para una persona ──
+    //
+    // El campo `fuente` guarda el origen técnico, y así tiene que ser en la
+    // base: para auditar importa saber si una tasa la trajo el sistema o la
+    // tipeó alguien. Pero `carga_inicial`, `manual_admin` y `panel_admin`
+    // significan todos lo mismo para el que mira la pantalla: la puso una
+    // persona. Mostrarlos crudos confunde, y la distinción entre "inicial" y
+    // "manual" solo nos sirve a nosotros.
+    function nombreFuente(f) {
+        if (!f) return 'origen desconocido';
+        var v = String(f);
+        if (v === 'carga_inicial' || v === 'manual_admin' || v === 'panel_admin' || v === 'manual') {
+            return 'Carga manual';
+        }
+        if (v === 'dolarapi.com' || v === 'dolarapi') return 'dolarapi.com';
+        return v;
+    }
+
     // Igual que cuandoFue, pero mirando para adelante: la próxima todavía no
     // llegó. Se lee "mañana", "en 2 días", y no "hace".
     function cuandoSera(diasAdelante) {
@@ -114,7 +132,7 @@
         // Aviso de antigüedad: si el dato no es de hoy, se dice antes que nada.
         // No es una confirmación extra, es una línea de contexto.
         var avisoViejo = '';
-        var fuenteTxt = (bcv && bcv.fuente) ? bcv.fuente : 'fuente desconocida';
+        var fuenteTxt = nombreFuente(bcv && bcv.fuente);
 
         // Antes acá iban dos avisos: "La tasa sigue siendo la de ayer, BCV no
         // publicó nueva" y "Este es el BCV de <fuente> del <fecha>, ¿lo
@@ -168,7 +186,7 @@
                         '<span class="tv-tenue"> (' + cuandoFue(bcv.dias_atras) + ')</span>' +
                     '</div>' +
                     '<div class="tv-fuente">' +
-                        'Fuente: <strong>' + (bcv.fuente || 'origen desconocido') + '</strong>' +
+                        'Fuente: <strong>' + nombreFuente(bcv.fuente) + '</strong>' +
                     '</div>' +
                 '</div>';
         }

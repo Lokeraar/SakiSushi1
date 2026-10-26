@@ -39,6 +39,22 @@
 // leer "subieron el precio antes de que la tasa rigiera". El registro con
 // motivo es el papel que responde.
 
+// ── Nombre de la fuente, legible para una persona ──
+//
+// El campo `fuente` guarda el origen técnico y así queda en la base, porque
+// para auditar importa distinguir lo que trajo el sistema de lo que tipeó una
+// persona. Pero `carga_inicial`, `manual_admin` y `panel_admin` significan lo
+// mismo en pantalla: lo puso alguien a mano. Mostrarlos crudos confunde.
+function nombreFuenteTasa(f) {
+    if (!f) return 'origen desconocido';
+    var v = String(f);
+    if (v === 'carga_inicial' || v === 'manual_admin' || v === 'panel_admin' || v === 'manual') {
+        return 'Carga manual';
+    }
+    if (v === 'dolarapi.com' || v === 'dolarapi') return 'dolarapi.com';
+    return v;
+}
+
 (function () {
     'use strict';
 
@@ -101,7 +117,11 @@
                     '<div class="tbp-nota">El cron la busca de lunes a viernes a las 5 pm. Si esto sigue así, revisá que el cron esté corriendo.</div>' +
                 '</div>';
         } else {
-            var fuente = bcv.fuente || 'origen desconocido';
+            // `carga_inicial`, `manual_admin` y `panel_admin` son el mismo
+            // caso para quien mira: lo tipeó una persona. Se traducen a una
+            // sola etiqueta; el nombre técnico se queda en la base para
+            // auditar.
+            var fuente = nombreFuenteTasa(bcv.fuente);
             var chipOrigen = bcv.es_principal === false
                 ? '<span class="tbp-chip tbp-chip-respaldo" title="La fuente principal no respondió y se usó esta">' + fuente + '</span>'
                 : '<span class="tbp-chip">' + fuente + '</span>';
@@ -111,7 +131,7 @@
             // saber si el número que ve es de hoy o de la semana pasada.
             var avisoViejo = '';
             var rev = _datos.revision || {};
-            var fuenteTxt = (bcv && bcv.fuente) ? bcv.fuente : 'fuente desconocida';
+            var fuenteTxt = nombreFuenteTasa(bcv && bcv.fuente);
 
             if (rev.captura_fallo_hoy) {
                 // No se pudo capturar hoy: se nombra la fuente y la fecha del
