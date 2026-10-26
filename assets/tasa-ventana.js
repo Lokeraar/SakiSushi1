@@ -88,25 +88,77 @@
     // ============================================================
     // Consultar si hay que mostrar la ventana
     // ============================================================
+    // Última respuesta buena conocida. Se guarda en memoria para poder
+    // volver a mostrarla si la consulta falla después.
+    var _ultimoBueno = null;
+
+    // ¿Se pudo consultar? La distinción es la clave de todo este archivo.
+    //
+    // Antes, CUALQUIER error devolvía null, y null significaba "no hace falta
+    // ventana". Resultado medido en la auditoría de red (recibo R6): sin
+    // internet, la ventana de tasa desaparecía y el panel quedaba entero
+    // usable. Fail-open: la única barrera de "sin tasa no se opera" se caía
+    // justo cuando el local está más indefenso.
+    //
+    // Ahora `null` significa UNA sola cosa: "consulté bien y no hay que
+    // revisar nada". Todo lo demás es INCERTIDUMBRE, y ante la duda se
+    // bloquea, porque el costo de bloquear de más es molesto y el costo de
+    // dejar cobrar sin tasa es plata mal cobrada.
+    //
+    // Excepción deliberada: si la FUNCIÓN no existe (migración no aplicada),
+    // no es incertidumbre, es que la ventana no está instalada todavía. Eso
+    // sí devuelve null para no romper instalaciones viejas.
     window.consultarVentanaTasa = async function () {
         try {
-            if (!window.supabaseClient) return null;
-            var r = await window.supabaseClient.rpc('estado_revision_tasa');
-            if (r.error) {
-                // 42883 / PGRST202: la migración 24 no está aplicada. La
-                // ventana simplemente no existe y nada se rompe.
-                if (r.error.code !== '42883' && r.error.code !== 'PGRST202') {
-                    console.warn('estado_revision_tasa:', r.error.message);
-                }
-                return null;
+            if (!window.supabaseClient) {
+                // Sin cliente no se puede saber nada. Es incertidumbre.
+                return { necesita_revision: true, modo_offline: true,
+                         motivo: 'Sin conexión con el servidor' };
             }
+
+            var r = await window.supabaseClient.rpc('estado_revision_tasa');
+
+            if (r.error) {
+                // La función no existe: la ventana no está instalada.
+                if (r.error.code === '42883' || r.error.code === 'PGRST202') {
+                    return null;
+                }
+                console.warn('estado_revision_tasa:', r.error.message);
+                return _estadoDeIncertidumbre(r.error.message);
+            }
+
             _estado = r.data;
+            _ultimoBueno = r.data;
             return _estado;
+
         } catch (e) {
             console.warn('No se pudo consultar la ventana de tasa:', e.message);
-            return null;
+            return _estadoDeIncertidumbre(e.message);
         }
     };
+
+    // Estado que se devuelve cuando NO se pudo consultar.
+    //
+    // Se apoya en la última respuesta buena si existe, para no perder el dato
+    // del BCV que ya estaba en pantalla. Pero `necesita_revision` se fuerza a
+    // true: sin poder verificar la firma del día, hay que asumir que falta.
+    function _estadoDeIncertidumbre(motivo) {
+        var base = _ultimoBueno || {};
+        return {
+            necesita_revision: true,
+            ya_revisada:       false,
+            incertidumbre:     true,
+            modo_offline:      true,
+            motivo:            motivo || 'No se pudo verificar la tasa del día',
+            aplicada:          base.aplicada,
+            bcv:               base.bcv || null,
+            proxima:           base.proxima || null,
+            fecha_valor:       base.fecha_valor,
+            dato_viejo:        base.dato_viejo,
+            antiguedad_dias:   base.antiguedad_dias,
+            fuente_bcv:        base.fuente_bcv
+        };
+    }
 
     // ============================================================
     // Mostrar la ventana, si corresponde
@@ -166,7 +218,31 @@
 
         // ── Bloque del BCV ──
         var bloqueBcv;
-        if (!bcv) {
+
+        // Caso incertidumbre: no se pudo consultar el servidor.
+        //
+        // No se puede verificar la firma del día ni traer una tasa nueva. Se
+        // dice tal cual, y se ofrecen solo las salidas que siguen siendo
+        // válidas sin conexión: conservar lo que ya está aplicado, o cargar
+        // un número a mano. La opción de la "próxima" no aparece porque
+        // depende de una consulta.
+        if (e.incertidumbre) {
+            bloqueBcv =
+                '<div class="tv-caja tv-alerta">' +
+                    '<div class="tv-titulo">No se pudo verificar la tasa del día</div>' +
+                    '<div class="tv-nota">' +
+                        'El sistema no pudo consultar el servidor, así que no sabe ' +
+                        'si alguien ya la confirmó hoy. Mientras no se pueda verificar, ' +
+                        'se cobra con la última tasa conocida.' +
+                    '</div>' +
+                '</div>' +
+                (aplicada > 0 ?
+                    '<div class="tv-caja">' +
+                        '<div class="tv-titulo">Última tasa conocida</div>' +
+                        '<div class="tv-valor">' + aplicada.toFixed(2) + '</div>' +
+                    '</div>'
+                    : '');
+        } else if (!bcv) {
             bloqueBcv =
                 '<div class="tv-caja tv-vacia">' +
                     '<div class="tv-titulo">Todavía no hay tasa del BCV</div>' +
@@ -225,7 +301,7 @@
         // devuelve 1 para este caso ("no es fricción, es una decisión con
         // consecuencia"), y el flujo de abajo vuelve a preguntar. El texto del
         // botón lo dice para que nadie se sorprenda después.
-        if (proxima && Number(proxima.valor) > 0) {
+        if (proxima && Number(proxima.valor) > 0 && !e.incertidumbre) {
             botones +=
                 '<button class="tv-btn tv-btn-proxima" onclick="window._decidirTasaVentana(\'aplicar_proxima\')">' +
                     '<span class="tv-btn-txt"><i class="fas fa-forward"></i> Establecer la próxima: ' +
@@ -502,13 +578,31 @@
         }
 
         // ── Registrar la decisión del día ──
-        var r3 = await window.supabaseClient.rpc('confirmar_revision_tasa', {
-            p_accion: accion,
-            p_nota:   nota
-        });
+        //
+        // OJO: antes, si esto fallaba, solo se hacía un console.warn y la
+        // ventana se cerraba igual. O sea: el admin creía haber firmado, el
+        // día quedaba sin firma, y la ventana volvía en la próxima apertura
+        // sin explicación. Ahora, si no se puede firmar, NO se cierra: se
+        // avisa y se deja la ventana abierta.
+        var r3;
+        try {
+            r3 = await window.supabaseClient.rpc('confirmar_revision_tasa', {
+                p_accion: accion,
+                p_nota:   nota
+            });
+        } catch (err) {
+            r3 = { error: err };
+        }
 
-        if (r3.error) {
-            console.warn('confirmar_revision_tasa:', r3.error.message);
+        if (!r3 || r3.error || (r3.data && r3.data.success === false)) {
+            var msg = (r3 && r3.error && r3.error.message) ||
+                      (r3 && r3.data && r3.data.error) ||
+                      'sin conexión con el servidor';
+            console.warn('confirmar_revision_tasa:', msg);
+            // No se cierra la ventana: la decisión NO quedó registrada.
+            window.mostrarToast &&
+                window.mostrarToast('❌ No se pudo registrar la decisión: ' + msg, 'error');
+            return;
         }
 
         // Cerrar y refrescar

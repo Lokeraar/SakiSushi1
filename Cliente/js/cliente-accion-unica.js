@@ -72,8 +72,13 @@
             .catch(function (err) {
                 // Un error no puede dejar el botón muerto: se habilita para
                 // que el cliente reintente.
+                //
+                // OJO: antes se mostraba `err.message` tal cual, y al cliente
+                // le aparecía "TypeError: Failed to fetch" — el mensaje del
+                // motor, no una explicación. Medido en la auditoría de red
+                // (recibo R2): 288 ms, texto técnico en pantalla.
                 if (window.mostrarToast && !opc.silencioso) {
-                    window.mostrarToast('❌ ' + (err && err.message ? err.message : err), 'error');
+                    window.mostrarToast('❌ ' + window.mensajeDeError(err), 'error');
                 }
                 throw err;
             })
