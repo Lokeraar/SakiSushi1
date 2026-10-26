@@ -272,24 +272,33 @@
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...'; }
 
         try {
-            const SCRAPER_URL = 'https://iqwwoihiiyrtypyqzhgy.supabase.co/functions/v1/tasa-bcv-scraper';
-            const res = await fetch(SCRAPER_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': window.SUPABASE_ANON_KEY,
-                },
-            });
-            const data = await res.json();
+            // Se lee de la base, que sí guarda la FECHA VALOR de la captura.
+            // Antes esto llamaba a una Edge Function que devolvía un número
+            // pelado: no sabía si era la tasa de hoy o la del martes que
+            // todavía no rige. Ese programa se retiró (ver memoria
+            // `saki-sushi1/edge-function-duplicada`).
+            const detalle = await window.obtenerTasaBCVDetalle({ forzar: true });
 
-            if (!data.success) {
-                window.mostrarToast('❌ BCV no respondió: ' + (data.error || 'Error desconocido'), 'error');
+            if (!detalle || !(detalle.valor > 0)) {
+                window.mostrarToast('❌ No hay ninguna tasa del BCV capturada todavía', 'error');
                 return;
             }
 
             // Mostrar modal de confirmación
-            const tasaEncontrada = data.tasa;
-            const fechaValor = data.fecha_valor || 'hoy';
+            const tasaEncontrada = detalle.valor;
+            const fechaValor = detalle.fecha_valor
+                ? new Date(detalle.fecha_valor + 'T12:00:00').toLocaleDateString('es-VE', {
+                      weekday: 'long', day: '2-digit', month: '2-digit'
+                  })
+                : 'sin fecha valor';
+
+            // Si la captura tiene días, se dice. La fecha valor es el dato que
+            // distingue una tasa vigente de una que todavía no rige.
+            const antiguedad = (detalle.dias_atras !== null && detalle.dias_atras !== undefined)
+                ? (detalle.dias_atras === 0 ? 'de hoy'
+                   : detalle.dias_atras === 1 ? 'de ayer'
+                   : 'hace ' + detalle.dias_atras + ' días')
+                : '';
 
             // Crear modal overlay
             const overlay = document.createElement('div');
@@ -302,7 +311,8 @@
             modal.innerHTML = `
                 <div style="font-size:2rem;margin-bottom:.75rem">📡</div>
                 <h3 style="color:#FF9800;margin:0 0 .3rem">Tasa BCV</h3>
-                <p style="color:rgba(255,255,255,.6);font-size:.85rem;margin:0 0 1rem">${fechaValor}</p>
+                <p style="color:rgba(255,255,255,.6);font-size:.85rem;margin:0 0 .3rem">Fecha valor: ${fechaValor}</p>
+                <p style="color:rgba(255,255,255,.45);font-size:.78rem;margin:0 0 1rem">${antiguedad}${detalle.fuente ? ' · ' + detalle.fuente : ''}</p>
                 <div style="font-size:2.5rem;font-weight:800;color:#fff;margin-bottom:1.5rem">
                     Bs ${tasaEncontrada.toFixed(2)}
                 </div>

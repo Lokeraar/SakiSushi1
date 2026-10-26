@@ -268,48 +268,81 @@ window.tienePermisoPush = function() {
 // ============================================
 // TASA DEL BCV
 // ============================================
-// La Edge Function `tasa-bcv-scraper` consulta el BCV y devuelve la tasa
-// oficial del día. Existe desde mayo pero estaba desconectada del frontend:
-// los precios se mostraban con la tasa guardada en `config`, que quedó
-// congelada en 544,58 desde el 28-may.
+// Consultar la tasa del BCV
+// ============================================
 //
-// Se cachea por día en localStorage para no golpear la función en cada carga
-// y para que un fallo del BCV no rompa la app.
-window.obtenerTasaBCV = async function(opciones) {
+// DE DÓNDE SALE AHORA
+//
+// Antes esto llamaba a la Edge Function `tasa-bcv-scraper`, que consultaba
+// internet y devolvía un número pelado: no sabía de qué FECHA era ese número.
+//
+// Eso fue justamente el problema que descubrimos: el BCV publica el martes 27
+// un valor que el sábado 24 todavía no rige, y una función que solo devuelve
+// "887,302" no puede distinguirlo de "886,2271 que es la de hoy".
+//
+// Ahora se lee de la base, que sí guarda la fecha valor, la fuente y el estado
+// de cada captura (tabla `tasa_bcv`, migraciones 22 a 26). El programa que
+// consultaba internet desde Supabase quedó sin uso y se retiró: un solo camino,
+// el que sabe de fechas.
+//
+// Las dos formas de llamarla:
+//
+//   obtenerTasaBCV()          -> el número, o null. Compatible con lo que ya
+//                                usaba el aviso de tasa vieja.
+//   obtenerTasaBCVDetalle()   -> { valor, fecha_valor, fuente, es_principal,
+//                                dias_atras }. Es lo que necesitan los botones
+//                                que muestran "Tasa BCV" al admin y al cajero,
+//                                porque ahí SÍ importa de qué día es.
+
+window.obtenerTasaBCVDetalle = async function (opciones) {
     const forzar = opciones && opciones.forzar;
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
 
     if (!forzar) {
-        const fechaCache = localStorage.getItem('saki_bcv_fecha');
-        const valorCache = parseFloat(localStorage.getItem('saki_bcv_valor'));
-        if (fechaCache === hoy && valorCache > 0) {
-            return valorCache;
-        }
+        try {
+            const guardado = localStorage.getItem('saki_bcv_detalle');
+            if (guardado) {
+                const d = JSON.parse(guardado);
+                // Se reutiliza solo si es del mismo día y sigue siendo válido.
+                if (d && d.__fecha_cache === hoy && d.valor > 0) return d;
+            }
+        } catch (_) { /* caché corrupta: se ignora */ }
     }
 
     try {
-        const url = window.SUPABASE_URL + '/functions/v1/tasa-bcv-scraper';
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': window.SUPABASE_ANON_KEY,
-                'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY
-            }
-        });
-        const data = await res.json();
-        if (!data.success || !(data.tasa > 0)) {
-            console.warn('BCV no devolvió una tasa usable:', data.error || 'sin detalle');
+        const r = await window.supabaseClient.rpc('tasa_bcv_vigente_json');
+        if (r.error) {
+            console.warn('No se pudo leer la tasa del BCV:', r.error.message);
             return null;
         }
-        localStorage.setItem('saki_bcv_fecha', hoy);
-        localStorage.setItem('saki_bcv_valor', String(data.tasa));
-        console.log('💱 Tasa BCV del día:', data.tasa, '(' + (data.fuente || 'BCV') + ')');
-        return data.tasa;
+        const d = r.data;
+        if (!d || !(d.valor > 0)) {
+            console.warn('La base todavía no tiene ninguna tasa del BCV capturada');
+            return null;
+        }
+
+        const detalle = {
+            valor:         Number(d.valor),
+            fecha_valor:   d.fecha_valor,
+            fuente:        d.fuente,
+            es_principal:  d.es_principal,
+            dias_atras:    d.dias_atras,
+            __fecha_cache: hoy
+        };
+
+        try { localStorage.setItem('saki_bcv_detalle', JSON.stringify(detalle)); } catch (_) {}
+        return detalle;
+
     } catch (e) {
-        console.warn('No se pudo consultar el BCV, se usa la tasa guardada:', e.message);
+        console.warn('No se pudo consultar la tasa del BCV:', e.message);
         return null;
     }
+};
+
+// Compatibilidad: el número pelado, que es lo que espera el aviso de tasa vieja.
+window.obtenerTasaBCV = async function (opciones) {
+    const d = await window.obtenerTasaBCVDetalle(opciones);
+    return d ? d.valor : null;
 };
 
 // Aplica el aumento vigente sobre una tasa base, igual que el admin.

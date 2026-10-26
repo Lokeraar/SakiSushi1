@@ -268,7 +268,7 @@
 <div class="modal-overlay" id="comprobanteModal"><div class="modal-content" style="max-width:500px"><div class="modal-header" style="background:linear-gradient(135deg,var(--info),#1565C0)"><h2><i class="fas fa-receipt"></i> Comprobante de Pago</h2><button class="modal-close" onclick="window.cerrarModal('comprobanteModal')" data-tooltip="Cerrar (ESC)"><i class="fas fa-times"></i></button></div><div class="modal-body text-center" id="comprobanteModalBody"></div><div class="modal-footer"><button class="btn btn-primary" onclick="window.cerrarModal('comprobanteModal')">Cerrar (ESC)</button></div></div></div>
 <div class="modal-overlay" id="deliveryModal"><div class="modal-content"><div class="modal-header delivery"><h2><i class="fas fa-motorcycle"></i> Acumulado Deliverys (Hoy)</h2><button class="modal-close" onclick="window.cerrarModal('deliveryModal')" data-tooltip="Cerrar (ESC)"><i class="fas fa-times"></i></button></div><div class="modal-body" id="deliveryModalBody"></div><div class="modal-footer"><button class="btn btn-primary" onclick="window.cerrarModal('deliveryModal')">Cerrar (ESC)</button></div></div></div>
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i><div><p id="toastText" style="margin:0;color:#fff">Operación completada</p></div></div>
-<script src="../supabase-config.js"></script>
+<script src="../supabase-config.js?v=1793000030"></script>
 <script>
 // ============================================ VARIABLES GLOBALES ============================================
 window.currentUser=null;window.jwtToken=null;window.pedidos=[];window.ventasHoy=[];window.propinas=[];window.menuItems=[];window.inventario=[];window.mesas=[];window.currentPedido=null;window.enProcesoDeCobro=false;window.pedidoParaAccion=null;window.accionPendiente=null;window.__tasaUnica=400;Object.defineProperty(window,'tasaEfectiva',{get:function(){var c=window.configGlobal;var v=c&&parseFloat(c.tasa_efectiva);return v>0?v:(window.__tasaUnica>0?window.__tasaUnica:400)},set:function(v){window.__tasaUnica=v},configurable:true});window.currentPropinaPedido=null;window.mesoneros=[];window.deliverys=[];window.alarmaAudio=document.getElementById('alarmaSonido');window.alarmaActiva=false;window.suscripciones=[];window.paginaVisible=true;window.reconectando=false;window.intervaloVerificacion=null;window.ultimaActualizacion=Date.now();window.propinaSeleccionada={mesonero:null,mesa:'',metodo:'efectivo_bs',monto:0,referencia:''};window.referenciaPropina=['','','','','',''];window.pendingLoginUser=null;window.stockCache={data:{},lastUpdate:0,duration:5e3,get:function(id){const ahora=Date.now();if(ahora-this.lastUpdate>this.duration)this.clear();return this.data[id]},set:function(id,v){this.data[id]=v;this.lastUpdate=Date.now()},clear:function(){this.data={};this.lastUpdate=0},invalidate:function(){this.data={};this.lastUpdate=0}};
@@ -464,21 +464,22 @@ window.cargarDatosIniciales=async function(){try{await window.cargarConfiguracio
                     const btn = document.getElementById('cajeroBtnBCV');
                     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
                     try {
-                        const SCRAPER_URL = 'https://iqwwoihiiyrtypyqzhgy.supabase.co/functions/v1/tasa-bcv-scraper';
-                        const res = await fetch(SCRAPER_URL, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'apikey': window.SUPABASE_ANON_KEY,
-                            },
-                        });
-                        const data = await res.json();
-                        if (!data.success) {
-                            window.mostrarToast('❌ BCV: ' + (data.error || 'Error'), 'error');
+                        // Se lee de la base, que guarda la FECHA VALOR. El
+                        // programa viejo devolvía un número sin fecha y no
+                        // distinguía la tasa que rige de la que todavía no.
+                        const detalle = await window.obtenerTasaBCVDetalle({ forzar: true });
+                        if (!detalle || !(detalle.valor > 0)) {
+                            window.mostrarToast('❌ No hay ninguna tasa del BCV capturada', 'error');
                             return;
                         }
-                        const tasaEncontrada = data.tasa;
-                        const fechaValor = data.fecha_valor || '';
+                        const tasaEncontrada = detalle.valor;
+                        const fechaValor = detalle.fecha_valor
+                            ? 'Fecha valor: ' + new Date(detalle.fecha_valor + 'T12:00:00')
+                                  .toLocaleDateString('es-VE', { weekday:'long', day:'2-digit', month:'2-digit' })
+                              + (detalle.dias_atras > 0
+                                   ? ' (hace ' + detalle.dias_atras + (detalle.dias_atras === 1 ? ' día' : ' días') + ')'
+                                   : '')
+                            : '';
                         // Modal de confirmación
                         const overlay = document.createElement('div');
                         overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:1rem';
