@@ -167,6 +167,15 @@
 .tv-btn-mantener:hover { background: rgba(74, 222, 128, .17); }
 .tv-btn-bcv { border-color: rgba(255, 152, 0, .55); background: rgba(255, 152, 0, .1); }
 .tv-btn-bcv:hover { background: rgba(255, 152, 0, .17); }
+/* Opción 2: la próxima conocida. Azul, distinta de "conservar" (verde) para
+   que se vea de un golpe que es una decisión de otro tipo: adelanta la tasa. */
+.tv-btn-proxima { border-color: rgba(96, 165, 250, .55); background: rgba(96, 165, 250, .1); }
+.tv-btn-proxima:hover { background: rgba(96, 165, 250, .17); }
+
+/* Línea de fuente, debajo de la fecha valor. Tenue: es dato de respaldo, no
+   el número que importa. Pero va, porque el dueño pidió el origen real. */
+.tv-fuente { font-size: .78rem; color: rgba(255, 255, 255, .55); margin-top: .35rem; }
+.tv-fuente strong { color: rgba(255, 255, 255, .8); font-weight: 600; }
 
 .tv-link {
     background: transparent;

@@ -49,6 +49,16 @@
         return dias[d.getDay()] + ' ' + dd + '/' + mm;
     }
 
+    // Igual que cuandoFue, pero mirando para adelante: la próxima todavía no
+    // llegó. Se lee "mañana", "en 2 días", y no "hace".
+    function cuandoSera(diasAdelante) {
+        var n = Number(diasAdelante);
+        if (isNaN(n)) return '';
+        if (n === 0) return 'hoy';
+        if (n === 1) return 'mañana';
+        return 'en ' + n + ' días';
+    }
+
     function cuandoFue(diasAtras) {
         var n = Number(diasAtras);
         if (isNaN(n)) return '';
@@ -115,28 +125,34 @@
         var avisoViejo = '';
         var fuenteTxt = (bcv && bcv.fuente) ? bcv.fuente : 'fuente desconocida';
 
-        if (e.captura_fallo_hoy) {
+        // Antes acá iban dos avisos: "La tasa sigue siendo la de ayer, BCV no
+        // publicó nueva" y "Este es el BCV de <fuente> del <fecha>, ¿lo
+        // eliges?". Con el texto nuevo del dueño ("La última tasa publicada
+        // conocida es X del <fecha>") los dos dicen lo mismo que el recuadro
+        // de abajo, tres líneas antes. Repetir el dato no informa: distrae.
+        //
+        // Se conserva el caso en que la captura de hoy FALLÓ, porque eso sí es
+        // información distinta: no es que el BCV no publicó, es que el sistema
+        // no pudo ir a buscarla. Ahí el admin necesita saber que el número que
+        // ve puede no ser el último.
+        if (e.captura_fallo_hoy && !(bcv && Number(bcv.dias_atras) <= 1)) {
             avisoViejo =
                 '<div class="tv-aviso tv-aviso-fallo">' +
-                    'Este es el BCV de ' + fuenteTxt + ' del ' +
-                    fechaEnPalabras(e.fecha_valor || (bcv && bcv.fecha_valor)) +
-                    ', ¿lo eliges?' +
-                '</div>';
-        } else if (e.dato_viejo) {
-            avisoViejo =
-                '<div class="tv-aviso">' +
-                    'La tasa sigue siendo la de ayer, BCV no publicó nueva' +
+                    'No se pudo consultar el BCV hoy. La última captura es de ' +
+                    'hace ' + Number(bcv && bcv.dias_atras) + ' días.' +
                 '</div>';
         }
 
-        // ── Encabezado, distinto si ya se revisó ──
-        var titulo = e.ya_revisada
-            ? 'La tasa del día ya fue revisada'
-            : 'La tasa del BCV, antes de abrir';
+        // ── Encabezado ──
+        //
+        // Texto pedido por el dueño: "Establezca la tasa del día". Antes decía
+        // "La tasa del BCV, antes de abrir", que describía el mecanismo en vez
+        // de pedir la acción.
+        var titulo = 'Establezca la tasa del día';
 
         var sub = e.ya_revisada
-            ? 'Revisada por ' + (e.revisada_por || 'alguien') + '. Podés cambiarla igual.'
-            : 'Nadie la revisó todavía hoy. Es la única vez que este aviso va a aparecer.';
+            ? 'Revisada por ' + (e.revisada_por || 'alguien') + '. Puede cambiarla igual.'
+            : 'Sin la tasa confirmada no se puede abrir el panel.';
 
         // ── Bloque del BCV ──
         var bloqueBcv;
@@ -148,16 +164,19 @@
                     'Si esto sigue así, revisá que el cron esté corriendo.</div>' +
                 '</div>';
         } else {
+            // Texto pedido por el dueño:
+            //   "La última tasa publicada conocida es (Monto) del (fecha)"
+            // Con la fuente real (dolarapi.com), no "respaldo".
             bloqueBcv =
                 '<div class="tv-caja">' +
-                    '<div class="tv-titulo">' +
-                        'El BCV publicó' +
-                        '<span class="tv-chip">' + (bcv.fuente || 'origen desconocido') + '</span>' +
-                    '</div>' +
+                    '<div class="tv-titulo">La última tasa publicada conocida</div>' +
                     '<div class="tv-valor">' + Number(bcv.valor).toFixed(2) + '</div>' +
                     '<div class="tv-fecha">' +
-                        'Fecha valor <strong>' + fechaEnPalabras(bcv.fecha_valor) + '</strong>' +
+                        'Del <strong>' + fechaEnPalabras(bcv.fecha_valor) + '</strong>' +
                         '<span class="tv-tenue"> (' + cuandoFue(bcv.dias_atras) + ')</span>' +
+                    '</div>' +
+                    '<div class="tv-fuente">' +
+                        'Fuente: <strong>' + (bcv.fuente || 'origen desconocido') + '</strong>' +
                     '</div>' +
                 '</div>' +
                 '<div class="tv-caja ' + (esIgual ? 'tv-ok' : 'tv-alerta') + '">' +
@@ -174,31 +193,57 @@
                 '</div>';
         }
 
-        // ── Botones ──
+        // ── Botones: las tres opciones que pidió el dueño ──
+        //
+        // 1. Conservar la última conocida.
+        // 2. Establecer la próxima conocida (publicada con fecha futura).
+        // 3. Introducir manualmente.
+        //
+        // Cada una tiene una consecuencia distinta y la base ya las conoce:
+        // `aplicar_tasa_elegida` acepta origen 'vigente', 'proxima' y 'manual'.
+        var proxima = e.proxima;
+
         var botones = '';
 
-        // "Mantener esta tasa: X" — el botón que pidió el dueño. Es el camino
-        // corto cuando la que está aplicada ya es la correcta.
+        // ── Opción 1: conservar ──
+        // Es el camino corto cuando lo que se está cobrando ya es correcto.
+        // Se dice el monto Y la fecha, para que se sepa qué se está
+        // conservando sin tener que mirar el recuadro de arriba.
+        var etiquetaConservar = 'Conservar ' + aplicada.toFixed(2);
+        if (bcv && bcv.fecha_valor) etiquetaConservar += ' del ' + fechaEnPalabras(bcv.fecha_valor);
+
         botones +=
             '<button class="tv-btn tv-btn-mantener" onclick="window._decidirTasaVentana(\'mantener\')">' +
-                '<span class="tv-btn-txt"><i class="fas fa-check"></i> Mantener esta tasa: ' +
-                    aplicada.toFixed(2) + '</span>' +
-                '<span class="tv-btn-sub">Dejo el precio como está</span>' +
+                '<span class="tv-btn-txt"><i class="fas fa-check"></i> ' + etiquetaConservar + '</span>' +
+                '<span class="tv-btn-sub">La última tasa conocida. El precio no cambia.</span>' +
             '</button>';
 
-        // Aplicar la del BCV solo tiene sentido si difiere.
-        if (bcv && !esIgual) {
+        // ── Opción 2: la próxima conocida ──
+        //
+        // Solo aparece si de verdad hay una publicación con fecha valor
+        // futura. Si no hay, no se ofrece: un botón que no lleva a ningún
+        // lado es peor que no tenerlo.
+        //
+        // OJO: elegirla ADELANTA la fecha valor. Por eso `_nivel_confirmacion_tasa`
+        // devuelve 1 para este caso ("no es fricción, es una decisión con
+        // consecuencia"), y el flujo de abajo vuelve a preguntar. El texto del
+        // botón lo dice para que nadie se sorprenda después.
+        if (proxima && Number(proxima.valor) > 0) {
             botones +=
-                '<button class="tv-btn tv-btn-bcv" onclick="window._decidirTasaVentana(\'aplicar_bcv\')">' +
-                    '<span class="tv-btn-txt"><i class="fas fa-building-columns"></i> Usar la del BCV: ' +
-                        Number(bcv.valor).toFixed(2) + '</span>' +
-                    '<span class="tv-btn-sub">Los precios se actualizan</span>' +
+                '<button class="tv-btn tv-btn-proxima" onclick="window._decidirTasaVentana(\'aplicar_proxima\')">' +
+                    '<span class="tv-btn-txt"><i class="fas fa-forward"></i> Establecer la próxima: ' +
+                        Number(proxima.valor).toFixed(2) + '</span>' +
+                    '<span class="tv-btn-sub">Publicada para el ' +
+                        fechaEnPalabras(proxima.fecha_valor) +
+                        ' (' + cuandoSera(proxima.dias_adelante) + '). Se cobra desde ya.</span>' +
                 '</button>';
         }
 
+        // ── Opción 3: manual ──
         botones +=
             '<button class="tv-btn tv-btn-otra" onclick="window._decidirTasaVentana(\'aplicar_otra\')">' +
-                '<span class="tv-btn-txt"><i class="fas fa-pen"></i> Poner otra a mano</span>' +
+                '<span class="tv-btn-txt"><i class="fas fa-pen"></i> Introducir manualmente</span>' +
+                '<span class="tv-btn-sub">Se registra como carga manual, con la fecha de hoy.</span>' +
             '</button>';
 
         // ── Armar ──
@@ -392,16 +437,38 @@
                     ' desde la ventana del día';
         }
 
+        // ── Opción 2: establecer la próxima conocida ──
+        //
+        // Se adelanta una publicación que todavía no rige. La base ya lo
+        // contempla: origen 'proxima' y fecha valor futura hacen que
+        // `_nivel_confirmacion_tasa` devuelva 1, así que el flujo de abajo
+        // vuelve a pedir confirmación. Es a propósito: cobrar con la tasa de
+        // mañana cambia el precio de todos los platos hoy.
+        if (accion === 'aplicar_proxima') {
+            var prox = e.proxima;
+            if (!prox) return;
+            valor = Number(prox.valor);
+            nota  = 'Se estableció por adelantado la tasa publicada para el ' +
+                    fechaEnPalabras(prox.fecha_valor) + ' (origen: proxima)';
+        }
+
         if (accion === 'mantener') {
             nota = 'Se mantuvo la tasa vigente sin cambios';
         }
 
         // ── Si hay que aplicar un número, se usa el camino único de la 23 ──
         if (valor !== null) {
-            var origen = (accion === 'aplicar_bcv') ? 'vigente' : 'manual';
-            var fecha  = (accion === 'aplicar_bcv')
-                ? (bcv && bcv.fecha_valor) || null
-                : null;
+            var origen;
+            if (accion === 'aplicar_bcv')          origen = 'vigente';
+            else if (accion === 'aplicar_proxima') origen = 'proxima';
+            else                                   origen = 'manual';
+
+            // La fecha valor viaja con la captura que se está eligiendo. Para
+            // la manual es null (es de hoy); para las otras dos es la de la
+            // publicación, aunque sea futura.
+            var fecha = null;
+            if (accion === 'aplicar_bcv')          fecha = (bcv  && bcv.fecha_valor)  || null;
+            else if (accion === 'aplicar_proxima') fecha = (e.proxima && e.proxima.fecha_valor) || null;
 
             var r1 = await window.supabaseClient.rpc('aplicar_tasa_elegida', {
                 p_valor:       valor,
