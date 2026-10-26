@@ -218,6 +218,13 @@
                     window.agregarTarjetaDiferenciaTasa();
                     // Aviso de tasa vieja: compara la confirmada contra el BCV
                     // y avisa si la deriva es grande. No escribe nada.
+                    //
+                    // Va DESPUÉS de la ventana del día, y eso importa: el aviso
+                    // sale como toast con z-index 5000, y la ventana del día
+                    // usa 12000. Si se llamara antes, el admin nunca lo vería:
+                    // quedaría tapado por el modal bloqueante. Además el dato
+                    // que compara (la tasa confirmada) todavía no existe hasta
+                    // que alguien firma, así que antes no tenía nada que decir.
                     if (typeof window.avisarTasaVieja === 'function') {
                         window.avisarTasaVieja();
                     }
@@ -229,11 +236,14 @@
                     // la base ya tiene es pedirle que lo invente.
                     //
                     // La ventana nueva (assets/tasa-ventana.js) muestra la tasa
-                    // capturada y ofrece "Mantener esta tasa: X". No bloquea: si
-                    // nadie la revisa, el sistema sigue cobrando con la última
-                    // conocida y el panel avisa.
+                    // capturada y ofrece "Mantener esta tasa: X". SÍ bloquea: sin
+                    // firma del día no se puede usar el panel. Ese texto decía
+                    // "No bloquea" y quedó viejo cuando la migración 27 la hizo
+                    // obligatoria; corregido para que nadie se guíe por él.
                     //
-                    // `_verificarAvisoLunes` se mantiene: es otra cosa.
+                    // `_verificarAvisoLunes` se mantiene: es otra cosa (el
+                    // aumento semanal del lunes), y sale como aviso flotante
+                    // arriba, no como modal.
                     window._verificarAvisoLunes();
 
                     // El panel del cuadro de tasa se refresca después de que

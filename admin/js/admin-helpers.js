@@ -86,10 +86,14 @@
     //      con su fecha valor (migraciones 22 a 26).
     //   2. El ejemplo "42.50" era de hace meses. Con la tasa en 886, quien se
     //      guiara por el ejemplo cargaba un valor 20 veces menor.
-    //   3. Era bloqueante: sin escribir un número, el admin no podía trabajar.
-    //      La ventana nueva (assets/tasa-ventana.js) no bloquea: muestra la tasa
-    //      capturada, ofrece "Mantener esta tasa: X", y si nadie decide, el
-    //      sistema sigue cobrando con la última conocida.
+    //   3. Era bloqueante y pedía el número a mano. La ventana nueva
+    //      (assets/tasa-ventana.js) TAMBIÉN bloquea, pero por la razón
+    //      correcta: no pide inventar un número, muestra el que el BCV
+    //      publicó y ofrece "Mantener esta tasa: X". Sin firma del día no se
+    //      puede usar el panel (migración 27).
+    //
+    // OJO: este comentario decía "la ventana nueva no bloquea" y quedó viejo
+    // cuando el dueño pidió que el bloqueo fuera obligatorio.
     //
     // El relevo es `window.arrancarVentanaTasa()`.
 

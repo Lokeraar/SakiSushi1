@@ -13,10 +13,10 @@
     <link rel="stylesheet" href="../assets/tasa-ventana.css">
     <!-- Módulos JS (orden correcto) -->
     <script src="js/admin-core.js" defer></script>
-    <script src="js/admin-auth.js?v=1793000040" defer></script>
+    <script src="js/admin-auth.js?v=1793000070" defer></script>
     <script src="js/admin-realtime.js" defer></script>
     <script src="js/admin-config.js?v=1793000040" defer></script>
-    <script src="js/admin-helpers.js?v=1793000040" defer></script>
+    <script src="js/admin-helpers.js?v=1793000070" defer></script>
     <script src="js/admin-ui.js" defer></script>
     <script src="js/admin-tasa-aviso.js" defer></script>
     <script src="../assets/tasa-ventana.js?v=1793000060" defer></script>
@@ -238,7 +238,6 @@
                          aplicada, el bloque se oculta solo y el panel sigue
                          funcionando como antes.
                          ============================================================ -->
-                    <div id="tasaBcvPanel" class="tbp-wrap" style="display:none"></div>
 
 
 
@@ -387,6 +386,8 @@
                         </div>
                     </div>
                 </div>
+                    <div id="tasaBcvPanel" class="tbp-wrap" style="display:none"></div>
+
                 <div class="dashboard-grid">
                     <div class="dashboard-card" id="diferenciaTasaCard" style="cursor:pointer" onclick="window.mostrarToast('Diferencia acumulada a favor del restaurante por aumento de tasa', 'info')">
                         <div class="card-title">Acumulado Dif. Tasa Base y Efectiva <span class="tooltip-wrap tooltip-wrap-tasa" style="position:relative; display:inline-flex; cursor:help; margin-left:.3rem" onmouseenter="this.querySelector('.tooltip-text').style.display='block'" onmouseleave="this.querySelector('.tooltip-text').style.display='none'">
