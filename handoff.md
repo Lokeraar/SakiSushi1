@@ -12,12 +12,12 @@
 
 `34d5161` (panel de tasa) → `40880d3` (cadena de respaldos + ventana del día)
 
-### Migraciones aplicadas (01 a 24)
+### Migraciones aplicadas (01 a 26)
 
-Nuevas desde el corte anterior: **23** (panel de la tasa: `tasa_panel()`,
-`aplicar_tasa_elegida()`, `pedidos_tasa_historica`) y **24** (cadena de
-respaldos, `tasa_intento`, `tasa_revision_diaria`). La 03 sigue siendo
-inaplicable.
+Nuevas desde el corte anterior: **23** (panel de la tasa), **24** (cadena de
+respaldos, `tasa_intento`, `tasa_revision_diaria`), **25** (la ventana deja de
+pedir revisión con datos viejos; niveles de confirmación) y **26** (redondeo a
+2 decimales). La 03 sigue siendo inaplicable.
 
 ### Lo cerrado en esta tanda
 
@@ -115,15 +115,26 @@ revive), Chrome, puente CDP y token.
 
 ### LO QUE SIGUE, en orden
 
-1. ~~Confirmar la réplica entre dos equipos reales~~ — **HECHO**. Verificado en
-   Chrome real de Android: la ventana se cierra sola y avisa
-   `🔒 Cajero Principal ya revisó la tasa del día: 886.23`.
-2. **Verificar que la cadena dispara sola** mañana a las 5 pm (corre de lunes
-   a viernes).
-3. **Decidir el camino de la captura**: la base usa `pg_net` directo contra
-   las tres URLs; la Edge Function `tasa-bcv-scraper` tiene su propia cadena y
-   nadie la llama. Dos caminos para lo mismo es deuda.
-4. Comprobar que la ventana no molesta en un segundo ingreso del mismo día.
+1. **EL PRÓXIMO PASO REAL: esperar el lunes a las 17:00.** El cron de captura
+   corre `*/3 21 * * 1-5` (UTC) = de lunes a viernes. Hoy es domingo, así que
+   el ciclo completo nunca corrió solo. Todo lo demás está simulado y
+   verificado; esto es lo único que depende del reloj. Verificar con:
+   `select jobname, status, start_time from cron.job_run_details
+    join cron.job using (jobid) order by start_time desc limit 5;`
+
+2. **Borrar el camino duplicado de la captura.** La base usa `pg_net` directo
+   contra las tres URLs; la Edge Function `tasa-bcv-scraper` tiene su propia
+   cadena y **nadie la llama**. Dos rutas para lo mismo es una que va a mentir
+   cuando alguien toque solo una. Recomendación: borrar la Edge Function.
+
+3. **Probar el segundo ingreso del mismo día.** `arrancarVentanaTasa` respeta
+   `sessionStorage`, pero no se verificó que un admin que ya revisó y vuelve a
+   entrar no vea la ventana otra vez (ni que el cajero la vea si el admin ya
+   revisó).
+
+4. **Los pendientes de calidad de vida del proyecto** (no de la tasa): el RLS
+   de la sección 5.1 fue cerrado en la migración 05; revisar si queda algo
+   abierto de la sección 5.
 
 ### Decisiones del dueño que no hay que re-preguntar
 
@@ -188,17 +199,8 @@ en la misma sentencia.
 detección por carpeta y manda todas las memorias a un solo proyecto. Quitado
 (respaldo en `~/.zshrc.bak-engram`). Aplica desde la próxima terminal.
 
-### LO QUE SIGUE, en orden
-
-1. **Panel del admin para la tasa**: mostrar la aplicada, su **fecha valor**, de
-   qué fuente vino y si fue respaldo. Un humano tiene que poder desmentirla
-   abriendo el Instagram del BCV.
-2. **Cadena de respaldos** cuando `dolarapi` falle, registrando de dónde vino y
-   avisando cuando no sea la principal.
-3. **Ventana del primer admin o cajero del día**, con la opción
-   "Mantener esta tasa: X", y replicación para cerrarla en las demás
-   computadoras cuando uno confirma.
-4. Verificar que **cambiar la tasa no altera lo ya cobrado**.
+<!-- Los cuatro pendientes de la tanda del 24/10 quedaron cerrados en las
+     migraciones 23 a 26. El estado vigente está arriba, en "LO QUE SIGUE". -->
 
 ### Decisiones del dueño que no hay que re-preguntar
 
