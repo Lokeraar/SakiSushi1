@@ -56,3 +56,6 @@ test-results.txt
 
 # Credenciales locales del dispositivo — NUNCA al repositorio
 .pguri*
+
+# Configuración local del CLI de Supabase (rutas y metadatos del proyecto)
+supabase/.temp/

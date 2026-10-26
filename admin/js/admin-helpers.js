@@ -75,83 +75,23 @@
         return base;
     };
 
-    window._pedirTasaDeHoy = function(onConfirm) {
-        const overlay = document.createElement('div');
-        overlay.id = 'tasaHoyOverlay';
-        overlay.style.cssText = [
-            'position:fixed','top:0','left:0','width:100%','height:100%',
-            'background:rgba(0,0,0,.85)','z-index:9999',
-            'display:flex','align-items:center','justify-content:center',
-            'font-family:Montserrat,sans-serif'
-        ].join(';');
-        overlay.innerHTML = `
-            <div style="background:#fff;border-radius:16px;padding:2rem 2.5rem;width:90%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.3);text-align:center">
-                <div style="font-size:2.5rem;margin-bottom:.75rem">💱</div>
-                <h2 style="font-size:1.3rem;color:#1a1a2e;margin-bottom:.4rem">Tasa de cambio de hoy</h2>
-                <p style="font-size:.88rem;color:#666;margin-bottom:1.5rem">
-                    Ingresa el valor actual del dólar en bolívares para que el sistema calcule correctamente todos los precios de hoy.
-                </p>
-                <input type="number" id="tasaHoyInput" placeholder="Ej: 42.50"
-                    step="0.01" min="1"
-                    style="width:100%;padding:.8rem 1rem;font-size:1.1rem;font-weight:700;text-align:center;
-                           border:2px solid #e0e0e0;border-radius:10px;outline:none;
-                           font-family:Montserrat,sans-serif;margin-bottom:1rem;box-sizing:border-box">
-                <div id="tasaHoyError" style="color:#D32F2F;font-size:.82rem;margin-bottom:.75rem;display:none">
-                    Por favor ingresa un valor válido mayor a 0.
-                </div>
-                <button id="tasaHoyBtn"
-                    style="width:100%;padding:.9rem;background:linear-gradient(135deg,#D32F2F,#B71C1C);
-                           color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;
-                           cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.5px">
-                    Confirmar tasa de hoy
-                </button>
-                <p style="font-size:.75rem;color:#999;margin-top:.75rem">
-                    Podrás ajustarla en cualquier momento desde la barra de tasa.
-                </p>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-
-        setTimeout(() => {
-            const input = document.getElementById('tasaHoyInput');
-            if (input) input.focus();
-        }, 100);
-
-        const confirmar = () => {
-            const val = parseFloat(document.getElementById('tasaHoyInput').value);
-            const errEl = document.getElementById('tasaHoyError');
-            if (!val || val <= 0) {
-                errEl.style.display = 'block';
-                document.getElementById('tasaHoyInput').focus();
-                return;
-            }
-            errEl.style.display = 'none';
-            const hoy = new Date().toISOString().split('T')[0];
-            localStorage.setItem('saki_tasa_fecha', hoy);
-            localStorage.setItem('saki_tasa_valor', val);
-            overlay.remove();
-            onConfirm(val);
-        };
-
-        document.getElementById('tasaHoyBtn').addEventListener('click', confirmar);
-        document.getElementById('tasaHoyInput').addEventListener('keydown', e => {
-            if (e.key === 'Enter') confirmar();
-        });
-    };
-
-    window._verificarTasaDeHoy = function(onReady) {
-        const hoy  = new Date().toISOString().split('T')[0];
-        const fecha = localStorage.getItem('saki_tasa_fecha');
-        const valor = parseFloat(localStorage.getItem('saki_tasa_valor'));
-
-        if (fecha === hoy && valor > 0) {
-            onReady(valor);
-        } else {
-            window._pedirTasaDeHoy((val) => {
-                onReady(val);
-            });
-        }
-    };
+    // ── Ventana de tasa de hoy: RETIRADA ──
+    //
+    // Acá vivían `_pedirTasaDeHoy()` y `_verificarTasaDeHoy()`, que abrían una
+    // ventana pidiendo que el admin ESCRIBIERA la tasa ("Ej: 42.50") y
+    // guardaban el valor en localStorage.
+    //
+    // Se retiraron por tres motivos:
+    //   1. Pedían un número que la base ya tiene: la tasa se captura del BCV
+    //      con su fecha valor (migraciones 22 a 26).
+    //   2. El ejemplo "42.50" era de hace meses. Con la tasa en 886, quien se
+    //      guiara por el ejemplo cargaba un valor 20 veces menor.
+    //   3. Era bloqueante: sin escribir un número, el admin no podía trabajar.
+    //      La ventana nueva (assets/tasa-ventana.js) no bloquea: muestra la tasa
+    //      capturada, ofrece "Mantener esta tasa: X", y si nadie decide, el
+    //      sistema sigue cobrando con la última conocida.
+    //
+    // El relevo es `window.arrancarVentanaTasa()`.
 
     window._verificarAvisoLunes = function() {
         if (!window.configGlobal || !window.configGlobal.aumento_semanal) return;

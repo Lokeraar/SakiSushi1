@@ -216,25 +216,38 @@
                     avisoViejo +
                     bloqueBcv +
                     '<div class="tv-botones">' + botones + '</div>' +
-                    (bcv
-                        ? '<button class="tv-link" onclick="window._cerrarVentanaTasa()">' +
-                              'Lo veo después, sin decidir' +
-                          '</button>'
-                        : '<button class="tv-link" onclick="window._cerrarVentanaTasa()">Cerrar</button>') +
+                    '<div class="tv-bloqueo">' +
+                        'Sin confirmar la tasa del día no se puede usar el panel.' +
+                    '</div>' +
                 '</div>' +
             '</div>';
 
         document.body.appendChild(overlay);
 
-        // Cerrar tocando fuera
+        // SIN SALIDA: tocar fuera NO cierra. Es a propósito.
+        //
+        // Sin tasa confirmada el restaurante no debería operar: los precios se
+        // calcularían con un número que nadie validó hoy. Hasta la migración 26
+        // esta ventana se podía posponer y eso permitía que el local trabajara
+        // con una tasa de hace días sin que nadie firmara.
         overlay.addEventListener('click', function (ev) {
-            if (ev.target === overlay) window._cerrarVentanaTasa();
+            if (ev.target === overlay) {
+                overlay.animate(
+                    [{ transform: 'translateX(0)' },
+                     { transform: 'translateX(-7px)' },
+                     { transform: 'translateX(7px)' },
+                     { transform: 'translateX(0)' }],
+                    { duration: 220 }
+                );
+            }
         });
     };
 
     // ============================================================
     // Cerrar sin decidir
     // ============================================================
+    // Se conserva el nombre por compatibilidad, pero ya NO es una salida libre:
+    // el modal no se cierra sin decidir. Solo se llama desde `_decidirTasaVentana`.
     window._cerrarVentanaTasa = function () {
         var o = document.getElementById(_idVentana);
         if (o) o.remove();
@@ -466,12 +479,10 @@
     window.arrancarVentanaTasa = async function (opciones) {
         opciones = opciones || {};
         try {
-            if (!opciones.forzar && cerradaHacePoco()) {
-                // La cerró hace poco. Se consulta igual el estado para que el
-                // panel muestre si otro equipo la revisó.
-                window.escucharRevisionTasaCompartida();
-                return;
-            }
+            // Ya no existe el "lo veo después": sin decisión del día no hay
+            // panel. `cerradaHacePoco` queda sin uso y se deja documentada más
+            // abajo por si algún día se vuelve a permitir posponer.
+
 
             var e = await window.consultarVentanaTasa();
             window.escucharRevisionTasaCompartida();
@@ -480,6 +491,12 @@
             if (!opciones.forzar && !e.necesita_revision) return;
 
             await window.abrirVentanaTasa(opciones.forzar);
+
+            // Si no hay ninguna tasa capturada, no se puede firmar. En ese caso
+            // se avisa en vez de dejar el panel libre sin explicación.
+            if (!e.bcv) {
+                console.warn('[tasa] no hay ninguna captura del BCV: no se puede confirmar');
+            }
         } catch (err) {
             console.warn('arrancarVentanaTasa:', err.message);
         }

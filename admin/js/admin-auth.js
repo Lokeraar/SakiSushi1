@@ -178,7 +178,24 @@
                         await window.cargarPlatilloEstrella();
                     }
                     
+                    // ── LO PRIMERO: LA TASA DEL DÍA ──
+                    //
+                    // El dueño lo pidió así: apenas se abre el panel, antes que
+                    // cualquier otra cosa, tiene que aparecer la tasa del día.
+                    // Sin tasa confirmada el restaurante no opera, porque todos
+                    // los precios salen de ese número.
+                    //
+                    // `arrancarVentanaTasa` es bloqueante: si hace falta firmar,
+                    // el modal no se puede cerrar. Por eso va ANTES de cargar
+                    // menú, inventario y demás: no tiene sentido traer datos para
+                    // una pantalla que todavía no se puede usar.
                     await window.cargarConfiguracionInicial();
+
+                    if (typeof window.arrancarVentanaTasa === 'function') {
+                        try { await window.arrancarVentanaTasa(); }
+                        catch (e) { console.warn('[tasa] ventana del día:', e.message); }
+                    }
+
                     await window.cargarMenu();
                     await window.cargarInventario();
                     await window.cargarUsuarios();
@@ -204,19 +221,24 @@
                     if (typeof window.avisarTasaVieja === 'function') {
                         window.avisarTasaVieja();
                     }
-                    window._verificarTasaDeHoy((tasa) => {
-                        const tasaInput = document.getElementById('tasaBaseInput');
-                        if (tasaInput) tasaInput.value = tasa;
-                        window.configGlobal.tasa_cambio = tasa;
-                        window.recalcularTasaEfectiva();
-                        // Actualizar tarjeta de diferencia de tasa después de cargar tasas
-                        setTimeout(() => {
-                            if (typeof window.actualizarTarjetaDiferenciaTasa === 'function') {
-                                window.actualizarTarjetaDiferenciaTasa();
-                            }
-                        }, 500);
-                        window._verificarAvisoLunes();
-                    });
+                    // REEMPLAZADO: antes acá se llamaba a `_verificarTasaDeHoy()`,
+                    // que abría una ventana pidiendo que el admin ESCRIBIERA a
+                    // mano la tasa del día ("Ej: 42.50"). Eso es lo contrario de
+                    // lo que hace falta: el sistema ya captura la tasa del BCV
+                    // con su fecha valor, y preguntarle al humano un número que
+                    // la base ya tiene es pedirle que lo invente.
+                    //
+                    // La ventana nueva (assets/tasa-ventana.js) muestra la tasa
+                    // capturada y ofrece "Mantener esta tasa: X". No bloquea: si
+                    // nadie la revisa, el sistema sigue cobrando con la última
+                    // conocida y el panel avisa.
+                    //
+                    // `_verificarAvisoLunes` se mantiene: es otra cosa.
+                    window._verificarAvisoLunes();
+
+                    // El panel del cuadro de tasa se refresca después de que
+                    // `cargarConfiguracionInicial` termine (eso lo encadena
+                    // admin-tasa-panel.js).
                     await window._actualizarVentasHoyNeto();
                     await window._actualizarDeliverysHoy();
                     setInterval(async () => { 
@@ -266,18 +288,15 @@
             // CUARTO: Cargar configuración inicial para obtener tasa de cambio y actualizar tarjeta de diferencia
             try {
                 await window.cargarConfiguracionInicial();
-                window._verificarTasaDeHoy((tasa) => {
-                    const tasaInput = document.getElementById('tasaBaseInput');
-                    if (tasaInput) tasaInput.value = tasa;
-                    window.configGlobal.tasa_cambio = tasa;
-                    window.recalcularTasaEfectiva();
-                    // Actualizar tarjeta de diferencia de tasa después de cargar tasas
-                    setTimeout(() => {
-                        if (typeof window.actualizarTarjetaDiferenciaTasa === 'function') {
-                            window.actualizarTarjetaDiferenciaTasa();
-                        }
-                    }, 500);
-                });
+
+                // Antes acá también se llamaba a `_verificarTasaDeHoy()`, la
+                // ventana que pedía escribir la tasa a mano. Se retiró: la tasa
+                // ya viene capturada de la base con su fecha valor, y el panel
+                // del cuadro de tasa (admin-tasa-panel.js) se refresca solo al
+                // terminar `cargarConfiguracionInicial`.
+                if (typeof window.actualizarTarjetaDiferenciaTasa === 'function') {
+                    setTimeout(() => window.actualizarTarjetaDiferenciaTasa(), 500);
+                }
             } catch (e) {
                 console.error('Error cargando configuración al restaurar sesión:', e);
             }

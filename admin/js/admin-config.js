@@ -245,7 +245,39 @@
                 descuento_al_quitar: document.getElementById('descuentoAlQuitar')?.checked ?? true,
                 ultima_actualizacion: new Date().toISOString()
             }).eq('id', 1);
-            
+
+            // ── DEJAR RASTRO DE LA TASA ──
+            //
+            // Este botón escribe la configuración completa (aumento, fechas,
+            // descuento) y sigue siendo el único lugar que calcula la tasa
+            // efectiva con el aumento acumulado. Eso está bien: es la función
+            // de negocio que pidió el dueño.
+            //
+            // Lo que le faltaba era el registro. Si el admin fija la tasa desde
+            // acá, el sistema no guardaba de dónde salió ni dejaba constancia de
+            // que hoy alguien la confirmó. Con la tasa siendo bloqueante, eso
+            // dejaba el día sin firma.
+            //
+            // Se llama a las dos funciones de auditoría sin tocar el valor ya
+            // escrito: `registrar_tasa_bcv` anota la captura, y
+            // `confirmar_revision_tasa` firma el día.
+            try {
+                await window.supabaseClient.rpc('registrar_tasa_bcv', {
+                    p_valor:        tasaBase,
+                    p_fecha_valor:  new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' }),
+                    p_fuente:       'manual_admin',
+                    p_es_principal: false
+                });
+                await window.supabaseClient.rpc('confirmar_revision_tasa', {
+                    p_accion: 'aplicar_otra',
+                    p_nota:   'Tasa fijada desde el panel de configuración'
+                });
+            } catch (e) {
+                // Si falla el registro no se aborta el guardado: el valor ya
+                // quedó escrito y el admin tiene que poder trabajar.
+                console.warn('[tasa] no se pudo registrar la firma del día:', e.message);
+            }
+
             window.renderizarMenu(document.getElementById('menuBuscador')?.value || '');
             await window._actualizarVentasHoyNeto();
             await window._actualizarDeliverysHoy();
