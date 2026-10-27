@@ -1,14 +1,37 @@
 // admin-realtime.js - Suscripciones realtime y push
 (function() {
+    // Canales realtime abiertos por el panel. Se guardan para poder cerrarlos:
+    // antes se creaban y se perdía la referencia, así que quedaban vivos con
+    // la sesión cerrada y, como el arranque del panel corre dos veces (login y
+    // restauración), se acumulaban canales duplicados consultando la base.
+    window._canalesAdminRealtime = window._canalesAdminRealtime || [];
+
+    window.cerrarRealtimeAdmin = function () {
+        var abiertos = window._canalesAdminRealtime || [];
+        for (var i = 0; i < abiertos.length; i++) {
+            try { window.supabaseClient.removeChannel(abiertos[i]); } catch (e) {}
+        }
+        window._canalesAdminRealtime.length = 0;
+    };
+
     window.setupRealtimeSubscriptions = function() {
         try {
-            window.supabaseClient
+            // Cerrar los de antes evita escuchar dos veces el mismo cambio.
+            window.cerrarRealtimeAdmin();
+            var sb = {
+                channel: function (nombre) {
+                    var canal = window.supabaseClient.channel(nombre);
+                    window._canalesAdminRealtime.push(canal);
+                    return canal;
+                }
+            };
+            sb
                 .channel('admin-menu')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'menu' },
                     () => { window.cargarMenu(); })
                 .subscribe();
 
-            window.supabaseClient
+            sb
                 .channel('admin-inventario')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'inventario' },
                     async (p) => {
@@ -25,19 +48,19 @@
                     })
                 .subscribe();
 
-            window.supabaseClient
+            sb
                 .channel('admin-usuarios')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'usuarios' },
                     () => { window.cargarUsuarios(); })
                 .subscribe();
 
-            window.supabaseClient
+            sb
                 .channel('admin-qr')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'codigos_qr' },
                     () => { window.cargarQRs(); })
                 .subscribe();
 
-            window.supabaseClient
+            sb
                 .channel('admin-pedidos')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' },
                     () => {
@@ -47,25 +70,25 @@
                     })
                 .subscribe();
 
-            window.supabaseClient
+            sb
                 .channel('admin-mesoneros')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'mesoneros' },
                     () => { window.cargarMesoneros(); })
                 .subscribe();
 
-            window.supabaseClient
+            sb
                 .channel('admin-deliverys')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'deliverys' },
                     () => { window.cargarDeliverys(); })
                 .subscribe();
 
-            window.supabaseClient
+            sb
                 .channel('admin-propinas')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'propinas' },
                     () => { window.cargarPropinas(); })
                 .subscribe();
 
-            window.supabaseClient
+            sb
                 .channel('admin-config')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'config' },
                     (p) => {
@@ -90,7 +113,7 @@
                     })
                 .subscribe();
 
-            window.supabaseClient
+            sb
                 .channel('admin-platillo-estrella')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'vista_platillo_estrella' },
                     () => { window.cargarTopVentasCliente(); })
@@ -98,7 +121,7 @@
 
             // Escuchar cambios en la tabla menu para actualizar platillo estrella en tiempo real
             // Esto asegura que si cambia la imagen de un platillo en menu, se refleje inmediatamente
-            window.supabaseClient
+            sb
                 .channel('admin-menu-platillo-estrella')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'menu' },
                     () => { 

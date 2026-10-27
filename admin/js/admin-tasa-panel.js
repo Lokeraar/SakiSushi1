@@ -457,7 +457,7 @@ function nombreFuenteTasa(f) {
             });
 
             if (r.error) {
-                window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(r.error.message.replace('.message','')) : r.error.message), 'error');
+                if (window.mostrarErrorLegible) window.mostrarErrorLegible(r.error, 'aplicar la tasa'); else if (window.mostrarToast) window.mostrarToast('\u274C ' + (r.error && r.error.message || r.error), 'error'); else console.error('[aplicar la tasa]', r.error);
                 return;
             }
 
@@ -532,7 +532,7 @@ function nombreFuenteTasa(f) {
             });
 
             if (r.error) {
-                window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(r.error.message.replace('.message','')) : r.error.message), 'error');
+                if (window.mostrarErrorLegible) window.mostrarErrorLegible(r.error, 'aplicar la tasa'); else if (window.mostrarToast) window.mostrarToast('\u274C ' + (r.error && r.error.message || r.error), 'error'); else console.error('[aplicar la tasa]', r.error);
                 return;
             }
 
@@ -549,7 +549,7 @@ function nombreFuenteTasa(f) {
                     p_confirmar:   true
                 });
                 if (r2.error) {
-                    window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(r2.error.message.replace('.message','')) : r2.error.message), 'error');
+                    if (window.mostrarErrorLegible) window.mostrarErrorLegible(r2.error, 'aplicar la tasa'); else if (window.mostrarToast) window.mostrarToast('\u274C ' + (r2.error && r2.error.message || r2.error), 'error'); else console.error('[aplicar la tasa]', r2.error);
                     return;
                 }
                 d = r2.data || {};

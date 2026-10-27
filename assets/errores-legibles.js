@@ -99,4 +99,31 @@
         return 'No se pudo ' + queSeIntentaba + '. ' + window.mensajeDeError(err);
     };
 
+    /**
+     * Traduce y muestra un error en un solo paso.
+     *
+     * Antes cada pantalla armaba el texto a mano y varias le hacían
+     * `r.error.message.replace('.message','')` antes de pasarlo. Eso no limpia
+     * nada: si el mensaje del servidor contenía ese texto, lo borraba del
+     * medio, y si no lo contenía, no hacía absolutamente nada. El efecto era
+     * un mensaje cambiado sin motivo y una traducción que a veces no coincidía
+     * con ningún caso conocido.
+     *
+     * Acá se pasa el error tal como llega. `mensajeDeError` ya sabe leer
+     * `.message`, `.error_description` o un texto suelto.
+     */
+    window.mostrarErrorLegible = function (err, queSeIntentaba) {
+        var texto = queSeIntentaba
+            ? window.mensajeDeFallo(queSeIntentaba, err)
+            : window.mensajeDeError(err);
+
+        if (typeof window.mostrarToast === 'function') {
+            window.mostrarToast('\u274C ' + texto, 'error');
+        }
+
+        // Se devuelve el texto para quien quiera además registrarlo o
+        // devolverlo como valor de retorno.
+        return texto;
+    };
+
 })();

@@ -211,8 +211,7 @@
                     if (typeof window.cargarDeliverys  === 'function') await window.cargarDeliverys();
                     if (typeof window.cargarPropinas   === 'function') await window.cargarPropinas();
                     window.setupEventListeners();
-                    window.setupRealtimeSubscriptions();
-                    window.setupStockRealtime();
+                    window.iniciarTiempoRealAdmin();
                     window.restaurarWifiPersistente();
                     window._registrarPushAdmin();
                     window.agregarTarjetaDiferenciaTasa();
@@ -251,15 +250,7 @@
                     // admin-tasa-panel.js).
                     await window._actualizarVentasHoyNeto();
                     await window._actualizarDeliverysHoy();
-                    // Igual que en admin-ui.js: se guarda la referencia y se
-                    // cancela la anterior, para no acumular intervalos que
-                    // consultan la base para siempre tras cada login.
-                    if (window._intervaloTasa) clearInterval(window._intervaloTasa);
-                    window._intervaloTasa = setInterval(async () => {
-                        await window._actualizarVentasHoyNeto();
-                        await window._actualizarDeliverysHoy();
-                        window.actualizarTarjetaDiferenciaTasa();
-                    }, 60000);
+                    window.iniciarResumenDia();
                 } catch (e) { console.error('Error cargando datos:', e); window.mostrarToast('Error cargando datos: ' + (window.mensajeDeError ? window.mensajeDeError(e) : e.message), 'error'); }
             }, 100);
         } catch (error) {
@@ -323,10 +314,66 @@
         }
     };
 
+    // Refresco periódico del resumen del día (ventas, deliverys y la tarjeta
+    // de diferencia de tasa).
+    //
+    // Antes este bloque estaba escrito dos veces, igual, en admin-auth.js y en
+    // admin-ui.js: uno por el login y otro por el arranque del panel. Y el
+    // nombre era `_intervaloTasa`, que mentía: la tasa no se refresca acá.
+    // Dos copias del mismo temporizador son dos oportunidades de dejarlo
+    // huérfano, así que queda una sola función, acá, que se carga primero.
+    //
+    // Siempre se cancela el anterior antes de crear el nuevo: sin eso, cada
+    // login y cada restauración sumaba un temporizador más, y todos seguían
+    // consultando la base para siempre.
+    window.iniciarResumenDia = function () {
+        window.detenerResumenDia();
+        window._intervaloResumenDia = setInterval(async () => {
+            await window._actualizarVentasHoyNeto();
+            await window._actualizarDeliverysHoy();
+            window.actualizarTarjetaDiferenciaTasa();
+        }, 60000);
+    };
+
+    window.detenerResumenDia = function () {
+        if (window._intervaloResumenDia) {
+            clearInterval(window._intervaloResumenDia);
+            window._intervaloResumenDia = null;
+        }
+    };
+
+    // Un solo lugar arranca el tiempo real del panel.
+    //
+    // Antes cada módulo llamaba a `setupRealtimeSubscriptions` y a
+    // `setupStockRealtime` por su cuenta, y el arranque del panel corre dos
+    // veces (login y restauración de sesión): eso abría los mismos canales
+    // duplicados, y los perdidos nunca se cerraban porque `admin-realtime.js`
+    // no guardaba la referencia. Un canal duplicado no es inofensivo: cada
+    // cambio en la base dispara la recarga dos veces, y con la sesión cerrada
+    // sigue escuchando.
+    //
+    // Ambos setups ya se cierran a sí mismos antes de abrir (ver
+    // `cerrarRealtimeAdmin`), así que llamar acá siempre deja un solo juego.
+    window.iniciarTiempoRealAdmin = function () {
+        window.setupRealtimeSubscriptions();
+        window.setupStockRealtime();
+    };
+
+    window.detenerTiempoRealAdmin = function () {
+        if (typeof window.cerrarRealtimeAdmin === 'function') window.cerrarRealtimeAdmin();
+        if (window.stockUpdateChannel) {
+            try { window.supabaseClient.removeChannel(window.stockUpdateChannel); } catch (e) {}
+            window.stockUpdateChannel = null;
+        }
+    };
+
     window.cerrarSesion = function() {
         // Se cancela el refresco periódico: si no, sigue consultando la base
         // con la sesión ya cerrada.
-        if (window._intervaloTasa) { clearInterval(window._intervaloTasa); window._intervaloTasa = null; }
+        window.detenerResumenDia();
+        // Y se cierran los canales realtime, por el mismo motivo: sin esto
+        // seguían escuchando cambios con la sesión cerrada.
+        if (typeof window.detenerTiempoRealAdmin === 'function') window.detenerTiempoRealAdmin();
         sessionStorage.removeItem('admin_authenticated');
         sessionStorage.removeItem('admin_jwt_token');
         sessionStorage.removeItem('admin_user');

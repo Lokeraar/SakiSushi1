@@ -225,9 +225,20 @@
                     // que sí aplica en el login normal.
                     //
                     // Se llama acá, antes de cargar datos, igual que en `hacerLogin`.
+                    //
+                    // Si esto falla, NO se puede seguir: la ventana de tasa es
+                    // lo único que impide operar sin la firma del día. Antes el
+                    // error se tragaba con un `console.warn` y el panel seguía
+                    // cargando, que es exactamente el agujero que se vino a
+                    // cerrar. Ahora se avisa y se corta el arranque.
                     if (typeof window.arrancarVentanaTasa === 'function') {
-                        try { await window.arrancarVentanaTasa(); }
-                        catch (e) { console.warn('[tasa] ventana del día:', e.message); }
+                        try {
+                            await window.arrancarVentanaTasa();
+                        } catch (e) {
+                            console.error('[tasa] no se pudo abrir la ventana del día:', e);
+                            if (window.mostrarErrorLegible) window.mostrarErrorLegible(e, 'verificar la tasa del día'); else console.error('[tasa] verificar la tasa del día', e);
+                            return;
+                        }
                     }
 
                     await window.cargarMenu();
@@ -240,8 +251,10 @@
                     await window.cargarDeliverys();
                     await window.cargarPropinas();
                     window.setupEventListeners();
-                    window.setupRealtimeSubscriptions();
-                    window.setupStockRealtime();
+                    // Un solo lugar arranca realtime (admin-auth.js). Acá estaba
+                    // duplicado: login y restauración de sesión abrían los
+                    // mismos canales dos veces, y los perdidos no se cerraban.
+                    window.iniciarTiempoRealAdmin();
                     window.restaurarWifiPersistente();
                     window._registrarPushAdmin();
                     
@@ -253,18 +266,11 @@
                     await window._actualizarVentasHoyNeto();
                     await window._actualizarDeliverysHoy();
                     window.actualizarTarjetaDiferenciaTasa();
-                    // Se guarda la referencia para poder cancelarlo al cerrar
-                    // sesión. Antes se creaba uno nuevo en cada login (y en
-                    // cada restauración) sin cancelar el anterior: cada uno
-                    // seguía consultando la base para siempre, y tras varias
-                    // entradas y salidas quedaban intervalos huérfanos
-                    // martillando el servidor. Se limpia si ya había uno.
-                    if (window._intervaloTasa) clearInterval(window._intervaloTasa);
-                    window._intervaloTasa = setInterval(async () => {
-                        await window._actualizarVentasHoyNeto();
-                        await window._actualizarDeliverysHoy();
-                        window.actualizarTarjetaDiferenciaTasa();
-                    }, 60000);
+                    // Un solo lugar define este temporizador (admin-auth.js).
+                    // Acá estaba duplicado, y el nombre viejo (`_intervaloTasa`)
+                    // decía que refrescaba la tasa cuando en realidad refresca
+                    // el resumen del día.
+                    window.iniciarResumenDia();
                 } catch (e) { 
                     console.error('Error cargando datos:', e); 
                     window.mostrarToast('Error cargando datos: ' + (window.mensajeDeError ? window.mensajeDeError(e) : e.message), 'error'); 
