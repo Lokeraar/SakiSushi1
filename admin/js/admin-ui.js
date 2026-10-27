@@ -250,7 +250,7 @@
                     }, 60000);
                 } catch (e) { 
                     console.error('Error cargando datos:', e); 
-                    window.mostrarToast('Error cargando datos: ' + e.message, 'error'); 
+                    window.mostrarToast('Error cargando datos: ' + (window.mensajeDeError ? window.mensajeDeError(e) : e.message), 'error'); 
                 }
             }, 100);
         } else {

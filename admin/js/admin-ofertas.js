@@ -184,7 +184,7 @@
             }
             return !!(data && data.success);
         } catch (e) {
-            window.mostrarToast('⚠️ No se pudo guardar la oferta: ' + (e.message || e), 'warning');
+            window.mostrarToast('⚠️ No se pudo guardar la oferta: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'warning');
             return false;
         }
     };

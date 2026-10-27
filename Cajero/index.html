@@ -361,7 +361,7 @@ window.hacerLogin = async function() {
                 window.mostrarPanel();
             } catch (e) {
                 console.error('Error cargando datos:', e);
-                window.mostrarToast('Error cargando datos: ' + e.message, 'error');
+                window.mostrarToast('Error cargando datos: ' + (window.mensajeDeError ? window.mensajeDeError(e) : e.message), 'error');
                 window.mostrarPanel();
             }
         }, 500);
@@ -1047,7 +1047,7 @@ window.confirmarCobro = async function() {
         // El mensaje se traduce: antes el cajero leía "TypeError: Failed to
         // fetch" (recibo R3 de la auditoría de red) y no sabía si el cobro
         // había quedado registrado o no.
-        window.mostrarToast('\u274c No se pudo registrar el cobro. '+(window.mensajeDeError?window.mensajeDeError(e):(e.message||e)),'error');
+        window.mostrarToast('\u274c No se pudo registrar el cobro. '+(window.mensajeDeError?window.mensajeDeError(e):(window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e))),'error');
     } finally {
         // Restaurar el botón siempre, sin importar si hubo error
         const _ccBtn = document.getElementById('confirmCobroBtn');

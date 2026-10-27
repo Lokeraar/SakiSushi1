@@ -250,7 +250,7 @@
                 window.mostrarToast('❌ ' + ((hecho && hecho.error) || 'No se pudo renombrar'), 'error');
             }
         } catch (e) {
-            window.mostrarToast('❌ ' + (e.message || e), 'error');
+            window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         }
     };
 
@@ -302,7 +302,7 @@
                 window.mostrarToast('❌ ' + ((hecho && hecho.error) || 'No se pudo eliminar'), 'error');
             }
         } catch (e) {
-            window.mostrarToast('❌ ' + (e.message || e), 'error');
+            window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         }
     };
 
@@ -334,7 +334,7 @@
             if (error) throw error;
             await window.cargarSeccionesAdmin();
         } catch (e) {
-            window.mostrarToast('❌ ' + (e.message || e), 'error');
+            window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         }
     };
 
@@ -368,7 +368,7 @@
                 window.mostrarToast('❌ ' + ((data && data.error) || 'No se pudo crear'), 'error');
             }
         } catch (e) {
-            window.mostrarToast('❌ ' + (e.message || e), 'error');
+            window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         }
     };
 
@@ -483,7 +483,7 @@
                     btn.textContent = 'Asignar';
                 }
             } catch (e) {
-                window.mostrarToast('❌ ' + (e.message || e), 'error');
+                window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
                 btn.disabled = false;
                 btn.textContent = 'Asignar';
             }

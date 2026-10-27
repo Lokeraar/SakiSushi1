@@ -234,7 +234,7 @@
             await window.cargarEstadoCierre();
 
         } catch (e) {
-            window.mostrarToast('⚠️ No se pudo cerrar: ' + (e.message || e), 'error');
+            window.mostrarToast('⚠️ No se pudo cerrar: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         }
     };
 
@@ -315,7 +315,7 @@
             await window.cargarEstadoCierre();
 
         } catch (e) {
-            window.mostrarToast('⚠️ No se pudo reabrir: ' + (e.message || e), 'error');
+            window.mostrarToast('⚠️ No se pudo reabrir: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         }
     };
 

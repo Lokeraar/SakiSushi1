@@ -157,7 +157,7 @@
             if (e.message && e.message.includes('permission denied')) {
                 window.mostrarToast('⚠️ No se pudo cambiar el estado. Contacta al administrador del sistema.', 'error');
             } else {
-                window.mostrarToast('❌ Error: ' + (e.message || e), 'error');
+                window.mostrarToast('❌ Error: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
             }
         }
     };
@@ -903,7 +903,7 @@
             
         } catch (e) {
             console.error('Error guardando platillo:', e);
-            window.mostrarToast('❌ Error al guardar: ' + (e.message || e), 'error');
+            window.mostrarToast('❌ Error al guardar: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         }
     };
 })();

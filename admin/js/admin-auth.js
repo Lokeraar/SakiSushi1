@@ -256,7 +256,7 @@
                         await window._actualizarDeliverysHoy();
                         window.actualizarTarjetaDiferenciaTasa();
                     }, 60000);
-                } catch (e) { console.error('Error cargando datos:', e); window.mostrarToast('Error cargando datos: ' + e.message, 'error'); }
+                } catch (e) { console.error('Error cargando datos:', e); window.mostrarToast('Error cargando datos: ' + (window.mensajeDeError ? window.mensajeDeError(e) : e.message), 'error'); }
             }, 100);
         } catch (error) {
             console.error('❌ Error:', error);

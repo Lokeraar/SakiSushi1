@@ -266,7 +266,7 @@
                     await window.cargarMesoneros();
                     window.mostrarToast('Mesonero eliminado', 'success');
                 } catch(e) { 
-                    window.mostrarToast('Error: ' + (e.message || e), 'error'); 
+                    window.mostrarToast('Error: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error'); 
                 }
             }
         );
@@ -286,7 +286,7 @@
             await window.cargarMesoneros();
             window.mostrarToast('Mesonero agregado', 'success');
         } catch(e) {
-            window.mostrarToast('Error: ' + (e.message || e), 'error');
+            window.mostrarToast('Error: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         } finally {
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> Agregar'; }
         }
@@ -990,7 +990,7 @@
             window.mostrarToast('Pago total registrado: ' + montoMostrar, 'success');
         } catch(e) {
             console.error('Error pago total:', e);
-            window.mostrarToast('Error: ' + (e.message || e), 'error');
+            window.mostrarToast('Error: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -1509,7 +1509,7 @@
                 window.cerrarModal('mesoneroModal');
                 await window.cargarMesoneros();
                 window.mostrarToast('Mesonero guardado', 'success');
-            } catch(e) { window.mostrarToast('Error: '+e.message,'error'); }
+            } catch(e) { window.mostrarToast('Error: '+ (window.mensajeDeError ? window.mensajeDeError(e) : e.message),'error'); }
             finally { this.disabled=false; this.innerHTML='Guardar'; }
         });
     }

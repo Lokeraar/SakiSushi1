@@ -373,7 +373,7 @@
             document.getElementById('deliveryModal').classList.remove('active');
             if (window.mostrarToast) window.mostrarToast('✅ Pedido delivery registrado', 'success');
         }).catch(function(err) {
-            if (window.mostrarToast) window.mostrarToast('❌ Error: ' + (err.message || err), 'error');
+            if (window.mostrarToast) window.mostrarToast('❌ Error: ' + (window.mensajeDeError ? window.mensajeDeError(err) : (err.message || err)), 'error');
         });
         }, { texto: '<i class="fas fa-check"></i> Confirmar Pedido', textoCargando: 'Enviando...' });
     }
@@ -468,7 +468,7 @@
                 window.mostrarToast('✅ Reserva registrada. El local verificará tu pago.', 'success');
             }
         }).catch(function (err) {
-            if (window.mostrarToast) window.mostrarToast('❌ ' + (err.message || err), 'error');
+            if (window.mostrarToast) window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(err) : (err.message || err)), 'error');
         });
         }, { texto: '<i class="fas fa-check"></i> Confirmar Reserva', textoCargando: 'Enviando...' });
     }
@@ -567,7 +567,7 @@
                 validarFormularioDelivery();
             }).catch(function(err) {
                 isUploading = false;
-                if (window.mostrarToast) window.mostrarToast('❌ Error al subir: ' + (err.message || err), 'error');
+                if (window.mostrarToast) window.mostrarToast('❌ Error al subir: ' + (window.mensajeDeError ? window.mensajeDeError(err) : (err.message || err)), 'error');
                 limpiarCampoComprobante('delivery');
             });
         } else {
@@ -634,7 +634,7 @@
                 }
                 validarFormularioReserva();
             }).catch(function (err) {
-                if (window.mostrarToast) window.mostrarToast('❌ Error al subir: ' + (err.message || err), 'error');
+                if (window.mostrarToast) window.mostrarToast('❌ Error al subir: ' + (window.mensajeDeError ? window.mensajeDeError(err) : (err.message || err)), 'error');
                 uploadComplete = false;
                 reservaFormData.comprobante = null;
                 if (barra) barra.style.display = 'none';

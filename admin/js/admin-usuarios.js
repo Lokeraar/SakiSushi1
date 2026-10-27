@@ -289,7 +289,7 @@
             window.mostrarToast('✅ Usuario guardado', 'success');
         } catch (e) {
             console.error('Error guardando usuario:', e);
-            window.mostrarToast('❌ Error: ' + (e.message || e), 'error');
+            window.mostrarToast('❌ Error: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         } finally {
             if (btn) { btn.disabled = false; btn.innerHTML = 'Guardar'; }
         }

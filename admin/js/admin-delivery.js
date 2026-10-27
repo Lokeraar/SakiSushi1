@@ -120,7 +120,7 @@
             if (inp) inp.value = '';
             await window.cargarDeliverys();
             window.mostrarToast('Motorizado agregado', 'success');
-        } catch(e) { window.mostrarToast('Error: '+(e.message||e),'error'); }
+        } catch(e) { window.mostrarToast('Error: '+(window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)),'error'); }
         finally { if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> Agregar';} }
     };
 
@@ -162,7 +162,7 @@
                     await window.supabaseClient.from('deliverys').delete().eq('id', id);
                     await window.cargarDeliverys();
                     window.mostrarToast('Motorizado eliminado', 'success');
-                } catch(e) { window.mostrarToast('Error: '+(e.message||e),'error'); }
+                } catch(e) { window.mostrarToast('Error: '+(window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)),'error'); }
             }
         );
     };
@@ -238,7 +238,7 @@
                 if (r1.error) throw r1.error;
                 window.mostrarToast('Pago parcial registrado', 'success');
             } catch(e) { 
-                window.mostrarToast('Error: '+(e.message||e), 'error'); 
+                window.mostrarToast('Error: '+(window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error'); 
             } finally { 
                 if(btn){ btn.disabled=false; btn.innerHTML='Confirmar'; } 
             }
@@ -273,7 +273,7 @@
                 
                 window.mostrarToast('Pago total registrado. Acumulado reiniciado.', 'success');
             } catch(e) { 
-                window.mostrarToast('Error: '+(e.message||e), 'error'); 
+                window.mostrarToast('Error: '+(window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error'); 
             } finally { 
                 if(btn){ btn.disabled=false; btn.innerHTML='Confirmar'; } 
             }

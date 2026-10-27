@@ -80,7 +80,7 @@
             document.getElementById('qrNombreMesa').value = '';
             await window.cargarQRs();
             window.mostrarToast('✅ QR generado', 'success');
-        } catch(e) { console.error('Error generando QR:', e); window.mostrarToast('❌ Error al generar QR: ' + (e.message || e), 'error'); }
+        } catch(e) { console.error('Error generando QR:', e); window.mostrarToast('❌ Error al generar QR: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error'); }
     };
 
     window.eliminarQR = async function(id) {

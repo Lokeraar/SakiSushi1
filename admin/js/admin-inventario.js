@@ -1051,7 +1051,7 @@ validarPrecios();
             
         } catch (e) {
             console.error('Error guardando ingrediente:', e);
-            window.mostrarToast('❌ Error al guardar: ' + (e.message || e), 'error');
+            window.mostrarToast('❌ Error al guardar: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         } finally {
             isSavingIngrediente = false;
             updateSaveButtonState();
