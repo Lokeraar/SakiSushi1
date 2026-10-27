@@ -218,8 +218,18 @@
                         await window.cargarPlatilloEstrella();
                     }
                     
-                    // La configuración y tasas ya se cargaron en restaurarSesionAdmin
-                    
+                    // La configuración ya se cargó en restaurarSesionAdmin, pero
+                    // la VENTANA DE TASA NO. Y eso era un agujero: quien retoma
+                    // una sesión guardada (recargar, volver al día siguiente)
+                    // entraba al panel sin firmar el día, salteando el bloqueo
+                    // que sí aplica en el login normal.
+                    //
+                    // Se llama acá, antes de cargar datos, igual que en `hacerLogin`.
+                    if (typeof window.arrancarVentanaTasa === 'function') {
+                        try { await window.arrancarVentanaTasa(); }
+                        catch (e) { console.warn('[tasa] ventana del día:', e.message); }
+                    }
+
                     await window.cargarMenu();
                     await window.cargarInventario();
                     await window.cargarUsuarios();
@@ -243,7 +253,14 @@
                     await window._actualizarVentasHoyNeto();
                     await window._actualizarDeliverysHoy();
                     window.actualizarTarjetaDiferenciaTasa();
-                    setInterval(async () => { 
+                    // Se guarda la referencia para poder cancelarlo al cerrar
+                    // sesión. Antes se creaba uno nuevo en cada login (y en
+                    // cada restauración) sin cancelar el anterior: cada uno
+                    // seguía consultando la base para siempre, y tras varias
+                    // entradas y salidas quedaban intervalos huérfanos
+                    // martillando el servidor. Se limpia si ya había uno.
+                    if (window._intervaloTasa) clearInterval(window._intervaloTasa);
+                    window._intervaloTasa = setInterval(async () => {
                         await window._actualizarVentasHoyNeto();
                         await window._actualizarDeliverysHoy();
                         window.actualizarTarjetaDiferenciaTasa();

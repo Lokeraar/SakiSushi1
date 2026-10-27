@@ -269,7 +269,7 @@
 <div class="modal-overlay" id="deliveryModal"><div class="modal-content"><div class="modal-header delivery"><h2><i class="fas fa-motorcycle"></i> Acumulado Deliverys (Hoy)</h2><button class="modal-close" onclick="window.cerrarModal('deliveryModal')" data-tooltip="Cerrar (ESC)"><i class="fas fa-times"></i></button></div><div class="modal-body" id="deliveryModalBody"></div><div class="modal-footer"><button class="btn btn-primary" onclick="window.cerrarModal('deliveryModal')">Cerrar (ESC)</button></div></div></div>
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i><div><p id="toastText" style="margin:0;color:#fff">Operación completada</p></div></div>
 <script src="../assets/errores-legibles.js?v=1793000130" defer></script>
-<script src="../supabase-config.js?v=1793000030"></script>
+<script src="../supabase-config.js?v=1793000160"></script>
 <script>
 // ============================================ VARIABLES GLOBALES ============================================
 window.currentUser=null;window.jwtToken=null;window.pedidos=[];window.ventasHoy=[];window.propinas=[];window.menuItems=[];window.inventario=[];window.mesas=[];window.currentPedido=null;window.enProcesoDeCobro=false;window.pedidoParaAccion=null;window.accionPendiente=null;window.__tasaUnica=400;Object.defineProperty(window,'tasaEfectiva',{get:function(){var c=window.configGlobal;var v=c&&parseFloat(c.tasa_efectiva);return v>0?v:(window.__tasaUnica>0?window.__tasaUnica:400)},set:function(v){window.__tasaUnica=v},configurable:true});window.currentPropinaPedido=null;window.mesoneros=[];window.deliverys=[];window.alarmaAudio=document.getElementById('alarmaSonido');window.alarmaActiva=false;window.suscripciones=[];window.paginaVisible=true;window.reconectando=false;window.intervaloVerificacion=null;window.ultimaActualizacion=Date.now();window.propinaSeleccionada={mesonero:null,mesa:'',metodo:'efectivo_bs',monto:0,referencia:''};window.referenciaPropina=['','','','','',''];window.pendingLoginUser=null;window.stockCache={data:{},lastUpdate:0,duration:5e3,get:function(id){const ahora=Date.now();if(ahora-this.lastUpdate>this.duration)this.clear();return this.data[id]},set:function(id,v){this.data[id]=v;this.lastUpdate=Date.now()},clear:function(){this.data={};this.lastUpdate=0},invalidate:function(){this.data={};this.lastUpdate=0}};
@@ -445,7 +445,7 @@ window.cargarDatosIniciales=async function(){try{await window.cargarConfiguracio
                         });
 
                         if (r.error) {
-                            window.mostrarToast && window.mostrarToast('❌ ' + r.error.message, 'error');
+                            window.mostrarToast && window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(r.error.message.replace('.message','')) : r.error.message), 'error');
                             return;
                         }
 
@@ -459,7 +459,7 @@ window.cargarDatosIniciales=async function(){try{await window.cargarConfiguracio
                                 p_fecha_valor: null, p_confirmar: true
                             });
                             if (r2.error) {
-                                window.mostrarToast && window.mostrarToast('❌ ' + r2.error.message, 'error');
+                                window.mostrarToast && window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(r2.error.message.replace('.message','')) : r2.error.message), 'error');
                                 return;
                             }
                         } else if (!d.success) {

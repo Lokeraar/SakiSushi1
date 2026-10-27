@@ -457,7 +457,7 @@ function nombreFuenteTasa(f) {
             });
 
             if (r.error) {
-                window.mostrarToast('❌ ' + r.error.message, 'error');
+                window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(r.error.message.replace('.message','')) : r.error.message), 'error');
                 return;
             }
 
@@ -532,7 +532,7 @@ function nombreFuenteTasa(f) {
             });
 
             if (r.error) {
-                window.mostrarToast('❌ ' + r.error.message, 'error');
+                window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(r.error.message.replace('.message','')) : r.error.message), 'error');
                 return;
             }
 
@@ -549,7 +549,7 @@ function nombreFuenteTasa(f) {
                     p_confirmar:   true
                 });
                 if (r2.error) {
-                    window.mostrarToast('❌ ' + r2.error.message, 'error');
+                    window.mostrarToast('❌ ' + (window.mensajeDeError ? window.mensajeDeError(r2.error.message.replace('.message','')) : r2.error.message), 'error');
                     return;
                 }
                 d = r2.data || {};

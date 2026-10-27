@@ -251,7 +251,11 @@
                     // admin-tasa-panel.js).
                     await window._actualizarVentasHoyNeto();
                     await window._actualizarDeliverysHoy();
-                    setInterval(async () => { 
+                    // Igual que en admin-ui.js: se guarda la referencia y se
+                    // cancela la anterior, para no acumular intervalos que
+                    // consultan la base para siempre tras cada login.
+                    if (window._intervaloTasa) clearInterval(window._intervaloTasa);
+                    window._intervaloTasa = setInterval(async () => {
                         await window._actualizarVentasHoyNeto();
                         await window._actualizarDeliverysHoy();
                         window.actualizarTarjetaDiferenciaTasa();
@@ -260,7 +264,7 @@
             }, 100);
         } catch (error) {
             console.error('❌ Error:', error);
-            window.mostrarToast('❌ Error: ' + error.message, 'error');
+            window.mostrarToast('❌ Error: ' + (window.mensajeDeError ? window.mensajeDeError(error) : error.message), 'error');
         } finally {
             if (loginBtn) { loginBtn.disabled = false; loginBtn.innerHTML = 'Ingresar'; }
         }
@@ -320,6 +324,9 @@
     };
 
     window.cerrarSesion = function() {
+        // Se cancela el refresco periódico: si no, sigue consultando la base
+        // con la sesión ya cerrada.
+        if (window._intervaloTasa) { clearInterval(window._intervaloTasa); window._intervaloTasa = null; }
         sessionStorage.removeItem('admin_authenticated');
         sessionStorage.removeItem('admin_jwt_token');
         sessionStorage.removeItem('admin_user');

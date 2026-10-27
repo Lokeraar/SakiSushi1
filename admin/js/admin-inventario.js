@@ -307,7 +307,7 @@
             return uploadedImageUrl;
         } catch (error) {
             console.error('Error subiendo imagen:', error);
-            window.mostrarToast('Error al subir imagen: ' + (error.message || error), 'error');
+            window.mostrarToast('Error al subir imagen: ' + (window.mensajeDeError ? window.mensajeDeError(error) : (error.message || error)), 'error');
             return null;
         } finally {
             isUploadingImage = false;
