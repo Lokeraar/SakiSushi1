@@ -434,49 +434,17 @@
         if (o) o.remove();
         liberarFondo();
 
-        // Se recuerda SOLO en esta sesión del navegador. No se escribe en la
-        // base: "lo veo después" no es una decisión y no debe quedar
-        // registrado como si lo fuera.
-        //
-        // Pero con un límite de tiempo. Antes esta bandera duraba toda la
-        // sesión, y eso era peor que no tenerla: si el admin la cerraba a las
-        // 7 am diciendo "lo veo después", no la volvía a ver nunca, ni a las 3
-        // pm. Se quedaba sin revisar la tasa por haber pospuesto una vez.
-        //
-        // Ahora se recuerda 90 minutos, y una sola vez. Al vencer, si la base
-        // sigue diciendo que hay algo que decidir, vuelve a aparecer.
-        try {
-            sessionStorage.setItem('saki_ventana_tasa_cerrada', String(Date.now()));
-            sessionStorage.setItem('saki_ventana_tasa_veces',
-                String(Number(sessionStorage.getItem('saki_ventana_tasa_veces') || 0) + 1));
-        } catch (err) {}
     };
 
-    // ¿La cerró hace poco, y todavía vale la pena no volver a mostrarla?
+    // Acá vivía `cerradaHacePoco()`, el mecanismo de "lo veo después" con
+    // silencio de 90 minutos y tope a la tercera postergación. Se retiró
+    // completo cuando la ventana pasó a ser bloqueante: ya no hay botón de
+    // posponer, así que la función no se invocaba desde ningún lado y solo
+    // dejaba dos claves escritas en sessionStorage que nadie leía.
     //
-    // OJO CON LA LÓGICA (esto estuvo mal y es fácil de repetir): esta función
-    // devuelve true cuando hay que NO mostrar. Entonces "dejar de insistir"
-    // significa bloquear MÁS, no menos.
-    //
-    //   veces < 3  -> silencio de 90 minutos, después vuelve a aparecer
-    //   veces >= 3 -> se calla por el resto del día
-    //
-    // Al revés sería al revés: a la tercera postergación volvería a saltar,
-    // que es exactamente lo que el admin no quiere.
-    function cerradaHacePoco() {
-        try {
-            var sello = Number(sessionStorage.getItem('saki_ventana_tasa_cerrada'));
-            if (!sello) return false;
-
-            var veces = Number(sessionStorage.getItem('saki_ventana_tasa_veces') || 0);
-            if (veces >= 3) return true;   // ya pospuso bastante: no molestar más hoy
-
-            var MINUTOS = 90;
-            return (Date.now() - sello) < MINUTOS * 60 * 1000;
-        } catch (err) {
-            return false;
-        }
-    };
+    // REA lo detectó como inventario de almacenamiento persistente
+    // (`saki_ventana_tasa_cerrada` y `saki_ventana_tasa_veces`), que fue la
+    // pista para encontrarlo.
 
     // ============================================================
     // Decidir
@@ -610,21 +578,10 @@
         if (o) o.remove();
         liberarFondo();
 
-        // La decisión ya quedó escrita, así que `necesita_revision` va a dar
-        // false y la ventana no vuelve a abrirse en toda la sesión. Pero la
-        // bandera de "cerrada" se pone también acá: si la base fallara al
-        // registrar (sin red, por ejemplo), el admin no tiene que volver a ver
-        // el mismo cartel en cada cambio de sección.
-        // La decisión ya quedó escrita, así que `necesita_revision` va a dar
-        // false y la ventana no vuelve a abrirse. Pero se marca igual: si la
-        // base fallara al registrar (sin red, por ejemplo), el admin no tiene
-        // que volver a ver el mismo cartel en cada cambio de sección. Y se
-        // cuentan las veces para que `cerradaHacePoco` no lo trate como un
-        // "lo veo después".
-        try {
-            sessionStorage.setItem('saki_ventana_tasa_cerrada', String(Date.now()));
-            sessionStorage.setItem('saki_ventana_tasa_veces', '3');
-        } catch (err) {}
+        // No hace falta marcar nada en sessionStorage. La decisión quedó
+        // escrita en `tasa_revision_diaria`, así que `necesita_revision` va a
+        // dar false por sí sola. Si la escritura falló, ya se salió más arriba
+        // sin cerrar la ventana.
 
         if (window.mostrarToast) {
             var msj = accion === 'mantener'
@@ -698,16 +655,12 @@
     // Arranque
     // ============================================================
     //
-    // Se llama después del login. Respeta el "lo veo después" de la sesión y
-    // no molesta si ya se revisó hoy.
+    // Se llama después del login. No molesta si ya se revisó hoy.
     window.arrancarVentanaTasa = async function (opciones) {
         opciones = opciones || {};
         try {
             // Ya no existe el "lo veo después": sin decisión del día no hay
-            // panel. `cerradaHacePoco` queda sin uso y se deja documentada más
-            // abajo por si algún día se vuelve a permitir posponer.
-
-
+            // panel. La ventana bloquea, y la decisión se guarda en la base.
             var e = await window.consultarVentanaTasa();
             window.escucharRevisionTasaCompartida();
             if (!e) return;
