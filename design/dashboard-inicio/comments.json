@@ -151,9 +151,9 @@
       "excerpt": "Guardar cambios en tasa",
       "comment": "Asustado bien.",
       "createdAt": "2026-10-30T22:19:41.649Z",
-      "status": "open",
+      "status": "resolved",
       "sentAt": "2026-10-30T22:19:41.704Z",
-      "resolvedAt": null
+      "resolvedAt": "2026-10-30T22:33:35.964Z"
     },
     {
       "id": "z0dlezgm",
@@ -165,6 +165,17 @@
       "status": "resolved",
       "sentAt": "2026-10-30T22:20:15.887Z",
       "resolvedAt": "2026-10-30T22:21:35.188Z"
+    },
+    {
+      "id": "yxr75tew",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#btnObtenerTasaBCV",
+      "excerpt": "Consultar el BCV",
+      "comment": "Lo que debe hacer esta opción es un refresh de la tasa bcv, ejemplo: si coloqué incorrectamente la tasa al abrir, pero no quiero buscar manualmente en fuentes externas, al darle, me debe mostrar la última tasa publicada.",
+      "createdAt": "2026-10-30T22:23:38.598Z",
+      "status": "open",
+      "sentAt": null,
+      "resolvedAt": null
     }
   ]
 }
