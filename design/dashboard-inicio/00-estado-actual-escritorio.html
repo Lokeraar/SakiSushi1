@@ -970,6 +970,20 @@ html.dark-theme .toggle-slider { background-color: rgba(255,255,255,.2); }
         text-align: center;
         line-height: 1.25;
         max-width: 46%;
+        /* El icono no debe encogerse ni estirarse con el boton: queda del
+           tamano del texto y centrado respecto de las dos lineas. */
+        justify-content: center;
+        gap: .35rem;
+    }
+    .tcb-save-btn > i {
+        flex: 0 0 auto;
+        font-size: 1em;
+        line-height: 1;
+        align-self: center;
+    }
+    .tcb-save-btn > span {
+        min-width: 0;
+        text-align: center;
     }
     .tcb-save-wrap {
         display: flex;
@@ -4768,7 +4782,7 @@ html.dark-theme .status-inactivo {
                         <div class="tcb-save-wrap">
                             <!-- Dos líneas: en un teléfono "Guardar cambios en tasa" no entra
                                  en una sola y desbordaba el ancho del bloque. -->
-                            <button class="btn-primary tcb-save-btn" id="saveAllButton"><i class="fas fa-save"></i> Guardar<br>cambios en tasa</button>
+                            <button class="btn-primary tcb-save-btn" id="saveAllButton"><i class="fas fa-save"></i><span>Guardar<br>cambios en tasa</span></button>
                         <button style="margin-left:8px" class="btn-secondary tcb-save-btn" id="btnObtenerTasaBCV"><i class="fas fa-satellite-dish"></i> Consultar<br>el BCV</button></div>
 
                         <!-- ============================================================

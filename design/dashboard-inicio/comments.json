@@ -154,6 +154,17 @@
       "status": "open",
       "sentAt": "2026-10-30T22:19:41.704Z",
       "resolvedAt": null
+    },
+    {
+      "id": "z0dlezgm",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#saveAllButton > i",
+      "excerpt": "",
+      "comment": "Ajústalo bien a las dimensiones del botón",
+      "createdAt": "2026-10-30T22:20:15.836Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T22:20:15.887Z",
+      "resolvedAt": "2026-10-30T22:21:35.188Z"
     }
   ]
 }
