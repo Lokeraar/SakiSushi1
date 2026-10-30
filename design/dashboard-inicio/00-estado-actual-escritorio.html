@@ -2226,7 +2226,25 @@ html.dark-theme .ingrediente-row {
 .content { padding: 1.5rem; }
 @media (max-width: 768px) {
     .content { padding: .85rem; }
-    .pane-header { flex-direction: column; align-items: flex-start; }
+    /* El título y su acción van en la misma linea. Apilarlos dejaba el boton
+       del cierre del local solo en una fila propia, gastando 44px de alto en
+       algo que entra al lado del titulo. */
+    .pane-header { flex-direction: row; align-items: center; }
+    .pane-header .section-title { flex: 1; min-width: 0; }
+    /* El boton comparte fila con el titulo, asi que se aprieta: texto mas
+       chico, sin partirse en dos lineas y con el chip a la vista. */
+    #btnAbrirCierre {
+        flex-shrink: 0;
+        font-size: .78rem;
+        padding: .4rem .6rem;
+        white-space: nowrap;
+        gap: .3rem;
+    }
+    #btnAbrirCierre i { font-size: .85em; }
+    #btnAbrirCierre #cierreEstadoChip {
+        font-size: .65rem;
+        padding: .1rem .35rem;
+    }
     .usuarios-grid { grid-template-columns: 1fr; }
     /* Mesoneros y deliverys: 1 columna en tablet/móvil */
     .mesoneros-grid,

@@ -132,6 +132,28 @@
       "status": "resolved",
       "sentAt": "2026-10-30T21:34:07.399Z",
       "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "yfh2vdma",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#btnAbrirCierre",
+      "excerpt": "Cierre del local Abierto",
+      "comment": "Suelo a la misma linea de \"Inicio\"",
+      "createdAt": "2026-10-30T22:19:21.201Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T22:19:21.405Z",
+      "resolvedAt": "2026-10-30T22:20:09.128Z"
+    },
+    {
+      "id": "jsybdvt2",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#saveAllButton",
+      "excerpt": "Guardar cambios en tasa",
+      "comment": "Asustado bien.",
+      "createdAt": "2026-10-30T22:19:41.649Z",
+      "status": "open",
+      "sentAt": "2026-10-30T22:19:41.704Z",
+      "resolvedAt": null
     }
   ]
 }
