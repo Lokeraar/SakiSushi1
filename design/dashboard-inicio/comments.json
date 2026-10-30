@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "comments": [
+    {
+      "id": "ijsp77qj",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#tasaBar > div:nth-of-type(2) > div:nth-of-type(5) > div > div > div:nth-of-type(2)",
+      "excerpt": "Si está activo, el cliente paga menos cuando saca un ingrediente al personalizar (se le devuelve el precio de venta de ese ingrediente). Si está apagado, el plato se cobra completo aunque saque la mitad.",
+      "comment": "Convierte este contenido en el tooltip del toggle",
+      "createdAt": "2026-10-30T21:13:44.265Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "da46tr3d",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#tasaBar > div:nth-of-type(2) > div:nth-of-type(5) > div > label > span",
+      "excerpt": "",
+      "comment": "Ubícalo al extremo derecho del título de este renglón.",
+      "createdAt": "2026-10-30T21:14:56.472Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "5o8189lz",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#saveAllButton",
+      "excerpt": "Guardar cambios en tasa",
+      "comment": "Distribuye en 2 líneas, no cabe en una sola línea.",
+      "createdAt": "2026-10-30T21:17:24.555Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "vqy0bjvh",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#btnObtenerTasaBCV",
+      "excerpt": "Consultar el BCV",
+      "comment": "Distribuye el texto en 2 líneas, no cabe en una.",
+      "createdAt": "2026-10-30T21:18:26.200Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "tcg7y5a2",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#dashboardPane > div:nth-of-type(1)",
+      "excerpt": "Inicio",
+      "comment": "A la derecha de acá coloca un botón que despliegue un modal con la sección de \"Cierre de local\"",
+      "createdAt": "2026-10-30T21:19:57.872Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "9dg8zbyh",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#cierrePanel > div:nth-of-type(1) > div",
+      "excerpt": "Cierre del local",
+      "comment": "Reunida esta sección dentro del modal del punto 5",
+      "createdAt": "2026-10-30T21:20:37.231Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "8p36vpz0",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#tasaBcvPanel > div:nth-of-type(1)",
+      "excerpt": "LO QUE PUBLICÓ EL BCV dolarapi.com 889.26 Fecha valor: viernes 30/10 (de hoy) Se cobra con 889.26 de base, y el precio al cliente sale con la efectiva de 889.26.",
+      "comment": "Este campo está de más, el valor (precio de la tasa) de este campo es el que debe estar ubicado en el campo del punto 8 (tasa base)",
+      "createdAt": "2026-10-30T21:24:13.039Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "tdak4fyn",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#tasaBaseInput",
+      "excerpt": "",
+      "comment": "Campo de tasa base",
+      "createdAt": "2026-10-30T21:24:40.075Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "59gg9i10",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#tasaBar > div:nth-of-type(1) > div:nth-of-type(1) > div",
+      "excerpt": "TASA BASE:",
+      "comment": "Añade un tooltip que indique la fuente de la cual se obtuvo/estableció ese precio base del campo.",
+      "createdAt": "2026-10-30T21:25:51.755Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "ouqk09op",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#tasaBcvPanel > div:nth-of-type(2)",
+      "excerpt": "AL DÍA umbral 0.5% Estás cobrando la tasa del BCV. La diferencia es de redondeo.",
+      "comment": "Este campo no hace falta, quítalo.",
+      "createdAt": "2026-10-30T21:26:13.927Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "3hvobqjd",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#tasaBcvPanel > div:nth-of-type(3) > button",
+      "excerpt": "Revisar de nuevo",
+      "comment": "Este campo no hace falta tenerlo, quítalo. Creo que va acorde al elemento del punto 4, compruébalo y modificalo.",
+      "createdAt": "2026-10-30T21:27:35.567Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    },
+    {
+      "id": "ecvhakwp",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#tasaBcvPanel > div:nth-of-type(4)",
+      "excerpt": "CÓMO FUE LA CAPTURA DE HOY dolarapi.com 11:52",
+      "comment": "El contenido de acá es al que me refería en el punto 9.",
+      "createdAt": "2026-10-30T21:28:32.529Z",
+      "status": "resolved",
+      "sentAt": "2026-10-30T21:34:07.399Z",
+      "resolvedAt": "2026-10-30T21:39:36.444Z"
+    }
+  ]
+}

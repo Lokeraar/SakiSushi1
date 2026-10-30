@@ -1,0 +1,20 @@
+{
+  "title": "Dashboard · Inicio",
+  "brief": "Estado actual del panel de Inicio del admin de Saki Sushi, tomado del commit más reciente (54dfe31) y del DOM que produce al ejecutarse. El layout es mobile-first: por debajo de 768px muestra header-mobile y apila todo, arriba muestra header-desktop en dos filas. Son dos pantallas distintas, así que van dos artboards. Base editable para mejoras visuales: no propone nada, muestra lo que hay.",
+  "artboards": [
+    {
+      "file": "00-estado-actual-movil.html",
+      "title": "Estado actual · móvil (390px)",
+      "tradeoff": "Es el layout que se usa a diario. Ancho 390px: el del iPhone 12/13/14 y el que entra sin recorte en la pantalla de un teléfono una vez descontado el chrome del canvas. El bloque de tasa mete el descuento de ingredientes y todo el cierre del local dentro de .tcb-controls, que mide 202 renglones; los bloques van apilados sin jerarquía.",
+      "width": 390,
+      "height": 2800
+    },
+    {
+      "file": "00-estado-actual-escritorio.html",
+      "title": "Estado actual · escritorio (1440px)",
+      "tradeoff": "Mismo código, otra pantalla: header de dos filas, tarjetas en cuatro columnas y grid de dos columnas abajo. Sirve para ver qué se rompe al angostar. Ancho 1440px.",
+      "width": 1440,
+      "height": 2400
+    }
+  ]
+}
