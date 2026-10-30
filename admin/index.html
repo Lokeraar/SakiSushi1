@@ -201,7 +201,6 @@
                         <div class="tcb-card tcb-card-base">
                             <div class="tcb-label">Tasa Base:</div>
                             <input type="number" step="0.01" id="tasaBaseInput" class="tcb-input" oninput="window.recalcularTasaEfectiva && window.recalcularTasaEfectiva()">
-                            <div class="tcb-sublabel">Bs. por $1</div>
                         </div>
                         <div class="tcb-card tcb-card-pct">
                             <div class="tcb-label" id="labelAumentoPct">Aumento Diario %:</div>
@@ -214,17 +213,14 @@
                                    id="aumentoDiarioInput" class="tcb-input"
                                    inputmode="decimal"
                                    oninput="window.recalcularTasaEfectiva && window.recalcularTasaEfectiva()">
-                            <div class="tcb-sublabel">por periodo</div>
                         </div>
                         <div class="tcb-card tcb-card-efectiva">
                             <div class="tcb-label">Tasa Efectiva:</div>
                             <div class="tcb-value-big" id="tasaEfectivaDisplay">400.00</div>
-                            <div class="tcb-sublabel">Bs. por $1 hoy</div>
                         </div>
                         <div class="tcb-card tcb-card-acum">
                             <div class="tcb-label">Acumulado:</div>
                             <div class="tcb-value-big tcb-acum-val" id="aumentoAcumuladoDisplay">0%</div>
-                            <div class="tcb-sublabel">aumento total</div>
                         </div>
                     </div>
                     <!-- ============================================================
@@ -245,16 +241,74 @@
                     <div class="tcb-controls">
                         <div class="tcb-toggle-card">
                             <div class="tcb-toggle-top">
-                                <span class="tcb-toggle-label">Aumento diario activo</span>
+                                <span class="tcb-toggle-label">
+                                    Aumento diario activo
+                                    <span class="tooltip-wrap" style="cursor:help;margin-left:.3rem" onmouseenter="this.querySelector('.tooltip-text').style.display='block'" onmouseleave="this.querySelector('.tooltip-text').style.display='none'">
+                                        <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--text-muted);color:#fff;border-radius:50%;font-size:.6rem;font-weight:700">?</span>
+                                        <span class="tooltip-text">Suma el porcentaje indicado una vez por día desde la fecha "Desde". El recargo se va acumulando con el paso de los días.</span>
+                                    </span>
+                                </span>
                                 <label class="toggle-switch"><input type="checkbox" id="aumentoActivoToggle"><span class="toggle-slider"></span></label>
                             </div>
                         </div>
                         <div class="tcb-toggle-card">
                             <div class="tcb-toggle-top">
-                                <span class="tcb-toggle-label">Aumento semanal activo</span>
+                                <span class="tcb-toggle-label">
+                                    Aumento semanal activo
+                                    <span class="tooltip-wrap" style="cursor:help;margin-left:.3rem" onmouseenter="this.querySelector('.tooltip-text').style.display='block'" onmouseleave="this.querySelector('.tooltip-text').style.display='none'">
+                                        <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--text-muted);color:#fff;border-radius:50%;font-size:.6rem;font-weight:700">?</span>
+                                        <span class="tooltip-text">Igual que el diario, pero suma el porcentaje una vez por semana. No se puede tener diario y semanal encendidos a la vez.</span>
+                                    </span>
+                                </span>
                                 <label class="toggle-switch"><input type="checkbox" id="aumentoSemanalToggle"><span class="toggle-slider"></span></label>
                             </div>
                         </div>
+                        <!-- ============================================================
+                             DETENER EL AUMENTO (mantener lo acumulado)
+                             ============================================================
+                             Tercer estado, distinto de los otros dos toggles:
+
+                               - Aumento activo  -> sube solo cada día o semana.
+                               - Detenido        -> deja de subir, pero se sigue
+                                                    cobrando lo ya acumulado.
+                               - Ambos apagados  -> se cobra la tasa base,
+                                                    sin recargo. Es lo que el
+                                                    estado "detenido" NO hace.
+
+                             Antes este estado solo se conseguía poniendo la
+                             fecha "Hasta" en el pasado, que es un truco: nadie
+                             adivina que esa fecha sirve para detener. Por eso
+                             va como toggle explícito, acá, junto a la tasa.
+                             ============================================================ -->
+                        <div class="tcb-toggle-card">
+                            <div class="tcb-toggle-top">
+                                <span class="tcb-toggle-label">
+                                    Detener el aumento
+                                    <span class="tooltip-wrap" style="cursor:help;margin-left:.3rem" onmouseenter="this.querySelector('.tooltip-text').style.display='block'" onmouseleave="this.querySelector('.tooltip-text').style.display='none'">
+                                        <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--text-muted);color:#fff;border-radius:50%;font-size:.6rem;font-weight:700">?</span>
+                                        <span class="tooltip-text">Deja de subir, pero se sigue cobrando lo acumulado hasta hoy. Distinto de apagar los dos aumentos: eso borra el recargo y se cobra la tasa base.</span>
+                                    </span>
+                                </span>
+                                <label class="toggle-switch"><input type="checkbox" id="aumentoDetenidoToggle"><span class="toggle-slider"></span></label>
+                            </div>
+                        </div>
+                        <!-- ============================================================
+                             DETENER EL AUMENTO (mantener lo acumulado)
+                             ============================================================
+                             Tercer estado, distinto de los otros dos toggles:
+
+                               - Aumento activo  -> sube solo cada día o semana.
+                               - Detenido        -> deja de subir, pero se sigue
+                                                    cobrando lo ya acumulado.
+                               - Ambos apagados  -> se cobra la tasa base,
+                                                    sin recargo. Es lo que el
+                                                    estado "detenido" NO hace.
+
+                             Antes este estado solo se conseguía poniendo la
+                             fecha "Hasta" en el pasado, que es un truco: nadie
+                             adivina que esa fecha sirve para detener. Por eso
+                             va como toggle explícito, acá, junto a la tasa.
+                             ============================================================ -->
                         <div class="tcb-fechas-card" id="tasaFechasDiv" style="display:none">
                             <div class="tcb-fecha-row tcb-fecha-row-completa">
                                 <span class="tcb-fecha-label">Desde:</span>

@@ -96,6 +96,9 @@
         document.getElementById('aumentoActivoToggle').checked = window.configGlobal.aumento_activo || false;
         const semEl = document.getElementById('aumentoSemanalToggle');
         if (semEl) semEl.checked = window.configGlobal.aumento_semanal || false;
+        // Se restaura el toggle de "detener" con el valor guardado.
+        const detEl = document.getElementById('aumentoDetenidoToggle');
+        if (detEl) detEl.checked = window.configGlobal.aumento_detenido === true;
         document.getElementById('tasaEfectivaDisplay').textContent = (window.configGlobal.tasa_efectiva || 400).toFixed(2);
 
         // Interruptor de descuento al quitar ingredientes. Si la columna no
@@ -131,6 +134,8 @@
         const activoSemanal = document.getElementById('aumentoSemanalToggle') &&
                               document.getElementById('aumentoSemanalToggle').checked;
         const estaActivo   = activoDiario || activoSemanal;
+        const detenido     = document.getElementById('aumentoDetenidoToggle') &&
+                             document.getElementById('aumentoDetenidoToggle').checked;
         const indefinido   = document.getElementById('aumentoIndefinido') &&
                              document.getElementById('aumentoIndefinido').checked;
         const desdeVal     = document.getElementById('aumentoDesde')?.value || '';
@@ -138,13 +143,43 @@
 
         let periodos = 0;
 
-        if (estaActivo && desdeVal) {
+        // ── El estado "detenido" congela el acumulado ──
+        //
+        // Si está detenido, el aumento deja de crecer pero lo ya acumulado se
+        // sigue cobrando. La forma de lograrlo sin inventar otra columna es
+        // congelar el fin del conteo: se cuentan los períodos hasta la fecha en
+        // que se detuvo (`fecha_ultimo_aumento`), no hasta hoy. Así el número
+        // queda fijo en vez de seguir subiendo día tras día.
+        //
+        // Ojo con la diferencia: si además se apagan los dos toggles de
+        // "activo", `estaActivo` es false, periodos queda en 0 y la efectiva
+        // vuelve a la base. Eso es "desactivar el recargo", que es otra cosa.
+        // ── ¿Hay recargo vigente? ──
+        //
+        // Tres estados, no dos. Esta cuenta decide todo lo demás:
+        //   activo   -> `estaActivo` y sube.
+        //   detenido -> no sube, pero conserva lo acumulado.
+        //   ninguno  -> se cobra la base, sin recargo.
+        //
+        // Antes el congelado vivía dentro de `if (estaActivo ...)`, así que
+        // marcar "Detener" con los dos toggles apagados dejaba periodos en 0 y
+        // la efectiva caía a la base, mientras la migración 34 sí lo contaba
+        // como recargo. Cliente y servidor decían cosas distintas.
+        const hayRecargo   = estaActivo || detenido;
+
+        const finCongelado = detenido && window.configGlobal && window.configGlobal.fecha_ultimo_aumento
+            ? new Date(String(window.configGlobal.fecha_ultimo_aumento).split('T')[0] + 'T00:00:00')
+            : null;
+
+        if (hayRecargo && desdeVal) {
             const hoy        = new Date(); hoy.setHours(0,0,0,0);
             const desdeDate  = new Date(desdeVal + 'T00:00:00');
             const hastaDate  = hastaVal ? new Date(hastaVal + 'T00:00:00') : null;
 
             if (desdeDate <= hoy) {
-                const finEfectivo = hastaDate && hastaDate < hoy ? hastaDate : hoy;
+                // Si está detenido, el conteo se corta donde se detuvo.
+                let finEfectivo = hastaDate && hastaDate < hoy ? hastaDate : hoy;
+                if (finCongelado && finCongelado < finEfectivo) finEfectivo = finCongelado;
                 const msDay      = 24 * 60 * 60 * 1000;
                 const msPeriodo  = activoSemanal ? 7 * msDay : msDay;
                 const diffMs     = finEfectivo - desdeDate;
@@ -156,10 +191,12 @@
         const tasaEfectiva     = tasaBase * (1 + aumentoAcumulado / 100);
 
         console.group('%c🔄 Saki Sushi — Cálculo de Tasa', 'color:#FF9800;font-weight:700');
-        console.log('Modo activo:', estaActivo ? (activoSemanal ? 'SEMANAL' : 'DIARIO') : 'DESACTIVADO');
+        console.log('Modo activo:', estaActivo ? (activoSemanal ? 'SEMANAL' : 'DIARIO') : (detenido ? 'DETENIDO' : 'DESACTIVADO'));
+        console.log('Detenido (congela acumulado):', detenido ? 'SÍ' : 'no');
+        if (finCongelado) console.log('Aumento congelado al:', finCongelado.toISOString().split('T')[0]);
         console.log('Fecha inicio (Desde):', desdeVal || '—');
         console.log('Fecha fin   (Hasta): ', hastaVal || (indefinido ? 'Indefinido' : '—'));
-        if (estaActivo && desdeVal) {
+        if (hayRecargo && desdeVal) {
             const _hoyLog = new Date(); _hoyLog.setHours(0,0,0,0);
             const _desdeLog = new Date(desdeVal + 'T00:00:00');
             const _msD = 24*60*60*1000;
@@ -184,6 +221,7 @@
         window.configGlobal.aumento_diario    = aumentoPct;
         window.configGlobal.aumento_activo    = activoDiario;
         window.configGlobal.aumento_semanal   = activoSemanal;
+        window.configGlobal.aumento_detenido  = detenido;
         window.configGlobal.aumento_acumulado = aumentoAcumulado;
         window.configGlobal.tasa_efectiva     = tasaEfectiva;
     };
@@ -235,7 +273,7 @@
                 aumento_diario:    window.configGlobal.aumento_diario,
                 aumento_activo:    window.configGlobal.aumento_activo,
                 aumento_semanal:   window.configGlobal.aumento_semanal || false,
-                aumento_detenido:  window.configGlobal.aumento_detenido,
+                aumento_detenido:  window.configGlobal.aumento_detenido === true,
                 aumento_acumulado: window.configGlobal.aumento_acumulado,
                 tasa_efectiva:     window.configGlobal.tasa_efectiva,
                 aumento_desde:     (document.getElementById('aumentoDesde') && document.getElementById('aumentoDesde').value) || null,

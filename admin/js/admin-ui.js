@@ -136,16 +136,38 @@
         }
         document.getElementById('aumentoActivoToggle').addEventListener('change', function() {
             if (this.checked) document.getElementById('aumentoSemanalToggle').checked = false;
-            window.configGlobal.aumento_detenido = !this.checked;
             _actualizarLabelAumento();
             window.recalcularTasaEfectiva();
         });
         document.getElementById('aumentoSemanalToggle').addEventListener('change', function() {
             if (this.checked) document.getElementById('aumentoActivoToggle').checked = false;
-            window.configGlobal.aumento_detenido = !this.checked;
             _actualizarLabelAumento();
             window.recalcularTasaEfectiva();
         });
+        // Tercer estado: dejar de subir pero seguir cobrando lo acumulado.
+        //
+        // Antes las dos líneas de arriba escribían
+        //   window.configGlobal.aumento_detenido = !this.checked;
+        // o sea que tildar "aumento activo" marcaba el aumento como DETENIDO,
+        // justo al revés. Y como nadie leía el campo, el error no se notaba.
+        // Ahora lo escribe su propio toggle y el cálculo lo lee.
+        const toggleDetenido = document.getElementById('aumentoDetenidoToggle');
+        if (toggleDetenido) {
+            toggleDetenido.addEventListener('change', function() {
+                if (this.checked) {
+                    // Fecha LOCAL, no UTC. `toISOString()` devuelve UTC: en
+                    // Venezuela (UTC-4), marcarlo después de las 8 de la noche
+                    // guardaba la fecha de MAÑANA, y el congelado se atrasaba un
+                    // día entero, dejando pasar un aumento más.
+                    var hoyLocal = new Date();
+                    var yyyy = hoyLocal.getFullYear();
+                    var mm   = String(hoyLocal.getMonth() + 1).padStart(2, '0');
+                    var dd   = String(hoyLocal.getDate()).padStart(2, '0');
+                    window.configGlobal.fecha_ultimo_aumento = yyyy + '-' + mm + '-' + dd;
+                }
+                window.recalcularTasaEfectiva();
+            });
+        }
         document.getElementById('aumentoIndefinido').addEventListener('change', function() {
             document.getElementById('aumentoHasta').disabled = this.checked;
             if (this.checked) document.getElementById('aumentoHasta').value = '';
