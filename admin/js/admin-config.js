@@ -46,48 +46,18 @@
         }
     };
 
-    // Helpers para mostrar el botón como "ya configurado" sin ocultarlo
-    function botonSutil(btn) {
-        btn.style.opacity = '0.5';
-        btn.style.pointerEvents = '';
-    }
-    function botonNormal(btn) {
-        btn.style.opacity = '';
-        btn.style.pointerEvents = '';
-    }
-
-    window._actualizarVisibilidadBotonBCV = function() {
-        const btn = document.getElementById('btnObtenerTasaBCV');
-        if (!btn) return;
-        const fechaHoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
-        const ultimaAct = window.configGlobal?.ultima_actualizacion;
-        const fechaUltima = ultimaAct ? new Date(ultimaAct).toLocaleDateString('en-CA', { timeZone: 'America/Caracas' }) : null;
-        if (fechaUltima === fechaHoy) {
-            botonSutil(btn);
-            btn.title = 'Ya configurada hoy — click para re-consultar';
-            let indicator = document.getElementById('tasaHoyIndicator');
-            if (!indicator) {
-                indicator = document.createElement('span');
-                indicator.id = 'tasaHoyIndicator';
-                indicator.style.cssText = 'color:#4CAF50;font-size:.75rem;font-weight:600;margin-left:8px';
-                btn.parentNode.appendChild(indicator);
-            }
-            indicator.textContent = '✅ Tasa configurada hoy';
-            indicator.style.display = 'inline';
-        } else {
-            botonNormal(btn);
-            btn.title = 'Obtener tasa del BCV automáticamente';
-            const indicator = document.getElementById('tasaHoyIndicator');
-            if (indicator) indicator.style.display = 'none';
-        }
-    };
+    // El botón de consulta no necesita estado visual propio: la ventana del
+    // día es la que informa si la tasa ya está firmada. Acá vivía
+    // `_actualizarVisibilidadBotonBCV`, que atenuaba el botón y le colgaba un
+    // chip "✅ Tasa configurada hoy". Se retiró junto con el modal viejo: era
+    // decoración de un flujo que ya no existe, y el dato bueno (¿está firmada
+    // hoy?) lo da `estado_revision_tasa()` en el panel de la tasa.
 
     window.cargarConfiguracionInicial = async function() {
         await window.cargarConfiguracion();
         window.actualizarTasaUI();
         window.recalcularTasaEfectiva();
         window.actualizarMenuTasaBanner();
-        window._actualizarVisibilidadBotonBCV();
     };
 
     window.actualizarTasaUI = function() {
@@ -336,109 +306,36 @@
         }
     };
 
-    // ── Botón "Obtener del BCV" ──
+    // ── Consulta del BCV (sin modal, sin escribir nada) ──
+    //
+    // Acá vivía un modal propio que ofrecía "Usar esta tasa" y escribía con
+    // `guardarConfiguracion()`. Era un segundo camino para fijar la tasa, y el
+    // peor: no dejaba firma en `tasa_revision_diaria`, no sabía de la fecha
+    // valor y no pasaba por `aplicar_tasa_elegida`. Como además la ventana
+    // buena ya lo hace todo, al elegir "Conservar" aparecían DOS modales
+    // seguidos pidiendo lo mismo.
+    //
+    // Se retira el modal y queda solo la consulta, que es lo único que otro
+    // módulo (`admin-tasa-aviso.js`) necesitaba. Es la misma limpieza que se
+    // hizo con la ventana vieja "Tasa de Hoy" del cajero.
     window.obtenerTasaBCV = async function() {
-        const btn = document.getElementById('btnObtenerTasaBCV');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...'; }
-
         try {
-            // Se lee de la base, que sí guarda la FECHA VALOR de la captura.
-            // Antes esto llamaba a una Edge Function que devolvía un número
-            // pelado: no sabía si era la tasa de hoy o la del martes que
-            // todavía no rige. Ese programa se retiró (ver memoria
-            // `saki-sushi1/edge-function-duplicada`).
             const detalle = await window.obtenerTasaBCVDetalle({ forzar: true });
-
-            if (!detalle || !(detalle.valor > 0)) {
-                window.mostrarToast('❌ No hay ninguna tasa del BCV capturada todavía', 'error');
-                return;
-            }
-
-            // Mostrar modal de confirmación
-            const tasaEncontrada = detalle.valor;
-            const fechaValor = detalle.fecha_valor
-                ? new Date(detalle.fecha_valor + 'T12:00:00').toLocaleDateString('es-VE', {
-                      weekday: 'long', day: '2-digit', month: '2-digit'
-                  })
-                : 'sin fecha valor';
-
-            // Si la captura tiene días, se dice. La fecha valor es el dato que
-            // distingue una tasa vigente de una que todavía no rige.
-            const antiguedad = (detalle.dias_atras !== null && detalle.dias_atras !== undefined)
-                ? (detalle.dias_atras === 0 ? 'de hoy'
-                   : detalle.dias_atras === 1 ? 'de ayer'
-                   : 'hace ' + detalle.dias_atras + ' días')
-                : '';
-
-            // Crear modal overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay';
-            overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:1rem';
-
-            const modal = document.createElement('div');
-            modal.style.cssText = 'background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:1.5rem;max-width:420px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)';
-
-            modal.innerHTML = `
-                <div style="font-size:2rem;margin-bottom:.75rem">📡</div>
-                <h3 style="color:#FF9800;margin:0 0 .3rem">Tasa BCV</h3>
-                <p style="color:rgba(255,255,255,.6);font-size:.85rem;margin:0 0 .3rem">Fecha valor: ${fechaValor}</p>
-                <p style="color:rgba(255,255,255,.45);font-size:.78rem;margin:0 0 1rem">${antiguedad}${detalle.fuente ? ' · ' + detalle.fuente : ''}</p>
-                <div style="font-size:2.5rem;font-weight:800;color:#fff;margin-bottom:1.5rem">
-                    Bs ${tasaEncontrada.toFixed(2)}
-                </div>
-                <div style="display:flex;gap:.8rem;flex-wrap:wrap">
-                    <button id="modalUsarTasa" style="flex:1;padding:.75rem;border:none;border-radius:10px;background:linear-gradient(135deg,#D32F2F,#b71c1c);color:#fff;font-weight:700;font-size:.95rem;cursor:pointer">
-                        ✅ Usar esta tasa
-                    </button>
-                    <button id="modalModificarTasa" style="flex:1;padding:.75rem;border:none;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-weight:600;font-size:.95rem;cursor:pointer">
-                        ✏️ Modificar
-                    </button>
-                    <button id="modalCancelarTasa" style="flex:1;padding:.75rem;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.5);font-size:.85rem;cursor:pointer">
-                        Cancelar
-                    </button>
-                </div>
-            `;
-
-            overlay.appendChild(modal);
-            document.body.appendChild(overlay);
-
-            // Eventos del modal
-            document.getElementById('modalUsarTasa').onclick = async () => {
-                document.getElementById('tasaBaseInput').value = tasaEncontrada.toFixed(2);
-                window.configGlobal.tasa_cambio = tasaEncontrada;
-                window.recalcularTasaEfectiva();
-                await window.guardarConfiguracion();
-                overlay.remove();
-                window._actualizarVisibilidadBotonBCV();
-                window.mostrarToast('✅ Tasa BCV aplicada: Bs ' + tasaEncontrada.toFixed(2), 'success');
-            };
-
-            document.getElementById('modalModificarTasa').onclick = () => {
-                document.getElementById('tasaBaseInput').value = tasaEncontrada.toFixed(2);
-                window.configGlobal.tasa_cambio = tasaEncontrada;
-                window.recalcularTasaEfectiva();
-                overlay.remove();
-                document.getElementById('tasaBaseInput').focus();
-                document.getElementById('tasaBaseInput').select();
-                window.mostrarToast('📝 Tasa del BCV cargada. Podés ajustar el valor antes de guardar.', 'info');
-            };
-
-            document.getElementById('modalCancelarTasa').onclick = () => {
-                overlay.remove();
-            };
-
-            // Cerrar con click fuera
-            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-
+            if (!detalle || !(detalle.valor > 0)) return null;
+            return detalle.valor;
         } catch (e) {
-            console.error('Error obteniendo tasa BCV:', e);
-            window.mostrarToast('❌ Error de conexión al consultar BCV', 'error');
-        } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Obtener del BCV'; }
+            console.warn('No se pudo consultar el BCV:', e.message);
+            return null;
         }
     };
 
-    // Agregar el botón "Obtener del BCV" al lado del botón Guardar
+
+    // Agregar el botón "Consultar el BCV" al lado del botón Guardar.
+    //
+    // Es solo una consulta: trae la tasa vigente y la deja en la caja de
+    // "Tasa Base" para que el admin la revise y guarde. NO escribe nada por su
+    // cuenta y NO abre un modal propio: el camino para fijar la tasa del día
+    // es la ventana bloqueante, que sí deja firma.
     (function _agregarBotonBCV() {
         const saveWrap = document.querySelector('.tcb-save-wrap');
         if (!saveWrap) return;
@@ -446,8 +343,34 @@
         btn.id = 'btnObtenerTasaBCV';
         btn.className = 'btn-secondary tcb-save-btn';
         btn.style.marginLeft = '8px';
-        btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Obtener del BCV';
-        btn.onclick = window.obtenerTasaBCV;
+        btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Consultar el BCV';
+        btn.onclick = async function () {
+            const anterior = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
+            try {
+                const detalle = await window.obtenerTasaBCVDetalle({ forzar: true });
+                if (!detalle || !(detalle.valor > 0)) {
+                    window.mostrarToast('❌ No hay ninguna tasa del BCV capturada todavía', 'error');
+                    return;
+                }
+                const input = document.getElementById('tasaBaseInput');
+                if (input) {
+                    input.value = Number(detalle.valor).toFixed(2);
+                    input.focus();
+                    input.select();
+                }
+                window.mostrarToast(
+                    '📝 Tasa del BCV cargada: ' + Number(detalle.valor).toFixed(2) +
+                    '. Revisala y guardá si corresponde.', 'info');
+            } catch (e) {
+                console.error('Error consultando el BCV:', e);
+                window.mostrarToast('❌ Error de conexión al consultar el BCV', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = anterior;
+            }
+        };
         saveWrap.appendChild(btn);
     })();
 })();

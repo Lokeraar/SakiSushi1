@@ -106,16 +106,11 @@
             );
         }
 
-        // Marca visible en el botón del BCV, para que quede rastro después
-        // de que el toast desaparezca.
-        var btn = document.getElementById('btnObtenerTasaBCV');
-        if (btn && !document.getElementById('avisoTasaVieja')) {
-            var chip = document.createElement('span');
-            chip.id = 'avisoTasaVieja';
-            chip.style.cssText = 'color:#FF9800;font-size:.75rem;font-weight:600;margin-left:8px';
-            chip.textContent = '⚠ Tasa desactualizada vs BCV (' + d.derivaPorcentaje.toFixed(2) + '%)';
-            btn.parentNode.appendChild(chip);
-        }
+        // Se informa con el toast. Antes además se colgaba un chip
+        // "⚠ Tasa desactualizada" al lado del botón del BCV, pero ese botón
+        // pertenecía al flujo viejo y se retiró con su modal: el chip quedaba
+        // huérfano. El dato sigue disponible en el panel de la tasa, que es
+        // donde se decide.
 
         console.log('[tasa] Diagnóstico:', d);
     };
