@@ -343,7 +343,9 @@
         btn.id = 'btnObtenerTasaBCV';
         btn.className = 'btn-secondary tcb-save-btn';
         btn.style.marginLeft = '8px';
-        btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Consultar el BCV';
+        // Dos líneas: en un teléfono "Consultar el BCV" no entra en una sola y
+        // desbordaba al lado del botón Guardar.
+        btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Consultar<br>el BCV';
         btn.onclick = async function () {
             const anterior = btn.innerHTML;
             btn.disabled = true;

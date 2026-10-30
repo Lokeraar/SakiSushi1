@@ -946,6 +946,23 @@ html.dark-theme .toggle-slider { background-color: rgba(255,255,255,.2); }
     padding: .55rem 1.1rem;
     white-space: nowrap;
 }
+/* Los dos botones del bloque de tasa llevan dos líneas en móvil: el texto no
+   entra en una sola y desbordaba el ancho de la tarjeta. El text-align y el
+   line-height evitan que la segunda línea quede pegada al borde. */
+@media (max-width: 768px) {
+    .tcb-save-btn {
+        white-space: normal;
+        text-align: center;
+        line-height: 1.25;
+        max-width: 46%;
+    }
+    .tcb-save-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .4rem;
+        align-items: center;
+    }
+}
 /* Tablet responsive for save button - fit in same row */
 @media (min-width: 769px) and (max-width: 1024px) {
     .tcb-controls {

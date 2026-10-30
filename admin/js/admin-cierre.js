@@ -105,12 +105,14 @@
             // "Desactivado" no es un formulario: es una acción directa.
             if (rango) rango.style.display = 'none';
             if (campos) campos.style.display = 'none';
+            sincronizarBotonConfirmar(modo);
             window.desactivarCierre();
             return;
         }
 
         if (campos) campos.style.display = '';
         if (rango) rango.style.display = (modo === 'rango') ? '' : 'none';
+        sincronizarBotonConfirmar(modo);
         pintarSugerencias();
     };
 
@@ -145,7 +147,7 @@
         if (cierre) {
             chip.textContent = 'Cerrado';
             chip.style.background = 'rgba(239,68,68,.18)';
-            chip.style.color = '#fca5a5';
+            chip.style.color = '#c62828';
 
             document.getElementById('cierreVigenteMotivo').textContent = cierre.motivo || 'Cerrado';
             document.getElementById('cierreVigenteMensaje').textContent = '«' + (cierre.mensaje || '') + '»';
@@ -161,7 +163,8 @@
         } else {
             chip.textContent = 'Abierto';
             chip.style.background = 'rgba(74,222,128,.15)';
-            chip.style.color = '#4ade80';
+            // Verde legible sobre fondo claro: #4ade80 sólo funciona en el tema oscuro.
+            chip.style.color = '#2e7d32';
             box.style.display = 'none';
             if (form) form.style.display = '';
             pintarSugerencias();
@@ -177,6 +180,43 @@
         var d = new Date(v);
         return isNaN(d.getTime()) ? null : d.toISOString();
     }
+
+    // ============================================================
+    // Abrir y cerrar el modal
+    // ============================================================
+    //
+    // El cierre vivía dentro del bloque de la tasa y ocupaba 63 líneas para una
+    // acción que se usa pocas veces al año. Va en su propio modal, con el estado
+    // a la vista en el botón que lo abre.
+    // El botón de confirmar cambia de rótulo según el modo: en "Desactivado" no
+    // cierra nada, así que no puede seguir diciendo "Cerrar el local".
+    function sincronizarBotonConfirmar(modo) {
+        var btn = document.getElementById('btnConfirmarCierre');
+        if (!btn) return;
+        if (modo === 'desactivado') {
+            btn.style.display = 'none';
+        } else {
+            btn.style.display = '';
+            btn.innerHTML = '<i class="fas fa-lock"></i> Cerrar el local';
+        }
+    }
+
+    window.abrirModalCierre = function () {
+        var modal = document.getElementById('cierreModal');
+        if (!modal) return;
+        modal.classList.add('active');
+        // Cada apertura arranca en "Hoy": el modo elegido la vez anterior no
+        // debe quedar pegado y cerrar el local en un rango que nadie eligió.
+        window._cierreModo('hoy');
+        pintarSugerencias();
+        var motivo = document.getElementById('cierreMotivo');
+        if (motivo) motivo.focus();
+    };
+
+    window.cerrarModalCierre = function () {
+        var modal = document.getElementById('cierreModal');
+        if (modal) modal.classList.remove('active');
+    };
 
     window.crearCierre = async function () {
         if (!window.supabaseClient) return;

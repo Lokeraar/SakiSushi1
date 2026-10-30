@@ -107,100 +107,60 @@ function nombreFuenteTasa(f) {
         var aplicada = _datos.aplicada || {};
         var dif      = _datos.diferencia || {};
 
-        // ── Bloque 1: la tasa del BCV ──
-        var html = '';
-
-        if (!bcv) {
-            html +=
-                '<div class="tbp-caja tbp-vacia">' +
-                    '<div class="tbp-titulo"><i class="fas fa-triangle-exclamation"></i> No hay ninguna tasa del BCV capturada</div>' +
-                    '<div class="tbp-nota">El cron la busca de lunes a viernes a las 5 pm. Si esto sigue así, revisá que el cron esté corriendo.</div>' +
-                '</div>';
-        } else {
-            // `carga_inicial`, `manual_admin` y `panel_admin` son el mismo
-            // caso para quien mira: lo tipeó una persona. Se traducen a una
-            // sola etiqueta; el nombre técnico se queda en la base para
-            // auditar.
-            var fuente = nombreFuenteTasa(bcv.fuente);
-            var chipOrigen = bcv.es_principal === false
-                ? '<span class="tbp-chip tbp-chip-respaldo" title="La fuente principal no respondió y se usó esta">' + fuente + '</span>'
-                : '<span class="tbp-chip">' + fuente + '</span>';
-
-            // Aviso de antigüedad. No bloquea nada ni pide confirmación: es
-            // información. Pero tiene que estar, porque el admin necesita
-            // saber si el número que ve es de hoy o de la semana pasada.
-            var avisoViejo = '';
-            var rev = _datos.revision || {};
-            var fuenteTxt = nombreFuenteTasa(bcv && bcv.fuente);
-
-            if (rev.captura_fallo_hoy) {
-                // No se pudo capturar hoy: se nombra la fuente y la fecha del
-                // dato que se está mostrando, y se pregunta si es el que quiere.
-                avisoViejo =
-                    '<div class="tbp-aviso-viejo tbp-aviso-fallo">' +
-                        '<i class="fas fa-plug-circle-xmark"></i> ' +
-                        'Este es el BCV de ' + fuenteTxt + ' del ' +
-                        fechaEnPalabras(rev.fecha_valor || (bcv && bcv.fecha_valor)) +
-                        ', ¿lo eliges?' +
-                    '</div>';
-            } else if (rev.dato_viejo) {
-                avisoViejo =
-                    '<div class="tbp-aviso-viejo">' +
-                        '<i class="fas fa-clock"></i> ' +
-                        'La tasa sigue siendo la de ayer, BCV no publicó nueva' +
-                    '</div>';
+        // ── Tooltip de la tarjeta TASA BASE ──
+        //
+        // Responde "¿de dónde salió este número?" ahí mismo, junto al campo, en
+        // lugar de obligar a bajar hasta los bloques de abajo. Se rellena con
+        // los datos reales de la captura, no con texto fijo.
+        var tip = document.getElementById('tasaBaseFuenteTip');
+        if (tip) {
+            if (!bcv) {
+                tip.textContent = 'Sin tasa del BCV capturada. El valor de la base se cargó a mano.';
+            } else {
+                var partesTip = [];
+                partesTip.push('Fuente: ' + nombreFuenteTasa(bcv.fuente) + '.');
+                partesTip.push('Fecha valor: ' + fechaEnPalabras(bcv.fecha_valor) + ' (' + cuandoFue(bcv.dias_atras) + ').');
+                partesTip.push('Publicado: ' + Number(bcv.valor).toFixed(2) + ' Bs por dólar.');
+                if (bcv.es_principal === false) {
+                    partesTip.push('Se usó un respaldo: la fuente principal no respondió.');
+                }
+                var cadenaTip = (_datos.cadena_hoy || [])[0];
+                if (cadenaTip && cadenaTip.hora) {
+                    partesTip.push('Capturado hoy a las ' + cadenaTip.hora + '.');
+                }
+                tip.textContent = partesTip.join(' ');
             }
-
-            html +=
-                '<div class="tbp-caja">' +
-                    '<div class="tbp-titulo">' +
-                        '<i class="fas fa-building-columns"></i> Lo que publicó el BCV' +
-                        chipOrigen +
-                    '</div>' +
-                    avisoViejo +
-                    '<div class="tbp-fila-principal">' +
-                        '<div class="tbp-valor">' + Number(bcv.valor).toFixed(2) + '</div>' +
-                        '<div class="tbp-fecha">' +
-                            'Fecha valor: <strong>' + fechaEnPalabras(bcv.fecha_valor) + '</strong>' +
-                            '<span class="tbp-tenue"> (' + cuandoFue(bcv.dias_atras) + ')</span>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="tbp-nota">Se cobra con <strong>' + Number(aplicada.tasa_cambio || 0).toFixed(2) +
-                        '</strong> de base, y el precio al cliente sale con la efectiva de <strong>' +
-                        Number(aplicada.tasa_efectiva || 0).toFixed(2) + '</strong>.</div>' +
-                '</div>';
         }
 
-        // ── Bloque 2: la diferencia ──
-        if (bcv && Number(aplicada.tasa_cambio) > 0) {
+        // ── Bloque 1: retirado ──
+        //
+        // Acá se mostraba otra vez el valor del BCV con su fuente y fecha. Ese
+        // dato ya está en el tooltip de la tarjeta "Tasa Base", justo al lado del
+        // campo donde se usa, así que repetirlo abajo sobraba y empujaba hacia
+        // arriba lo que de verdad importa.
+        var html = '';
+
+        // ── Bloque 2: solo cuando hay algo que avisar ──
+        //
+        // El aviso "Al día, la diferencia es de redondeo" es ruido: si no hay
+        // diferencia, no hay nada que hacer. Se deja únicamente el caso que pide
+        // acción, que es estar por debajo del umbral.
+        if (bcv && Number(aplicada.tasa_cambio) > 0 && dif.requiere_revision) {
             var pct  = Number(dif.porcentaje || 0);
             var abs  = Math.abs(pct);
-            var cls  = dif.requiere_revision ? 'tbp-alerta' : 'tbp-ok';
-            var icono = dif.requiere_revision ? 'fa-triangle-exclamation' : 'fa-circle-check';
-
             var texto;
-            if (dif.es_igual || dif.signo === 'igual') {
-                // A 2 decimales es la misma tasa: el BCV publica 886,2271 y se
-                // cobra 886,23 porque es lo que entra en config. Avisar acá
-                // enseña a ignorar el panel.
-                texto = 'Estás cobrando la tasa del BCV. La diferencia es de redondeo.';
-            } else if (dif.signo === 'falta') {
+            if (dif.signo === 'falta') {
                 texto = 'Estás cobrando por debajo del BCV: faltan <strong>' + formatoBs(dif.bolivares) +
-                        '</strong> por dólar (' + abs.toFixed(2) + '%).';
+                        '</strong> por dólar (' + abs.toFixed(2) + '%). Cada 100 USD de venta estás ' +
+                        'dejando de cobrar <strong>' + formatoBs(Math.abs(dif.por_100_usd)) + '</strong>.';
             } else {
                 texto = 'Estás cobrando por encima del BCV: sobran <strong>' + formatoBs(Math.abs(dif.bolivares)) +
                         '</strong> por dólar (' + abs.toFixed(2) + '%).';
             }
 
-            if (dif.requiere_revision && dif.signo === 'falta') {
-                texto += ' Cada 100 USD de venta estás dejando de cobrar <strong>' +
-                         formatoBs(Math.abs(dif.por_100_usd)) + '</strong>.';
-            }
-
             html +=
-                '<div class="tbp-caja ' + cls + '">' +
-                    '<div class="tbp-titulo"><i class="fas ' + icono + '"></i> ' +
-                        (dif.requiere_revision ? 'Revisar' : 'Al día') +
+                '<div class="tbp-caja tbp-alerta">' +
+                    '<div class="tbp-titulo"><i class="fas fa-triangle-exclamation"></i> Revisar' +
                         '<span class="tbp-chip tbp-chip-umbral">umbral ' + dif.umbral_porcentaje + '%</span>' +
                     '</div>' +
                     '<div class="tbp-nota">' + texto + '</div>' +
@@ -246,27 +206,13 @@ function nombreFuenteTasa(f) {
                 '</div>';
         }
 
-        // ── Bloque 3b: ¿ya se revisó hoy? ──
-        var rev = _datos.revision || {};
-        if (rev.ya_revisada) {
-            var etiquetas = {
-                mantener:     'Se mantuvo la tasa',
-                aplicar_bcv:  'Se aplicó la del BCV',
-                aplicar_otra: 'Se aplicó una tasa a mano',
-                sin_captura:  'No había tasa del BCV'
-            };
-            html +=
-                '<div class="tbp-caja tbp-revisada">' +
-                    '<div class="tbp-titulo"><i class="fas fa-lock"></i> Tasa del día ya revisada</div>' +
-                    '<div class="tbp-nota">' +
-                        (etiquetas[rev.accion] || 'Revisada') + ' por <strong>' +
-                        (rev.revisada_por || 'alguien') + '</strong>.' +
-                    '</div>' +
-                    '<button class="tbp-btn-link" style="margin-top:.4rem" onclick="window.abrirVentanaTasa(true)">' +
-                        '<i class="fas fa-rotate"></i> Revisar de nuevo' +
-                    '</button>' +
-                '</div>';
-        }
+        // ── Bloque 3b: retirado ──
+        //
+        // Mostraba "Tasa del día ya revisada, se mantuvo la tasa por X" con un
+        // botón para revisar otra vez. Es un registro de auditoría, no algo que
+        // el admin necesite ver cada vez que abre Inicio, y el botón competía con
+        // "Consultar el BCV", que es el único camino para fijar la tasa.
+        // El dato sigue en la base; simplemente no ocupa la pantalla.
 
         // ── Bloque 3c: respaldos esperando confirmación ──
         //

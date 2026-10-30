@@ -195,11 +195,28 @@
             <div class="tab-pane active" id="dashboardPane">
                 <div class="pane-header">
                     <h2 class="section-title"><i class="fas fa-home"></i> Inicio</h2>
+                    <!-- El cierre del local es una acción poco frecuente y ocupaba 63
+                         líneas dentro del bloque de la tasa. Va en un modal. -->
+                    <button class="btn-secondary" id="btnAbrirCierre"
+                            onclick="window.abrirModalCierre()"
+                            style="align-self:center;margin-left:auto;font-size:.85rem;padding:.45rem .9rem">
+                        <i class="fas fa-store-slash"></i> Cierre del local
+                        <span id="cierreEstadoChip" style="font-size:.72rem;font-weight:700;padding:.15rem .5rem;border-radius:6px;background:rgba(74,222,128,.15);color:#2e7d32">Abierto</span>
+                    </button>
                 </div>
                 <div class="tasa-cards-bar" id="tasaBar">
                     <div class="tcb-cards">
                         <div class="tcb-card tcb-card-base">
-                            <div class="tcb-label">Tasa Base:</div>
+                            <div class="tcb-label">
+                                Tasa Base:
+                                <!-- De dónde salió este número. El contenido lo arma
+                                     admin-tasa-panel.js con los datos reales de la
+                                     captura: fuente y fecha valor del BCV. -->
+                                <span class="tooltip-wrap" style="cursor:help;margin-left:.3rem" onmouseenter="this.querySelector('.tooltip-text').style.display='block'" onmouseleave="this.querySelector('.tooltip-text').style.display='none'">
+                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--text-muted);color:#fff;border-radius:50%;font-size:.6rem;font-weight:700">?</span>
+                                    <span class="tooltip-text" id="tasaBaseFuenteTip" style="width:260px">Sin datos de la captura todavía.</span>
+                                </span>
+                            </div>
                             <input type="number" step="0.01" id="tasaBaseInput" class="tcb-input" oninput="window.recalcularTasaEfectiva && window.recalcularTasaEfectiva()">
                         </div>
                         <div class="tcb-card tcb-card-pct">
@@ -337,17 +354,16 @@
 
                              Se guarda con el mismo botón que la tasa. -->
                         <div style="border-top:1px solid rgba(255,255,255,.12);margin-top:.9rem;padding-top:.9rem">
-                            <div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem">
-                                <div style="flex:1">
-                                    <div style="font-weight:600;font-size:.92rem;margin-bottom:.15rem">
-                                        Descontar al quitar ingredientes
-                                    </div>
-                                    <div style="font-size:.78rem;opacity:.7;line-height:1.35">
-                                        Si está activo, el cliente paga menos cuando saca un ingrediente
-                                        al personalizar (se le devuelve el precio de venta de ese ingrediente).
-                                        Si está apagado, el plato se cobra completo aunque saque la mitad.
-                                    </div>
-                                </div>
+                            <div class="tcb-toggle-top">
+                                <span class="tcb-toggle-label" style="font-size:.92rem;color:var(--text-dark)">
+                                    Descontar al quitar ingredientes
+                                    <!-- El texto largo vive en el tooltip: ocupaba cuatro líneas de
+                                         ancho completo para explicar un switch de una línea. -->
+                                    <span class="tooltip-wrap" style="cursor:help;margin-left:.3rem" onmouseenter="this.querySelector('.tooltip-text').style.display='block'" onmouseleave="this.querySelector('.tooltip-text').style.display='none'">
+                                        <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--text-muted);color:#fff;border-radius:50%;font-size:.6rem;font-weight:700">?</span>
+                                        <span class="tooltip-text" style="width:260px">Si está activo, el cliente paga menos cuando saca un ingrediente al personalizar (se le devuelve el precio de venta de ese ingrediente). Si está apagado, el plato se cobra completo aunque saque la mitad.</span>
+                                    </span>
+                                </span>
                                 <label class="toggle-switch" style="flex-shrink:0">
                                     <input type="checkbox" id="descuentoAlQuitar">
                                     <span class="toggle-slider"></span>
@@ -355,7 +371,9 @@
                             </div>
                         </div>
                         <div class="tcb-save-wrap">
-                            <button class="btn-primary tcb-save-btn" id="saveAllButton"><i class="fas fa-save"></i> Guardar cambios en tasa</button>
+                            <!-- Dos líneas: en un teléfono "Guardar cambios en tasa" no entra
+                                 en una sola y desbordaba el ancho del bloque. -->
+                            <button class="btn-primary tcb-save-btn" id="saveAllButton"><i class="fas fa-save"></i> Guardar<br>cambios en tasa</button>
                         </div>
 
                         <!-- ============================================================
@@ -375,70 +393,6 @@
                              SOLO ADMIN. El cajero no puede cerrar ni reabrir el local:
                              eso es un dato del negocio, no de la caja.
                              ============================================================ -->
-                        <div id="cierrePanel" style="border-top:1px solid rgba(255,255,255,.12);margin-top:.9rem;padding-top:.9rem">
-                            <div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin-bottom:.6rem">
-                                <div style="font-weight:600;font-size:.92rem">
-                                    <i class="fas fa-store-slash" style="color:#ef4444"></i> Cierre del local
-                                </div>
-                                <span id="cierreEstadoChip" style="font-size:.72rem;font-weight:700;padding:.2rem .5rem;border-radius:6px;background:rgba(74,222,128,.15);color:#4ade80">Abierto</span>
-                            </div>
-
-                            <!-- Estado actual: ocupa todo el ancho cuando está cerrado -->
-                            <div id="cierreVigenteBox" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:.6rem .75rem;margin-bottom:.6rem">
-                                <div style="font-size:.82rem;font-weight:600;color:#fca5a5" id="cierreVigenteMotivo"></div>
-                                <div style="font-size:.78rem;opacity:.85;margin-top:.15rem" id="cierreVigenteMensaje"></div>
-                                <div style="font-size:.72rem;opacity:.6;margin-top:.25rem" id="cierreVigenteFechas"></div>
-                                <button class="btn-primary" style="margin-top:.5rem;background:#4ade80;color:#0b1220;font-size:.8rem;padding:.35rem .8rem"
-                                        onclick="window.desactivarCierre()">
-                                    <i class="fas fa-store"></i> Desactivar bloqueo y permitir pedidos
-                                </button>
-                            </div>
-
-                            <!-- Formulario para cerrar -->
-                            <div id="cierreForm">
-                                <div style="display:flex;gap:.4rem;margin-bottom:.5rem">
-                                    <button type="button" class="btn-secondary cierre-modo" data-modo="hoy"
-                                            onclick="window._cierreModo('hoy')" style="flex:1;font-size:.78rem;padding:.35rem">Hoy</button>
-                                    <button type="button" class="btn-secondary cierre-modo" data-modo="rango"
-                                            onclick="window._cierreModo('rango')" style="flex:1;font-size:.78rem;padding:.35rem">Desde/Hasta</button>
-                                    <button type="button" class="btn-secondary cierre-modo" data-modo="desactivado"
-                                            onclick="window._cierreModo('desactivado')" style="flex:1;font-size:.78rem;padding:.35rem">Desactivado</button>
-                                </div>
-
-                                <div id="cierreCampos">
-                                    <div class="form-group" style="margin-bottom:.5rem">
-                                        <label style="font-size:.78rem">Motivo (interno, para el historial)</label>
-                                        <input type="text" id="cierreMotivo" placeholder="Ej: Duelo familiar" style="width:100%">
-                                        <div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.3rem" id="cierreSugerenciasMotivo"></div>
-                                    </div>
-                                    <div class="form-group" style="margin-bottom:.5rem">
-                                        <label style="font-size:.78rem">Mensaje que verá el cliente</label>
-                                        <textarea id="cierreMensaje" rows="2" style="width:100%"
-                                                  placeholder="Escriba acá qué le quiere decir al cliente. Este texto aparece en la página."></textarea>
-                                        <div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.3rem" id="cierreSugerenciasMensaje"></div>
-                                    </div>
-                                    <div id="cierreRangoFechas" style="display:none">
-                                        <div class="form-row">
-                                            <div class="form-group" style="margin:0">
-                                                <label style="font-size:.78rem">Desde</label>
-                                                <input type="datetime-local" id="cierreDesde" style="width:100%">
-                                            </div>
-                                            <div class="form-group" style="margin:0">
-                                                <label style="font-size:.78rem">Hasta</label>
-                                                <input type="datetime-local" id="cierreHasta" style="width:100%">
-                                            </div>
-                                        </div>
-                                        <div style="font-size:.7rem;opacity:.6;margin-top:.25rem">
-                                            Si deja "Hasta" vacío, el cierre sigue hasta que lo desactive.
-                                        </div>
-                                    </div>
-                                    <button class="btn-primary" style="width:100%;font-size:.82rem;padding:.45rem;background:#ef4444"
-                                            onclick="window.crearCierre()">
-                                        <i class="fas fa-lock"></i> Cerrar el local
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
                     <div id="tasaBcvPanel" class="tbp-wrap" style="display:none"></div>
@@ -747,6 +701,79 @@
     <!-- ==================== MODALES ==================== -->
 
     <!-- MODAL PLATILLO -->
+    <!-- MODAL: CIERRE DEL LOCAL -->
+    <div class="modal" id="cierreModal">
+        <div class="modal-content" style="max-width:520px">
+            <div class="modal-header">
+                <h3><i class="fas fa-store-slash" style="color:#ef4444"></i> Cierre del local</h3>
+                <button class="modal-close" onclick="window.cerrarModalCierre()" title="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:.85rem;opacity:.75;margin:0 0 1rem;line-height:1.4">
+                    Para los días en que el comercio no abre. La carta se sigue viendo y el cliente
+                    puede navegar, pero no puede armar el pedido.
+                </p>
+
+                <div id="cierreVigenteBox" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:.6rem .75rem;margin-bottom:.8rem">
+                    <div style="font-size:.85rem;font-weight:600;color:#c62828" id="cierreVigenteMotivo"></div>
+                    <div style="font-size:.8rem;opacity:.85;margin-top:.15rem" id="cierreVigenteMensaje"></div>
+                    <div style="font-size:.75rem;opacity:.6;margin-top:.25rem" id="cierreVigenteFechas"></div>
+                    <button class="btn-primary" style="margin-top:.5rem;background:#4ade80;color:#0b1220;font-size:.8rem;padding:.35rem .8rem"
+                            onclick="window.desactivarCierre()">
+                        <i class="fas fa-store"></i> Desactivar bloqueo y permitir pedidos
+                    </button>
+                </div>
+
+                <div id="cierreForm">
+                    <div style="display:flex;gap:.4rem;margin-bottom:.8rem">
+                        <button type="button" class="btn-secondary cierre-modo" data-modo="hoy"
+                                onclick="window._cierreModo('hoy')" style="flex:1;font-size:.8rem;padding:.4rem">Hoy</button>
+                        <button type="button" class="btn-secondary cierre-modo" data-modo="rango"
+                                onclick="window._cierreModo('rango')" style="flex:1;font-size:.8rem;padding:.4rem">Desde/Hasta</button>
+                        <button type="button" class="btn-secondary cierre-modo" data-modo="desactivado"
+                                onclick="window._cierreModo('desactivado')" style="flex:1;font-size:.8rem;padding:.4rem">Desactivado</button>
+                    </div>
+
+                    <div id="cierreCampos">
+                        <div class="form-group" style="margin-bottom:.7rem">
+                            <label style="font-size:.8rem">Motivo (interno, para el historial)</label>
+                            <input type="text" id="cierreMotivo" placeholder="Ej: Duelo familiar" style="width:100%">
+                            <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.35rem" id="cierreSugerenciasMotivo"></div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:.7rem">
+                            <label style="font-size:.8rem">Mensaje que verá el cliente</label>
+                            <textarea id="cierreMensaje" rows="2" style="width:100%"
+                                      placeholder="Escriba acá qué le quiere decir al cliente."></textarea>
+                            <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.35rem" id="cierreSugerenciasMensaje"></div>
+                        </div>
+                        <div id="cierreRangoFechas" style="display:none">
+                            <div class="form-row">
+                                <div class="form-group" style="margin:0">
+                                    <label style="font-size:.8rem">Desde</label>
+                                    <input type="datetime-local" id="cierreDesde" style="width:100%">
+                                </div>
+                                <div class="form-group" style="margin:0">
+                                    <label style="font-size:.8rem">Hasta</label>
+                                    <input type="datetime-local" id="cierreHasta" style="width:100%">
+                                </div>
+                            </div>
+                            <div style="font-size:.75rem;opacity:.6;margin-top:.25rem">
+                                Si deja "Hasta" vacío, el cierre sigue hasta que lo desactive.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;width:100%">
+                <button class="btn-secondary" onclick="window.cerrarModalCierre()">Cancelar</button>
+                <button class="btn-primary" id="btnConfirmarCierre" style="background:#ef4444"
+                        onclick="window.crearCierre()">
+                    <i class="fas fa-lock"></i> Cerrar el local
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal" id="platilloModal">
         <div class="modal-content" style="max-width:600px">
             <div class="modal-header"><h3 id="platilloModalTitle">Nuevo Platillo</h3><button class="modal-close" onclick="window.cerrarModal('platilloModal')" title="Cerrar">&times;</button></div>
