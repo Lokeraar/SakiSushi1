@@ -171,11 +171,11 @@
       "file": "00-estado-actual-movil.html",
       "selector": "#btnObtenerTasaBCV",
       "excerpt": "Consultar el BCV",
-      "comment": "Lo que debe hacer esta opción es un refresh de la tasa bcv, ejemplo: si coloqué incorrectamente la tasa al abrir, pero no quiero buscar manualmente en fuentes externas, al darle, me debe mostrar la última tasa publicada.",
+      "comment": "Lo que debe hacer esta opción es un refresh de la tasa bcv, ejemplo: si coloqué incorrectamente la tasa al abrir, pero no quiero buscar manualmente en fuentes externas, al darle me debe mostrar la última tasa publicada y la de la fecha próxima en una ventana y al escoge alguna opción, se aplica en el campo de tasa base.",
       "createdAt": "2026-10-30T22:23:38.598Z",
-      "status": "open",
-      "sentAt": null,
-      "resolvedAt": null
+      "status": "resolved",
+      "sentAt": "2026-10-30T23:50:59.515Z",
+      "resolvedAt": "2026-10-30T23:56:27.989Z"
     }
   ]
 }

@@ -86,6 +86,21 @@ markup = markup.trimEnd() + '\n        </div>\n    </div>'; // content + panelCo
 // recorte de arriba no lo incluye. Se trae igual: es parte de Inicio desde que
 // el bloque salió del tasa-cards-bar.
 {
+  // El modal del BCV tambien vive fuera del panel-container.
+  const iniBcv = htmlSrc.indexOf('<div class="modal" id="bcvModal">');
+  if (iniBcv !== -1) {
+    let d = 0;
+    let k = iniBcv;
+    for (;;) {
+      const o = htmlSrc.indexOf('<div', k);
+      const c = htmlSrc.indexOf('</div>', k);
+      if (o !== -1 && o < c) { d += 1; k = o + 4; }
+      else { d -= 1; k = c + 6; if (d === 0) break; }
+    }
+    markup = htmlSrc.slice(iniBcv, k) + '\n' + markup;
+  }
+}
+{
   const ini = htmlSrc.indexOf('<div class="modal" id="cierreModal">');
   if (ini !== -1) {
     let d = 0;
@@ -157,6 +172,7 @@ console.log('renderizadores:');
 runModule('admin/js/admin-tasa-panel.js');
 runModule('admin/js/admin-cierre.js');
 runModule('admin/js/admin-platillo-estrella.js');
+runModule('admin/js/admin-config.js');
 
 // El cuadro de la tasa del BCV. Los datos son los de la captura; la forma del
 // HTML la decide tasa_panel.js.
@@ -183,6 +199,24 @@ if (typeof window.renderizarTasaPanel === 'function') {
   await window.cargarTasaPanel();
   const panelHtml = document.getElementById('tasaBcvPanel').innerHTML;
   console.log('  tasa_panel: ' + (panelHtml.length > 100 ? 'ok' : 'vacío'));
+}
+
+// El modal del BCV con sus dos opciones. Se ejecuta abrirModalBCV() real,
+// alimentado con las tasas que la base ya tiene capturadas.
+if (typeof window.abrirModalBCV === 'function') {
+  window.supabaseClient = {
+    rpc: async () => ({
+      data: {
+        bcv: { valor: 889.26, fecha_valor: '2026-10-30', dias_atras: 0, fuente: 'dolarapi.com', es_principal: true },
+        proxima: { valor: 895.40, fecha_valor: '2026-10-31', dias_para: 1, fuente: 'dolarapi.com' },
+        aplicada: { tasa_cambio: 889.26, tasa_efectiva: 889.26 },
+        diferencia: {}, revision: {}, por_confirmar: [], cadena_hoy: [], capturas: [],
+      },
+      error: null,
+    }),
+  };
+  await window.abrirModalBCV();
+  console.log('  modal BCV: ' + (document.getElementById('bcvOpciones').innerHTML.includes('bcv-opcion') ? 'ok' : 'vacío'));
 }
 
 // El cierre del local: local abierto, con sus chips de sugerencia.
@@ -228,6 +262,13 @@ if (saveWrap && !document.getElementById('btnObtenerTasaBCV')) {
   btn.setAttribute('style', 'margin-left:8px');
   btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Consultar<br>el BCV';
   saveWrap.appendChild(btn);
+}
+
+// El modal BCV se deja cerrado en el snapshot: en el canvas se abre tocando
+// "Consultar el BCV", igual que en la app.
+{
+  const m = document.getElementById('bcvModal');
+  if (m) m.classList.remove('active');
 }
 
 // ── 5. CSS real ───────────────────────────────────────────────────────────

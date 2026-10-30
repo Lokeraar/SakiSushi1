@@ -2272,6 +2272,70 @@ html.dark-theme .ingrediente-row {
     .card-value { font-size: 1.6rem; font-weight: 800; color: var(--card-value-color, var(--text-dark)); }
 }
 
+/* Opciones de tasa en el modal del BCV: dos tarjetas elegibles, una por tasa
+   publicada. Van como botones porque tocarlas es la acción, y así el foco de
+   teclado y el lector de pantalla las tratan como lo que son. */
+.bcv-opcion {
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+    width: 100%;
+    text-align: left;
+    padding: .85rem 1rem;
+    margin-bottom: .6rem;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 44px;
+}
+.bcv-opcion:hover,
+.bcv-opcion:focus-visible {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(211,47,47,.12);
+    outline: none;
+}
+.bcv-opcion-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+}
+.bcv-opcion-titulo {
+    font-size: .85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-muted);
+}
+.bcv-opcion-chip {
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .1rem .45rem;
+    border-radius: 50px;
+    background: rgba(74,222,128,.18);
+    color: #1b5e20;
+}
+html.dark-theme .bcv-opcion-chip { color: #69f0ae; }
+.bcv-opcion-valor {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+.bcv-opcion-fecha {
+    font-size: .82rem;
+    color: var(--text-muted);
+}
+.bcv-opcion-fuente {
+    font-size: .75rem;
+    color: var(--text-muted);
+    opacity: .75;
+}
+
 /* Pane input */
 .pane-input {
     flex: 1;
@@ -4502,6 +4566,24 @@ html.dark-theme .status-inactivo {
             </div>
         </div>
     </div>
+<div class="modal" id="bcvModal">
+        <div class="modal-content" style="max-width:480px">
+            <div class="modal-header">
+                <h3><i class="fas fa-satellite-dish" style="color:var(--accent)"></i> Tasa del BCV</h3>
+                <button class="modal-close" onclick="window.cerrarModalBCV()" title="Cerrar">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:.85rem;opacity:.75;margin:0 0 1rem;line-height:1.4">
+                    Elegí cuál de las tasas ya publicadas querés usar como base. El campo
+                    se completa con la que elijas; después revisás y guardás.
+                </p>
+                <div id="bcvOpciones"><button type="button" class="bcv-opcion" data-valor="889.26"><span class="bcv-opcion-top"><span class="bcv-opcion-titulo">Vigente</span><span class="bcv-opcion-chip">la que usás</span></span><span class="bcv-opcion-valor">889.26</span><span class="bcv-opcion-fecha">Fecha valor: viernes 30/10 (de hoy)</span><span class="bcv-opcion-fuente">dolarapi.com</span></button><button type="button" class="bcv-opcion" data-valor="895.4"><span class="bcv-opcion-top"><span class="bcv-opcion-titulo">Próxima</span></span><span class="bcv-opcion-valor">895.40</span><span class="bcv-opcion-fecha">Fecha valor: sábado 31/10 (mañana)</span><span class="bcv-opcion-fuente">dolarapi.com</span></button></div>
+            </div>
+            <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;width:100%">
+                <button class="btn-secondary" onclick="window.cerrarModalBCV()">Cancelar</button>
+            </div>
+        </div>
+    </div>
 <div class="panel-container" id="panelContainer">
         <header class="header">
             <!-- HEADER ESCRITORIO/TABLET (2 filas) -->
@@ -4783,7 +4865,7 @@ html.dark-theme .status-inactivo {
                             <!-- Dos líneas: en un teléfono "Guardar cambios en tasa" no entra
                                  en una sola y desbordaba el ancho del bloque. -->
                             <button class="btn-primary tcb-save-btn" id="saveAllButton"><i class="fas fa-save"></i><span>Guardar<br>cambios en tasa</span></button>
-                        <button style="margin-left:8px" class="btn-secondary tcb-save-btn" id="btnObtenerTasaBCV"><i class="fas fa-satellite-dish"></i> Consultar<br>el BCV</button></div>
+                        <button style="margin-left:8px" class="btn-secondary tcb-save-btn" id="btnObtenerTasaBCV"><i class="fas fa-satellite-dish"></i> Consultar<br>el BCV</button><button style="margin-left:8px" class="btn-secondary tcb-save-btn" id="btnObtenerTasaBCV"><i class="fas fa-satellite-dish"></i> Consultar<br>el BCV</button></div>
 
                         <!-- ============================================================
                              CIERRE DEL LOCAL

@@ -2257,6 +2257,70 @@ html.dark-theme .ingrediente-row {
     .card-value { font-size: 1.6rem; font-weight: 800; color: var(--card-value-color, var(--text-dark)); }
 }
 
+/* Opciones de tasa en el modal del BCV: dos tarjetas elegibles, una por tasa
+   publicada. Van como botones porque tocarlas es la acción, y así el foco de
+   teclado y el lector de pantalla las tratan como lo que son. */
+.bcv-opcion {
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+    width: 100%;
+    text-align: left;
+    padding: .85rem 1rem;
+    margin-bottom: .6rem;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 44px;
+}
+.bcv-opcion:hover,
+.bcv-opcion:focus-visible {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(211,47,47,.12);
+    outline: none;
+}
+.bcv-opcion-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+}
+.bcv-opcion-titulo {
+    font-size: .85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-muted);
+}
+.bcv-opcion-chip {
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .1rem .45rem;
+    border-radius: 50px;
+    background: rgba(74,222,128,.18);
+    color: #1b5e20;
+}
+html.dark-theme .bcv-opcion-chip { color: #69f0ae; }
+.bcv-opcion-valor {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+.bcv-opcion-fecha {
+    font-size: .82rem;
+    color: var(--text-muted);
+}
+.bcv-opcion-fuente {
+    font-size: .75rem;
+    color: var(--text-muted);
+    opacity: .75;
+}
+
 /* Pane input */
 .pane-input {
     flex: 1;

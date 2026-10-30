@@ -701,6 +701,32 @@
     <!-- ==================== MODALES ==================== -->
 
     <!-- MODAL PLATILLO -->
+    <!-- MODAL: ELEGIR LA TASA DEL BCV -->
+    <!--
+      "Consultar el BCV" ya no escribe el campo a ciegas: abre esta ventana con
+      las dos tasas que la base ya tiene capturadas —la vigente y la de la
+      fecha próxima— y aplica la que el admin elija. La ventana bloqueante
+      sigue siendo el único camino que deja firma; esto solo llena el campo.
+    -->
+    <div class="modal" id="bcvModal">
+        <div class="modal-content" style="max-width:480px">
+            <div class="modal-header">
+                <h3><i class="fas fa-satellite-dish" style="color:var(--accent)"></i> Tasa del BCV</h3>
+                <button class="modal-close" onclick="window.cerrarModalBCV()" title="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:.85rem;opacity:.75;margin:0 0 1rem;line-height:1.4">
+                    Elegí cuál de las tasas ya publicadas querés usar como base. El campo
+                    se completa con la que elijas; después revisás y guardás.
+                </p>
+                <div id="bcvOpciones"></div>
+            </div>
+            <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;width:100%">
+                <button class="btn-secondary" onclick="window.cerrarModalBCV()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: CIERRE DEL LOCAL -->
     <div class="modal" id="cierreModal">
         <div class="modal-content" style="max-width:520px">

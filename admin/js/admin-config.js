@@ -330,12 +330,117 @@
     };
 
 
-    // Agregar el botón "Consultar el BCV" al lado del botón Guardar.
+    // ── Elegir la tasa del BCV ──────────────────────────────────────────────
     //
-    // Es solo una consulta: trae la tasa vigente y la deja en la caja de
-    // "Tasa Base" para que el admin la revise y guarde. NO escribe nada por su
-    // cuenta y NO abre un modal propio: el camino para fijar la tasa del día
-    // es la ventana bloqueante, que sí deja firma.
+    // Antes el botón traía una sola tasa y la escribía en el campo sin
+    // preguntar. El problema es que hay dos tasas publicadas a la vez: la
+    // vigente y la de la fecha próxima, que el BCV adelanta la noche anterior.
+    // Escribir una u otra sin que el admin elija es decidir por él.
+    //
+    // Ahora abre una ventana con las dos y aplica la elegida. Sigue sin escribir
+    // en la base: llena el campo y el admin revisa y guarda. El camino que deja
+    // firma es la ventana bloqueante, no este botón.
+
+    function _fechaBCV(iso) {
+        if (!iso) return '—';
+        var d = new Date(String(iso) + 'T12:00:00');
+        if (isNaN(d)) return iso;
+        var dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        var dd = String(d.getDate()).padStart(2, '0');
+        var mm = String(d.getMonth() + 1).padStart(2, '0');
+        return dias[d.getDay()] + ' ' + dd + '/' + mm;
+    }
+
+    function _cuandoBCV(dias) {
+        var n = Number(dias);
+        if (isNaN(n)) return '';
+        if (n === 0) return 'de hoy';
+        if (n < 0) return n === -1 ? 'mañana' : 'en ' + Math.abs(n) + ' días';
+        if (n === 1) return 'de ayer';
+        return 'hace ' + n + ' días';
+    }
+
+    // Una tarjeta elegible por tasa. devuelve el HTML; data-valor lo lee el clic.
+    function _opcionBCV(titulo, dato, valorActual) {
+        if (!dato) return '';
+        var valor = Number(dato.valor);
+        var esActual = Math.abs(valor - Number(valorActual || 0)) < 0.005;
+        // dias_para cuenta hacia ADELANTE (la próxima) y dias_atras hacia ATRÁS.
+        // Se normaliza a un solo eje con signo: negativo = futuro.
+        var cuando = dato.dias_para !== undefined
+            ? _cuandoBCV(-Math.abs(Number(dato.dias_para)))
+            : _cuandoBCV(dato.dias_atras);
+        return '' +
+            '<button type="button" class="bcv-opcion" data-valor="' + valor + '">' +
+                '<span class="bcv-opcion-top">' +
+                    '<span class="bcv-opcion-titulo">' + titulo + '</span>' +
+                    (esActual ? '<span class="bcv-opcion-chip">la que usás</span>' : '') +
+                '</span>' +
+                '<span class="bcv-opcion-valor">' + valor.toFixed(2) + '</span>' +
+                '<span class="bcv-opcion-fecha">Fecha valor: ' + _fechaBCV(dato.fecha_valor) +
+                    (cuando ? ' (' + cuando + ')' : '') + '</span>' +
+                (dato.fuente ? '<span class="bcv-opcion-fuente">' + dato.fuente + '</span>' : '') +
+            '</button>';
+    }
+
+    window.cerrarModalBCV = function () {
+        var m = document.getElementById('bcvModal');
+        if (m) m.classList.remove('active');
+    };
+
+    window.abrirModalBCV = async function (btn) {
+        var cont = document.getElementById('bcvOpciones');
+        var modal = document.getElementById('bcvModal');
+        if (!cont || !modal) return;
+
+        cont.innerHTML = '<p style="text-align:center;opacity:.6;font-size:.85rem;padding:1rem">' +
+            '<i class="fas fa-spinner fa-spin"></i> Consultando…</p>';
+        modal.classList.add('active');
+
+        try {
+            if (!window.supabaseClient) throw new Error('sin conexión');
+            var r = await window.supabaseClient.rpc('tasa_panel');
+            if (r.error) throw new Error(r.error.message);
+
+            var d = r.data || {};
+            var actual = Number((d.aplicada || {}).tasa_cambio || 0);
+            var html = _opcionBCV('Vigente', d.bcv, actual) +
+                       _opcionBCV('Próxima', d.proxima, actual);
+
+            if (!html) {
+                cont.innerHTML = '<p style="text-align:center;opacity:.7;font-size:.85rem;padding:1rem">' +
+                    'No hay ninguna tasa del BCV capturada todavía.</p>';
+                return;
+            }
+            cont.innerHTML = html;
+
+            Array.prototype.forEach.call(cont.querySelectorAll('.bcv-opcion'), function (op) {
+                op.addEventListener('click', function () {
+                    var v = Number(op.getAttribute('data-valor'));
+                    if (!(v > 0)) return;
+                    var input = document.getElementById('tasaBaseInput');
+                    if (input) {
+                        input.value = v.toFixed(2);
+                        // recalcularTasaEfectiva es lo que mantiene coherente la
+                        // tarjeta de al lado; sin esto el campo cambia y el
+                        // número grande se queda con el valor viejo.
+                        if (window.recalcularTasaEfectiva) window.recalcularTasaEfectiva();
+                        input.focus();
+                        input.select();
+                    }
+                    window.cerrarModalBCV();
+                    window.mostrarToast('📝 Tasa aplicada: ' + v.toFixed(2) +
+                        '. Revisala y guardá si corresponde.', 'info');
+                });
+            });
+        } catch (e) {
+            console.error('Error consultando el BCV:', e);
+            cont.innerHTML = '<p style="text-align:center;opacity:.8;font-size:.85rem;padding:1rem;color:var(--danger)">' +
+                'No se pudieron leer las tasas del BCV. Probá de nuevo en un momento.</p>';
+        }
+    };
+
+    // Agregar el botón "Consultar el BCV" al lado del botón Guardar.
     (function _agregarBotonBCV() {
         const saveWrap = document.querySelector('.tcb-save-wrap');
         if (!saveWrap) return;
@@ -346,33 +451,7 @@
         // Dos líneas: en un teléfono "Consultar el BCV" no entra en una sola y
         // desbordaba al lado del botón Guardar.
         btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Consultar<br>el BCV';
-        btn.onclick = async function () {
-            const anterior = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
-            try {
-                const detalle = await window.obtenerTasaBCVDetalle({ forzar: true });
-                if (!detalle || !(detalle.valor > 0)) {
-                    window.mostrarToast('❌ No hay ninguna tasa del BCV capturada todavía', 'error');
-                    return;
-                }
-                const input = document.getElementById('tasaBaseInput');
-                if (input) {
-                    input.value = Number(detalle.valor).toFixed(2);
-                    input.focus();
-                    input.select();
-                }
-                window.mostrarToast(
-                    '📝 Tasa del BCV cargada: ' + Number(detalle.valor).toFixed(2) +
-                    '. Revisala y guardá si corresponde.', 'info');
-            } catch (e) {
-                console.error('Error consultando el BCV:', e);
-                window.mostrarToast('❌ Error de conexión al consultar el BCV', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = anterior;
-            }
-        };
+        btn.onclick = function () { window.abrirModalBCV(btn); };
         saveWrap.appendChild(btn);
     })();
 })();
