@@ -181,6 +181,18 @@
         var bcv       = e.bcv;
         var aplicada  = Number(e.aplicada || 0);
 
+        // Lo que se ofrece al tocar "Conservar".
+        //
+        // NO sale de `config` (que se queda atrás, ver migración 33) ni arma
+        // la fecha con la captura del BCV, que era el defecto: mostraba un
+        // monto del 23 de octubre firmado con la fecha de hoy. `conservar`
+        // trae el monto y la fecha de la MISMA tasa, la vigente real.
+        var conservar      = e.conservar || null;
+        var conservarValor = conservar && Number(conservar.valor) > 0
+            ? Number(conservar.valor)
+            : aplicada;
+        var conservarFecha = conservar ? conservar.fecha_valor : null;
+
         // Aviso de antigüedad: si el dato no es de hoy, se dice antes que nada.
         // No es una confirmación extra, es una línea de contexto.
         var avisoViejo = '';
@@ -283,8 +295,12 @@
         // Es el camino corto cuando lo que se está cobrando ya es correcto.
         // Se dice el monto Y la fecha, para que se sepa qué se está
         // conservando sin tener que mirar el recuadro de arriba.
-        var etiquetaConservar = 'Conservar ' + aplicada.toFixed(2);
-        if (bcv && bcv.fecha_valor) etiquetaConservar += ' del ' + fechaEnPalabras(bcv.fecha_valor);
+        //
+        // El monto y la fecha salen los dos de la tasa vigente: antes el
+        // monto venía de `config` y la fecha del BCV, así que se podía jurar
+        // "conservo la de hoy" sobre un número de hace una semana.
+        var etiquetaConservar = 'Conservar ' + conservarValor.toFixed(2);
+        if (conservarFecha) etiquetaConservar += ' del ' + fechaEnPalabras(conservarFecha);
 
         botones +=
             '<button class="tv-btn tv-btn-mantener" onclick="window._decidirTasaVentana(\'mantener\')">' +
