@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema de diseño — Saki Sushi Admin</title>
+<style>
+  /* Paleta real capturada de admin/css/admin.css */
+  :root {
+    --primary: #D32F2F; --primary-dark: #B71C1C;
+    --accent: #FF7043; --accent-dark: #E64A19; --gold: #FFB300;
+    --success: #388E3C; --info: #1976D2; --warning: #F57C00; --danger: #ef4444;
+    --delivery: #00ACC1; --propina: #9C27B0; --favordecaja: #FF9800; --condonar: #E91E63;
+    --usd-color: #0d6efd; --bs-color: #198754;
+
+    --secondary: #ffffff; --header-bg: #ffffff; --body-bg: #ffffff; --card-bg: #ffffff;
+    --text-dark: #000000; --text-muted: #4a4a4a; --border: #d0d0d0;
+    --tabs-bg: #ffffff; --tab-text: #000000; --tab-active: #D32F2F;
+    --table-header: #ffffff; --table-header-text: #000000;
+    --input-bg: #ffffff; --input-border: #cccccc;
+    --list-item-hover: #fafafa;
+    --badge-ok-bg: #e8f5e9; --badge-ok-text: #1b5e20;
+    --badge-bajo-bg: #fff3e0; --badge-bajo-text: #e65100;
+    --badge-critico-bg: #ffebee; --badge-critico-text: #b71c1c;
+
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.18);
+    --radius: 10px;
+
+    --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-display: Georgia, "Times New Roman", Times, serif;
+  }
+  html.dark {
+    --secondary: #000000; --header-bg: #000000; --body-bg: #000000; --card-bg: #0a0a0a;
+    --text-dark: #ffffff; --text-muted: #b0b0b0; --border: rgba(255,255,255,0.15);
+    --tabs-bg: #0a0a0a; --tab-text: rgba(255,255,255,0.7); --tab-active: #FF9800;
+    --table-header: #0a0a0a; --table-header-text: #ffffff;
+    --input-bg: #1a1a1a; --input-border: rgba(255,255,255,0.2);
+    --list-item-hover: rgba(255,255,255,0.08);
+    --badge-ok-bg: rgba(46,125,50,0.4); --badge-ok-text: #69f0ae;
+    --badge-bajo-bg: rgba(245,127,23,0.3); --badge-bajo-text: #ffcc02;
+    --badge-critico-bg: rgba(198,40,40,0.35); --badge-critico-text: #ff6b6b;
+    --usd-color: #6ea8fe; --bs-color: #75b798;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    background: var(--body-bg);
+    color: var(--text-dark);
+    padding: 2rem;
+    transition: background .3s ease, color .3s ease;
+  }
+
+  h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; }
+  h1 { font-size: 2rem; font-weight: 700; }
+  h2 { font-size: 1.45rem; font-weight: 700; }
+  h3 { font-size: 1.15rem; font-weight: 700; font-family: var(--font-body); letter-spacing: .01em; }
+
+  p { max-width: 78ch; }
+  small { font-size: 0.875rem; color: var(--text-muted); }
+
+  .board { max-width: 1376px; margin: 0 auto; display: grid; gap: 2rem; }
+
+  .board-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 2rem; flex-wrap: wrap;
+    padding-bottom: 1.25rem; border-bottom: 2px solid var(--border);
+  }
+  .board-head p { color: var(--text-muted); font-size: 1rem; margin-top: .4rem; }
+
+  .theme-btn {
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .65rem 1.15rem; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--secondary); color: var(--text-dark);
+    font-family: inherit; font-size: .9375rem; font-weight: 600; cursor: pointer;
+    min-height: 44px;
+  }
+  .theme-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .theme-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  section.block { display: grid; gap: 1rem; }
+  .block-head { display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap; }
+  .block-head small { font-size: .9375rem; }
+
+  /* --- Swatches --- */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .875rem; }
+  .swatch {
+    border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    background: var(--card-bg);
+  }
+  .swatch .chip { height: 68px; }
+  .swatch .meta { padding: .65rem .8rem; display: grid; gap: .1rem; }
+  .swatch code { font-size: .8125rem; color: var(--text-muted); font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .swatch strong { font-size: .9375rem; }
+
+  /* --- Type scale --- */
+  .type-row {
+    display: grid; grid-template-columns: 210px 1fr; gap: 1.25rem; align-items: baseline;
+    padding: .9rem 0; border-bottom: 1px solid var(--border);
+  }
+  .type-row small { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .s-display { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; }
+  .s-header { font-family: var(--font-display); font-size: 1.3rem; }
+  .s-body { font-size: 1rem; }
+  .s-label { font-size: .875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+  .s-value { font-size: 1.6rem; font-weight: 700; }
+  .s-micro { font-size: .8125rem; color: var(--text-muted); }
+
+  /* --- Spacing / radius / shadow --- */
+  .trio { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
+  .panel {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.15rem; display: grid; gap: .8rem;
+  }
+  .spacing-row { display: flex; align-items: center; gap: .75rem; font-size: .9375rem; }
+  .spacing-bar { height: 16px; background: var(--primary); border-radius: 3px; flex-shrink: 0; }
+  .radius-row { display: flex; gap: .6rem; flex-wrap: wrap; }
+  .radius-box {
+    width: 78px; height: 52px; background: var(--badge-bajo-bg);
+    border: 1px solid var(--badge-bajo-text); display: grid; place-items: center;
+    font-size: .8125rem; font-weight: 600; color: var(--badge-bajo-text);
+  }
+  .shadow-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; }
+  .shadow-box {
+    background: var(--card-bg); border-radius: 8px; height: 62px;
+    display: grid; place-items: center; font-size: .8125rem; color: var(--text-muted);
+  }
+
+  /* --- Componentes --- */
+  .homebar {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    padding: .75rem 1.1rem; background: var(--header-bg); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow-sm); flex-wrap: wrap;
+  }
+  .homebar-left { display: flex; align-items: center; gap: .8rem; }
+  .logo-dot {
+    width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; font-weight: 700; font-size: 1rem; font-family: var(--font-display);
+  }
+  .homebar h3 { font-size: 1.05rem; }
+  .homebar small { font-size: .875rem; }
+  .homebar-right { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+
+  .nav-button {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .5rem 1rem; background: var(--secondary); color: var(--text-dark);
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: inherit; font-size: .875rem; font-weight: 600; cursor: pointer; min-height: 40px;
+  }
+  .nav-button:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .nav-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .65rem 1.3rem; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; font-family: inherit; font-size: .9375rem; font-weight: 600;
+    cursor: pointer; min-height: 44px;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(211,47,47,.35); }
+  .btn-primary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .6rem 1.25rem; background: transparent; color: var(--text-dark);
+    border: 2px solid var(--border); border-radius: 8px;
+    font-family: inherit; font-size: .9375rem; font-weight: 600; cursor: pointer; min-height: 44px;
+  }
+  .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-secondary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .5rem 1rem; background: transparent; color: var(--text-muted);
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: inherit; font-size: .875rem; cursor: pointer; min-height: 40px;
+  }
+  .btn-ghost:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--tabs-bg); overflow-x: auto; }
+  .tab {
+    padding: .9rem 1.3rem; border: none; border-bottom: 3px solid transparent;
+    background: transparent; color: var(--tab-text); font-family: inherit;
+    font-size: .9375rem; font-weight: 500; cursor: pointer; white-space: nowrap;
+  }
+  .tab:hover { color: var(--text-dark); }
+  .tab[aria-selected="true"] { color: var(--tab-active); border-bottom-color: var(--tab-active); font-weight: 700; }
+  .tab:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-left: 4px solid var(--primary); border-radius: var(--radius);
+    padding: 1.25rem; box-shadow: var(--shadow-sm);
+  }
+  .card-title {
+    font-size: .875rem; color: var(--text-muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: .35rem;
+  }
+  .card-value { font-size: 1.6rem; font-weight: 700; }
+  .card-value.accent { color: var(--primary); }
+  .card-value.ok { color: var(--success); }
+  .card.c-accent { border-left-color: var(--accent); }
+  .card.c-gold { border-left-color: var(--gold); }
+  .card.c-info { border-left-color: var(--info); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
+  caption { text-align: left; font-size: .9375rem; color: var(--text-muted); padding-bottom: .6rem; }
+  th, td { text-align: left; padding: .7rem .9rem; border-bottom: 1px solid var(--border); }
+  th { background: var(--table-header); color: var(--table-header-text); font-weight: 700; font-size: .875rem; }
+  tbody tr:hover { background: var(--list-item-hover); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .2rem .6rem; border-radius: 50px; font-size: .8125rem; font-weight: 700;
+  }
+  .badge-ok { background: var(--badge-ok-bg); color: var(--badge-ok-text); }
+  .badge-bajo { background: var(--badge-bajo-bg); color: var(--badge-bajo-text); }
+  .badge-critico { background: var(--badge-critico-bg); color: var(--badge-critico-text); }
+
+  .toggles { display: grid; gap: .8rem; }
+  .toggle-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    padding: .7rem .9rem; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--card-bg);
+  }
+  .toggle-row span { font-size: .9375rem; font-weight: 500; }
+  .switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: var(--border); border-radius: 50px; transition: .2s; }
+  .slider::before {
+    content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .switch input:checked + .slider { background: var(--primary); }
+  .switch input:checked + .slider::before { transform: translateX(22px); }
+  .switch input:focus-visible + .slider { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .input-demo { display: grid; gap: .5rem; max-width: 340px; }
+  .input-demo label { font-size: .875rem; font-weight: 600; color: var(--text-muted); }
+  .input-demo input {
+    font-family: inherit; font-size: 1rem; padding: .65rem .8rem; min-height: 44px;
+    background: var(--input-bg); color: var(--text-dark);
+    border: 1px solid var(--input-border); border-radius: 8px;
+  }
+  .input-demo input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,112,67,.2); }
+
+  .notes { display: grid; gap: .6rem; padding-left: 1.1rem; }
+  .notes li { font-size: .9375rem; color: var(--text-muted); }
+  .notes li strong { color: var(--text-dark); }
+
+  .callout {
+    border-left: 4px solid var(--warning); background: var(--badge-bajo-bg);
+    color: var(--badge-bajo-text); padding: .85rem 1rem; border-radius: 0 8px 8px 0;
+    font-size: .9375rem;
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 1rem; }
+    .type-row { grid-template-columns: 1fr; gap: .35rem; }
+    .shadow-row { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="board">
+
+  <header class="board-head">
+    <div>
+      <h1>Sistema de diseño — Saki Sushi Admin</h1>
+      <p>Tokens y componentes capturados de <strong>admin/css/admin.css</strong> y <strong>assets/fonts/fuentes.css</strong>. Ningún valor es inventado.</p>
+      <p><small>Las tipografías se sustituyen por pilas del sistema: Georgia por Playfair Display, pila sans del sistema por Montserrat.</small></p>
+    </div>
+    <button class="theme-btn" id="themeBtn" aria-pressed="false">
+      <span aria-hidden="true">◐</span> Ver tema oscuro
+    </button>
+  </header>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Color de marca</h2>
+      <small>5 tokens · fuente: admin/css/admin.css</small>
+    </div>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:#D32F2F"></div><div class="meta"><strong>--primary</strong><code>#D32F2F</code><small>Rojo Saki</small></div></div>
+      <div class="swatch"><div class="chip" style="background:#B71C1C"></div><div class="meta"><strong>--primary-dark</strong><code>#B71C1C</code><small>Degradado de botón</small></div></div>
+      <div class="swatch"><div class="chip" style="background:#FF7043"></div><div class="meta"><strong>--accent</strong><code>#FF7043</code><small>Naranja salmón</small></div></div>
+      <div class="swatch"><div class="chip" style="background:#E64A19"></div><div class="meta"><strong>--accent-dark</strong><code>#E64A19</code><small>Hover del acento</small></div></div>
+      <div class="swatch"><div class="chip" style="background:#FFB300"></div><div class="meta"><strong>--gold</strong><code>#FFB300</code><small>Platillo estrella</small></div></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Estados y categorías</h2>
+      <small>9 tokens</small>
+    </div>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:#388E3C"></div><div class="meta"><strong>--success</strong><code>#388E3C</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#1976D2"></div><div class="meta"><strong>--info</strong><code>#1976D2</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#F57C00"></div><div class="meta"><strong>--warning</strong><code>#F57C00</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#ef4444"></div><div class="meta"><strong>--danger</strong><code>#ef4444</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#00ACC1"></div><div class="meta"><strong>--delivery</strong><code>#00ACC1</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#9C27B0"></div><div class="meta"><strong>--propina</strong><code>#9C27B0</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#FF9800"></div><div class="meta"><strong>--favordecaja</strong><code>#FF9800</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#E91E63"></div><div class="meta"><strong>--condonar</strong><code>#E91E63</code></div></div>
+      <div class="swatch"><div class="chip" style="background:linear-gradient(90deg,#0d6efd 50%,#198754 50%)"></div><div class="meta"><strong>--usd / --bs</strong><code>#0d6efd · #198754</code></div></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Superficies y texto</h2>
+      <small>El tema por defecto es de contraste duro: blanco puro y negro puro, sin grises de fondo</small>
+    </div>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:var(--body-bg);border-bottom:1px solid var(--border)"></div><div class="meta"><strong>--body-bg</strong><code>#ffffff / #000000</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--card-bg);border-bottom:1px solid var(--border)"></div><div class="meta"><strong>--card-bg</strong><code>#ffffff / #0a0a0a</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--text-dark)"></div><div class="meta"><strong>--text-dark</strong><code>#000000 / #ffffff</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--text-muted)"></div><div class="meta"><strong>--text-muted</strong><code>#4a4a4a / #b0b0b0</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--border)"></div><div class="meta"><strong>--border</strong><code>#d0d0d0 / 15% blanco</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--tab-active)"></div><div class="meta"><strong>--tab-active</strong><code>#D32F2F / #FF9800</code></div></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Escala tipográfica</h2>
+      <small>Base de cuerpo 16 px · títulos en serif, datos en sans</small>
+    </div>
+    <div>
+      <div class="type-row"><small>.section-title · 1.6rem / 700 / serif</small><div class="s-display">Reportes de venta</div></div>
+      <div class="type-row"><small>.header-left h2 · 1.3rem / serif</small><div class="s-header">Administración Saki Sushi</div></div>
+      <div class="type-row"><small>.card-value · 1.6rem / 700</small><div class="s-value">Bs 12.480,00</div></div>
+      <div class="type-row"><small>body · 1rem / 400</small><div class="s-body">El cierre de caja se genera al confirmar el turno, con el desglose de propinas en bolívares y dólares.</div></div>
+      <div class="type-row"><small>.card-title · 0.875rem / 600 / mayúsculas</small><div class="s-label">Total del día</div></div>
+      <div class="type-row"><small>microtexto actual · 0.7–0.75rem</small><div class="s-micro">Etiqueta secundaria tal como aparece hoy en el panel.</div></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Espaciado, radios y sombras</h2></div>
+    <div class="trio">
+      <div class="panel">
+        <h3>Espaciado</h3>
+        <div class="spacing-row"><span class="spacing-bar" style="width:8px"></span><code>0.5rem</code></div>
+        <div class="spacing-row"><span class="spacing-bar" style="width:16px"></span><code>1rem</code></div>
+        <div class="spacing-row"><span class="spacing-bar" style="width:32px"></span><code>2rem · padding de .content</code></div>
+        <small>Sin tokens propios: son valores repetidos en el CSS.</small>
+      </div>
+      <div class="panel">
+        <h3>Radios</h3>
+        <div class="radius-row">
+          <div class="radius-box" style="border-radius:6px">6px</div>
+          <div class="radius-box" style="border-radius:8px">8px</div>
+          <div class="radius-box" style="border-radius:10px">10px</div>
+          <div class="radius-box" style="border-radius:20px">20px</div>
+        </div>
+        <small>Seis radios conviven sin regla escrita. --radius vale 10px y solo lo usan las tarjetas.</small>
+      </div>
+      <div class="panel">
+        <h3>Sombras</h3>
+        <div class="shadow-row">
+          <div class="shadow-box" style="box-shadow:var(--shadow-sm)">sm</div>
+          <div class="shadow-box" style="box-shadow:var(--shadow-md)">md</div>
+          <div class="shadow-box" style="box-shadow:var(--shadow-lg)">lg</div>
+        </div>
+        <small>Tres niveles, tokenizados.</small>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Componentes</h2><small>Como se ven hoy en el panel</small></div>
+
+    <div class="homebar">
+      <div class="homebar-left">
+        <div class="logo-dot">S</div>
+        <div>
+          <h3>Administración Saki Sushi</h3>
+          <small>María Fernanda Rondón · Sucursal Centro</small>
+        </div>
+      </div>
+      <div class="homebar-right">
+        <button class="nav-button">☀ Tema</button>
+        <button class="nav-button">Cajero</button>
+        <button class="nav-button">Mesas</button>
+        <button class="btn-ghost">Salir</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true">Inicio</button>
+      <button class="tab" role="tab" aria-selected="false">Menú y Precios</button>
+      <button class="tab" role="tab" aria-selected="false">Inventario</button>
+      <button class="tab" role="tab" aria-selected="false">Usuarios</button>
+      <button class="tab" role="tab" aria-selected="false">Reportes</button>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="card-title">Total del día</div><div class="card-value accent">Bs 12.480,00</div></div>
+      <div class="card c-accent"><div class="card-title">Pedidos</div><div class="card-value">63</div></div>
+      <div class="card c-info"><div class="card-title">Ticket promedio</div><div class="card-value">Bs 198,10</div></div>
+      <div class="card c-gold"><div class="card-title">Propinas</div><div class="card-value ok">Bs 1.240,00</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Botones</h3>
+      <div class="homebar-right" style="flex-wrap:wrap">
+        <button class="btn-primary">Guardar cambios</button>
+        <button class="btn-secondary">Ver historial</button>
+        <button class="nav-button">Copiar enlace</button>
+        <button class="btn-ghost">Salir</button>
+      </div>
+      <small>Foco de teclado visible en todos: anillo exterior de 3 px en --accent.</small>
+    </div>
+
+    <div class="panel">
+      <h3>Inventario</h3>
+      <table>
+        <caption>Stock por insumo · actualizado hace 4 minutos</caption>
+        <thead>
+          <tr><th>Insumo</th><th class="num">Stock</th><th class="num">Mínimo</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Arroz para sushi</td><td class="num">18 kg</td><td class="num">10 kg</td><td><span class="badge badge-ok">Suficiente</span></td></tr>
+          <tr><td>Salmón fresco</td><td class="num">3 kg</td><td class="num">8 kg</td><td><span class="badge badge-bajo">Bajo</span></td></tr>
+          <tr><td>Aguacate</td><td class="num">0</td><td class="num">6 kg</td><td><span class="badge badge-critico">Crítico</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="trio">
+      <div class="panel">
+        <h3>Interruptores</h3>
+        <div class="toggles">
+          <div class="toggle-row"><span>Aumento diario activo</span><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></div>
+          <div class="toggle-row"><span>Aumento semanal activo</span><label class="switch"><input type="checkbox"><span class="slider"></span></label></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Campo de texto</h3>
+        <div class="input-demo">
+          <label for="demo-tasa">Tasa base</label>
+          <input id="demo-tasa" type="text" value="400,00" inputmode="decimal">
+          <small>Al enfocar, el borde pasa a --accent con halo suave.</small>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Badges</h3>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <span class="badge badge-ok">Suficiente</span>
+          <span class="badge badge-bajo">Bajo</span>
+          <span class="badge badge-critico">Crítico</span>
+        </div>
+        <small>Tres estados, un mismo radio de píldora.</small>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>Deudas detectadas</h2></div>
+    <div class="callout">Estas son decisiones pendientes al rediseñar, no defectos de este tablero.</div>
+    <ul class="notes">
+      <li><strong>Microtexto por debajo de 14 px:</strong> muchas etiquetas usan .7rem (≈11 px) y varias con !important.</li>
+      <li><strong>Pesos sintetizados:</strong> todos los @font-face de Montserrat y Playfair apuntan al archivo de peso 400, así que 600/700 los dibuja el navegador.</li>
+      <li><strong>Seis radios distintos</strong> (6, 8, 10, 12, 14, 20 px) sin regla escrita.</li>
+      <li><strong>Colores fuera de tokens:</strong> #ffc107, #4ade80, #1a1a2e y #5c6bc0 se usan directo en reglas.</li>
+      <li><strong>Foco de teclado:</strong> los inputs cambian de borde, pero botones y tabs no tenían anillo visible.</li>
+    </ul>
+  </section>
+
+</div>
+
+<script>
+  var btn = document.getElementById('themeBtn');
+  btn.addEventListener('click', function () {
+    var dark = document.documentElement.classList.toggle('dark');
+    btn.setAttribute('aria-pressed', String(dark));
+    btn.textContent = dark ? '◑ Ver tema claro' : '◐ Ver tema oscuro';
+  });
+</script>
+</body>
+</html>
