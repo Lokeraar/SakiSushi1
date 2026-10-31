@@ -287,8 +287,12 @@
 
         // Confirmación: dejar el local sin atención deja sin pedidos a todo el que entre.
         // No es un botón para tocar de paso.
+        //
+        // El modo "hoy" nombra las dos salidas: el fin automático a las 07:00
+        // y la reapertura manual, que sigue disponible antes de esa hora. Por
+        // eso su párrafo de abajo no repite el aviso de reabrir: ya lo dice acá.
         var cuando = (_modoActual === 'hoy')
-            ? 'hasta las 07:00 de mañana, cuando arranca el ciclo siguiente'
+            ? 'hasta las 07:00 a. m. de mañana, cuando arranca el siguiente día laboral o cuando lo actives de manera manual'
             : (_modoActual === 'indefinido')
             ? 'por tiempo indefinido, hasta que lo desactive'
             : ('desde ' + new Date(desde).toLocaleString('es-VE') +
@@ -346,7 +350,7 @@
                 '</div>' +
                 '<div style="font-size:.8rem;opacity:.65;line-height:1.45;margin-bottom:1.1rem">' +
                   (modo === 'hoy'
-                    ? 'No hace falta reabrirlo a mano: el cierre termina solo cuando arranca el ciclo siguiente.'
+                    ? 'El cierre se libera solo; también podés abrirlo antes desde este mismo botón.'
                     : 'Para volver a abrirlo tiene que entrar acá y tocarlo de nuevo.') +
                 '</div>';
 
