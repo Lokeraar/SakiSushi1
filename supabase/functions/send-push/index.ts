@@ -51,24 +51,28 @@ serve(async (req) => {
     const mensaje = record?.mensaje || 'Tienes una nueva notificación'
     const pedido_id = record?.pedido_id
     const tipo = record?.tipo || 'info'
+    const url = record?.url
 
-    if (!session_id) {
-      return new Response(JSON.stringify({ error: 'No session_id' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    // ── Modo broadcast ──
+    //
+    // Sin session_id se envía a TODAS las suscripciones. Es el caso del
+    // cierre del local: el aviso le interesa a todo el que alguna vez abrió
+    // la carta y dejó su suscripción, no a una sesión puntual.
+    //
+    // Sigue exigiendo service_role: un Bearer cualquiera no puede disparar
+    // un broadcast. La función ya valida eso arriba.
+    const esBroadcast = !session_id
 
-    console.log(`📱 Procesando para session: ${session_id}, tipo: ${tipo}`)
+    console.log(`📱 Procesando ${esBroadcast ? 'BROADCAST' : 'session ' + session_id}, tipo: ${tipo}`)
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { data: subscriptions, error } = await supabase
-      .from('push_subscriptions')
-      .select('*')
-      .eq('session_id', session_id)
+    const { data: subscriptions, error } = esBroadcast
+      ? await supabase.from('push_subscriptions').select('*')
+      : await supabase.from('push_subscriptions').select('*').eq('session_id', session_id)
 
     if (error) throw error
     if (!subscriptions?.length) {
@@ -103,7 +107,9 @@ serve(async (req) => {
 
         const pushPayload = JSON.stringify({
           titulo, mensaje, session_id, pedido_id, tipo,
-          url: tipo === 'session_closed' ? '/SakiSushi0/Cajero/' : '/SakiSushi0/Cliente/',
+          // El caller puede sugerir la URL de destino (el aviso de cierre
+          // manda a la carta). Sin sugerencia, el mismo mapa de siempre.
+          url: url || (tipo === 'session_closed' ? '/SakiSushi0/Cajero/' : '/SakiSushi0/Cliente/'),
           icon: iconUrl, badge: badgeUrl, timestamp: Date.now()
         })
 

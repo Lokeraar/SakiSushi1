@@ -863,6 +863,26 @@ validarPrecios();
         } catch (e) { console.error('Error enviando push:', e); }
     };
 
+    // Broadcast: sin session_id. La edge function interpreta eso como
+    // "enviar a todas las suscripciones". Lo usa el cierre del local para
+    // avisar a los clientes cuando reabre. Fire-and-forget: si falla, no
+    // bloquea la operación del admin; el cliente igual se entera al entrar.
+    window.enviarNotificacionPushBroadcast = async function(titulo, mensaje, url = null) {
+        try {
+            const response = await fetch('https://iqwwoihiiyrtypyqzhgy.supabase.co/functions/v1/send-push', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
+                },
+                body: JSON.stringify({ titulo, mensaje, url })
+            });
+            const result = await response.json();
+            console.log('Push broadcast:', result);
+        } catch (e) { console.error('Error en push broadcast:', e); }
+    };
+
     // Configurar eventos del modal de ingrediente (imagen, sincronización)
     function setupIngredienteModalEvents() {
         const fileInput = document.getElementById('ingredienteImagen');

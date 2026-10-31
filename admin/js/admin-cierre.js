@@ -2,11 +2,14 @@
 //
 // CÓMO FUNCIONA
 //
-// El admin elige uno de tres modos:
+// El admin elige uno de cuatro modos:
 //
 //   HOY          cierra desde ahora, sin fecha de fin. Se reabre a mano.
 //   DESDE/HASTA  cierra una ventana concreta. Se puede programar a futuro:
 //                cargar el cierre del lunes un viernes.
+//   INDEFINIDO   lo mismo que HOY pero explícito: sin fecha de fin, activo
+//                hasta que un admin lo desactive. Es el caso "cerramos por
+//                tiempo indeterminado" (vaciones, mudanza, duelo largo).
 //   DESACTIVADO  reabre. Deja de bloquear y los pedidos vuelven a entrar.
 //
 // EL CANDADO NO ESTÁ ACÁ
@@ -111,6 +114,8 @@
         }
 
         if (campos) campos.style.display = '';
+        // "Indefinido" comparte formulario con los otros modos, pero sin las
+        // fechas: son justamente lo que no tiene.
         if (rango) rango.style.display = (modo === 'rango') ? '' : 'none';
         sincronizarBotonConfirmar(modo);
         pintarSugerencias();
@@ -248,6 +253,8 @@
         // No es un botón para tocar de paso.
         var cuando = (_modoActual === 'hoy')
             ? 'desde ahora y sin fecha de fin'
+            : (_modoActual === 'indefinido')
+            ? 'por tiempo indefinido, hasta que lo desactive'
             : ('desde ' + new Date(desde).toLocaleString('es-VE') +
                (hasta ? (' hasta ' + new Date(hasta).toLocaleString('es-VE')) : ' sin fecha de fin'));
 
@@ -353,6 +360,18 @@
 
             window.mostrarToast('🔓 Local abierto. Ya se pueden hacer pedidos.', 'success');
             await window.cargarEstadoCierre();
+
+            // ── Avisar por push a los clientes ──
+            //
+            // El que tiene la página abierta se entera solo (realtime/polling).
+            // El que la cerró, no: para él es este push. La edge function sin
+            // session_id hace broadcast a todas las suscripciones.
+            if (window._cierreInfo) {
+                window.enviarNotificacionPushBroadcast(
+                    '🍣 Saki Sushi ya está abierto',
+                    'Volvimos a abrir. Ya podés armar tu pedido.'
+                );
+            }
 
         } catch (e) {
             window.mostrarToast('⚠️ No se pudo reabrir: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');

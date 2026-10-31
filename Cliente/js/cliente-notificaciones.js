@@ -24,18 +24,53 @@
     window.urlBase64ToUint8Array = urlBase64ToUint8Array;
     S.modules.notificaciones.urlBase64ToUint8Array = urlBase64ToUint8Array;
 
+    // ── Identidad de push del visitante ──
+    //
+    // La tabla push_subscriptions indexa por session_id. Cajero y admin usan
+    // su sesión; el visitante no tiene ninguna, así que se le da un id
+    // estable por navegador: se genera una vez, cae en localStorage y se
+    // reutiliza. Con eso "todos los dispositivos que alguna vez abrieron la
+    // carta" es simplemente "todas las filas con rol cliente".
+    function sessionIdDePush() {
+        try {
+            var k = 'saki_push_session';
+            var v = localStorage.getItem(k);
+            if (!v) {
+                v = 'cli-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+                localStorage.setItem(k, v);
+            }
+            return v;
+        } catch (e) { return null; }
+    }
+
     function solicitarPermisoPushAuto() {
         if (!('Notification' in window)) return;
-        if (Notification.permission === 'granted') {
-            if ('serviceWorker' in navigator && 'SyncManager' in window) {
-                navigator.serviceWorker.ready.then(function(reg) {
-                    reg.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: urlBase64ToUint8Array('BHRvBz9vUsBOfNF7KGb14R7WjfaBoFy7rG8RYUuRs4IYQcKCJ-3H7iVQOmL1gstnHIClAC_5PR1J2GuxyBj2BqI')
-                    }).catch(function() {});
-                });
-            }
-        }
+        if (Notification.permission !== 'granted') return;
+        if (!('serviceWorker' in navigator)) return;
+        if (!window.supabaseClient) return; // sin DB no hay dónde registrar
+        navigator.serviceWorker.ready.then(function(reg) {
+            reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array('BHRvBz9vUsBOfNF7KGb14R7WjfaBoFy7rG8RYUuRs4IYQcKCJ-3H7iVQOmL1gstnHIClAC_5PR1J2GuxyBj2BqI')
+            }).then(function(sub) {
+                // ANTES: solo suscribía en el navegador, y la suscripción se
+                // quedaba afuera de la base: el servidor no podía avisarle
+                // nada. Ahora se registra, para que el cierre del local pueda
+                // llegarle como push.
+                var p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('p256dh'))));
+                var auth   = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('auth'))));
+                var sid = sessionIdDePush();
+                if (!sid) return;
+                window.supabaseClient.from('push_subscriptions').upsert([{
+                    session_id: sid,
+                    endpoint:   sub.endpoint,
+                    p256dh:     p256dh,
+                    auth:       auth,
+                    rol:        'cliente',
+                    user_agent: navigator.userAgent
+                }], { onConflict: 'endpoint' }).catch(function() {});
+            }).catch(function() {});
+        });
     }
     window.solicitarPermisoPushAuto = solicitarPermisoPushAuto;
     S.modules.notificaciones.solicitarPermisoPushAuto = solicitarPermisoPushAuto;

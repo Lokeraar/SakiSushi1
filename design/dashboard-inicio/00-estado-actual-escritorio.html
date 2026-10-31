@@ -4508,9 +4508,11 @@ html.dark-theme .status-inactivo {
                 <button class="modal-close" onclick="window.cerrarModalCierre()" title="Cerrar">×</button>
             </div>
             <div class="modal-body">
+                <p style="font-size:.85rem;opacity:.75;margin:0 0 .4rem;line-height:1.4">
+                    Esto es para los días en que el comercio no abrirá.
+                </p>
                 <p style="font-size:.85rem;opacity:.75;margin:0 0 1rem;line-height:1.4">
-                    Para los días en que el comercio no abre. La carta se sigue viendo y el cliente
-                    puede navegar, pero no puede armar el pedido.
+                    El menú se seguirá viendo y el cliente puede navegar, pero no podrá armar pedido.
                 </p>
 
                 <div id="cierreVigenteBox" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:.6rem .75rem;margin-bottom:.8rem">
@@ -4526,7 +4528,24 @@ html.dark-theme .status-inactivo {
                     <div style="display:flex;gap:.4rem;margin-bottom:.8rem">
                         <button type="button" class="btn-secondary cierre-modo" data-modo="hoy" onclick="window._cierreModo('hoy')" style="flex:1;font-size:.8rem;padding:.4rem">Hoy</button>
                         <button type="button" class="btn-secondary cierre-modo" data-modo="rango" onclick="window._cierreModo('rango')" style="flex:1;font-size:.8rem;padding:.4rem">Desde/Hasta</button>
+                        <button type="button" class="btn-secondary cierre-modo" data-modo="indefinido" onclick="window._cierreModo('indefinido')" style="flex:1;font-size:.8rem;padding:.4rem">Indefinido</button>
                         <button type="button" class="btn-secondary cierre-modo" data-modo="desactivado" onclick="window._cierreModo('desactivado')" style="flex:1;font-size:.8rem;padding:.4rem">Desactivado</button>
+                    </div>
+
+                    <div id="cierreRangoFechas" style="display:none">
+                        <div class="form-row" style="align-items:flex-end">
+                            <div class="form-group" style="margin:0 .5rem .7rem 0">
+                                <label style="font-size:.8rem">Desde</label>
+                                <input type="datetime-local" id="cierreDesde" style="width:100%">
+                            </div>
+                            <div class="form-group" style="margin:0 0 .7rem">
+                                <label style="font-size:.8rem">Hasta</label>
+                                <input type="datetime-local" id="cierreHasta" style="width:100%">
+                            </div>
+                        </div>
+                        <div style="font-size:.75rem;opacity:.6;margin-top:-.4rem;margin-bottom:.7rem">
+                            Si deja "Hasta" vacío, el cierre sigue hasta que lo desactive.
+                        </div>
                     </div>
 
                     <div id="cierreCampos">
@@ -4539,21 +4558,6 @@ html.dark-theme .status-inactivo {
                             <label style="font-size:.8rem">Mensaje que verá el cliente</label>
                             <textarea id="cierreMensaje" rows="2" style="width:100%" placeholder="Escriba acá qué le quiere decir al cliente."></textarea>
                             <div data-listo="1" style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.35rem" id="cierreSugerenciasMensaje"><button type="button" onclick="window._usarSugerencia('mensaje',0)" style="font-size:.68rem;padding:.15rem .45rem;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer;opacity:.75">Hoy el local permanece cerrado. …</button><button type="button" onclick="window._usarSugerencia('mensaje',1)" style="font-size:.68rem;padding:.15rem .45rem;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer;opacity:.75">Cerrado por feriado. Abrimos en …</button><button type="button" onclick="window._usarSugerencia('mensaje',2)" style="font-size:.68rem;padding:.15rem .45rem;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer;opacity:.75">Estamos haciendo inventario. Vol…</button><button type="button" onclick="window._usarSugerencia('mensaje',3)" style="font-size:.68rem;padding:.15rem .45rem;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer;opacity:.75">Cerrado por mantenimiento. Discu…</button><button type="button" onclick="window._usarSugerencia('mensaje',4)" style="font-size:.68rem;padding:.15rem .45rem;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer;opacity:.75">Hoy no podremos atender. Gracias…</button></div>
-                        </div>
-                        <div id="cierreRangoFechas" style="display:none">
-                            <div class="form-row">
-                                <div class="form-group" style="margin:0">
-                                    <label style="font-size:.8rem">Desde</label>
-                                    <input type="datetime-local" id="cierreDesde" style="width:100%">
-                                </div>
-                                <div class="form-group" style="margin:0">
-                                    <label style="font-size:.8rem">Hasta</label>
-                                    <input type="datetime-local" id="cierreHasta" style="width:100%">
-                                </div>
-                            </div>
-                            <div style="font-size:.75rem;opacity:.6;margin-top:.25rem">
-                                Si deja "Hasta" vacío, el cierre sigue hasta que lo desactive.
-                            </div>
                         </div>
                     </div>
                 </div>
