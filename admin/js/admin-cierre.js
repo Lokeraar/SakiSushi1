@@ -286,7 +286,7 @@
             : ('desde ' + new Date(desde).toLocaleString('es-VE') +
                (hasta ? (' hasta ' + new Date(hasta).toLocaleString('es-VE')) : ' sin fecha de fin'));
 
-        var ok = await window._confirmarCierre(cuando);
+        var ok = await window._confirmarCierre(cuando, _modoActual);
         if (!ok) return;
 
         try {
@@ -317,7 +317,11 @@
     // Cerrar el local deja sin pedidos a todo el que entre, así que no puede
     // ser un botón que se toca de paso. Devuelve una promesa: true si el admin
     // confirma, false si cancela o toca fuera.
-    window._confirmarCierre = function (cuando) {
+    //
+    // La segunda línea depende del modo: solo "Indefinido" (y un rango sin
+    // fecha de fin) obligan a volver a entrar a reabrir. Decirle eso a quien
+    // eligió "Hoy" era mentira: ese cierre termina solo a las 07:00.
+    window._confirmarCierre = function (cuando, modo) {
         return new Promise(function (resolve) {
             var ov = document.createElement('div');
             ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;' +
@@ -333,7 +337,9 @@
                   '<strong>no van a poder hacer pedidos</strong> ' + cuando + '.' +
                 '</div>' +
                 '<div style="font-size:.8rem;opacity:.65;line-height:1.45;margin-bottom:1.1rem">' +
-                  'Para volver a abrir tiene que entrar acá y tocar "Desactivar bloqueo".' +
+                  (modo === 'hoy'
+                    ? 'No hace falta reabrirlo a mano: el cierre termina solo cuando arranca el ciclo siguiente.'
+                    : 'Para volver a abrir tiene que entrar acá y tocar "Desactivar bloqueo".') +
                 '</div>';
 
             var fila = document.createElement('div');
