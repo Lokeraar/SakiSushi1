@@ -1,4 +1,12 @@
-// admin-cierre.js — Cerrar el local por duelo, feriado, inventario o lo que sea
+// admin-cierre.js — Dejar el local sin atención por duelo, feriado, inventario
+//
+// OJO CON EL NOMBRE: esto NO es el cierre de caja.
+//
+// El cierre de caja es el fin de la jornada laboral: se cuenta la plata, se
+// cuadra el turno y la web sigue levantada recibiendo pedidos para mañana.
+// Este archivo hace otra cosa: deja el local sin atención, de modo que los
+// clientes puedan ver el menú pero no armar pedido. Por eso el panel habla de
+// "Local operativo" y no de "cierre": el dueño se confundía entre los dos.
 //
 // CÓMO FUNCIONA
 //
@@ -214,7 +222,7 @@
     // acción que se usa pocas veces al año. Va en su propio modal, con el estado
     // a la vista en el botón que lo abre.
     // El botón de confirmar cambia de rótulo según el modo: en "Desactivado" no
-    // cierra nada, así que no puede seguir diciendo "Cerrar el local".
+    // cierra nada, así que no puede seguir diciendo "Marcar como cerrado".
     function sincronizarBotonConfirmar(modo) {
         var btn = document.getElementById('btnConfirmarCierre');
         if (!btn) return;
@@ -222,7 +230,7 @@
             btn.style.display = 'none';
         } else {
             btn.style.display = '';
-            btn.innerHTML = '<i class="fas fa-lock"></i> Cerrar el local';
+            btn.innerHTML = '<i class="fas fa-lock"></i> Marcar como cerrado';
         }
     }
 
@@ -231,7 +239,7 @@
         if (!modal) return;
         modal.classList.add('active');
         // Cada apertura arranca en "Hoy": el modo elegido la vez anterior no
-        // debe quedar pegado y cerrar el local en un rango que nadie eligió.
+        // debe quedar pegado y dejar sin atención un rango que nadie eligió.
         window._cierreModo('hoy');
         pintarSugerencias();
         var motivo = document.getElementById('cierreMotivo');
@@ -277,7 +285,7 @@
             hasta = finDelDiaDeComercio().toISOString();
         }
 
-        // Confirmación: cerrar el local deja sin pedidos a todo el que entre.
+        // Confirmación: dejar el local sin atención deja sin pedidos a todo el que entre.
         // No es un botón para tocar de paso.
         var cuando = (_modoActual === 'hoy')
             ? 'hasta las 07:00 de mañana, cuando arranca el ciclo siguiente'
@@ -291,7 +299,7 @@
 
         try {
             var { data, error } = await window.supabaseClient.rpc('crear_cierre_local', {
-                p_motivo: motivo || 'Cierre del local',
+                p_motivo: motivo || 'Local sin atención',
                 p_mensaje: mensaje,
                 p_desde: desde,
                 p_hasta: hasta
@@ -303,7 +311,7 @@
                 return;
             }
 
-            window.mostrarToast('🔒 Local cerrado. Los pedidos quedan bloqueados.', 'success');
+            window.mostrarToast('🔒 Local cerrado. No se pueden armar pedidos.', 'success');
             document.getElementById('cierreMensaje').value = '';
             document.getElementById('cierreMotivo').value = '';
             await window.cargarEstadoCierre();
@@ -314,7 +322,7 @@
 
     // Diálogo de confirmación armado a mano.
     //
-    // Cerrar el local deja sin pedidos a todo el que entre, así que no puede
+    // Dejar el local sin atención deja sin pedidos a todo el que entre, así que no puede
     // ser un botón que se toca de paso. Devuelve una promesa: true si el admin
     // confirma, false si cancela o toca fuera.
     //
@@ -331,7 +339,7 @@
             caja.style.cssText = 'background:#1e293b;border-radius:14px;padding:1.25rem;max-width:360px;' +
                 'width:100%;box-shadow:0 12px 40px rgba(0,0,0,.55);color:#e2e8f0';
             caja.innerHTML =
-                '<div style="font-size:1.05rem;font-weight:700;margin-bottom:.6rem">¿Cerrar el local?</div>' +
+                '<div style="font-size:1.05rem;font-weight:700;margin-bottom:.6rem">¿Marcar el local como cerrado?</div>' +
                 '<div style="font-size:.88rem;opacity:.9;line-height:1.5;margin-bottom:1rem">' +
                   'Los clientes van a poder <strong>ver el menú</strong>, pero ' +
                   '<strong>no van a poder hacer pedidos</strong> ' + cuando + '.' +
@@ -339,7 +347,7 @@
                 '<div style="font-size:.8rem;opacity:.65;line-height:1.45;margin-bottom:1.1rem">' +
                   (modo === 'hoy'
                     ? 'No hace falta reabrirlo a mano: el cierre termina solo cuando arranca el ciclo siguiente.'
-                    : 'Para volver a abrir tiene que entrar acá y tocar "Desactivar bloqueo".') +
+                    : 'Para volver a abrirlo tiene que entrar acá y tocarlo de nuevo.') +
                 '</div>';
 
             var fila = document.createElement('div');

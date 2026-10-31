@@ -4504,7 +4504,7 @@ html.dark-theme .status-inactivo {
 <div class="modal" id="cierreModal">
         <div class="modal-content" style="max-width:520px">
             <div class="modal-header">
-                <h3><i class="fas fa-store-slash" style="color:#ef4444"></i> Cierre del local</h3>
+                <h3><i class="fas fa-store-slash" style="color:#ef4444"></i> Local operativo</h3>
                 <button class="modal-close" onclick="window.cerrarModalCierre()" title="Cerrar">×</button>
             </div>
             <div class="modal-body">
@@ -4520,7 +4520,7 @@ html.dark-theme .status-inactivo {
                     <div style="font-size:.8rem;opacity:.85;margin-top:.15rem" id="cierreVigenteMensaje"></div>
                     <div style="font-size:.75rem;opacity:.6;margin-top:.25rem" id="cierreVigenteFechas"></div>
                     <button class="btn-primary" style="margin-top:.5rem;background:#4ade80;color:#0b1220;font-size:.8rem;padding:.35rem .8rem" onclick="window.desactivarCierre()">
-                        <i class="fas fa-store"></i> Desactivar bloqueo y permitir pedidos
+                        <i class="fas fa-store"></i> Marcar como abierto y permitir pedidos
                     </button>
                 </div>
 
@@ -4565,7 +4565,7 @@ html.dark-theme .status-inactivo {
             <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;width:100%">
                 <button class="btn-secondary" onclick="window.cerrarModalCierre()">Cancelar</button>
                 <button class="btn-primary" id="btnConfirmarCierre" style="background:#ef4444" onclick="window.crearCierre()">
-                    <i class="fas fa-lock"></i> Cerrar el local
+                        <i class="fas fa-lock"></i> Marcar como cerrado
                 </button>
             </div>
         </div>
@@ -4695,10 +4695,14 @@ html.dark-theme .status-inactivo {
             <div class="tab-pane active" id="dashboardPane">
                 <div class="pane-header">
                     <h2 class="section-title"><i class="fas fa-home"></i> Inicio</h2>
-                    <!-- El cierre del local es una acción poco frecuente y ocupaba 63
-                         líneas dentro del bloque de la tasa. Va en un modal. -->
+                    <!-- El estado operativo del local es una acción poco frecuente
+                         y ocupaba 63 líneas dentro del bloque de la tasa. Va en un
+                         modal. El rótulo dice "Local operativo" y no "cierre" a
+                         propósito: el dueño confundía "cierre del local" con el
+                         cierre de caja, que es el fin de la jornada laboral y no
+                         tiene nada que ver con dejar de recibir pedidos. -->
                     <button class="btn-secondary" id="btnAbrirCierre" onclick="window.abrirModalCierre()" style="align-self:center;margin-left:auto;font-size:.85rem;padding:.45rem .9rem">
-                        <i class="fas fa-store-slash"></i> Cierre del local
+                        <i class="fas fa-store-slash"></i> Local operativo:
                         <span id="cierreEstadoChip" style="font-size:.72rem;font-weight:700;padding:.15rem .5rem;border-radius:6px;background:rgba(74,222,128,.15);color:#2e7d32">Abierto</span>
                     </button>
                 </div>
