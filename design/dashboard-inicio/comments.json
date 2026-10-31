@@ -198,6 +198,17 @@
       "status": "resolved",
       "sentAt": "2026-10-31T20:27:54.835Z",
       "resolvedAt": "2026-10-31T20:29:34.878Z"
+    },
+    {
+      "id": "381e1yls",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#platilloEstrellaCard",
+      "excerpt": "PLATILLO ESTRELLA - Sin actividad No hay ventas registradas esta semana 0 unidades unidades $ 0.00 Bs 0,00 VER ANALÍTICA COMPLETA",
+      "comment": "En esta tarjeta quise hacer un carrusel funcional en la que se mostrara los 5 platillos (o combos) estrellas (más vendidos) que su imagen se mostrara y tradiciones cada 5 segundos pero no lo logré... se supone que la cuenta  se toma en el momento en que el cajero confirma el cobro de un pedido. Revisa el código existente de él.",
+      "createdAt": "2026-10-31T20:32:11.979Z",
+      "status": "open",
+      "sentAt": "2026-10-31T20:32:12.122Z",
+      "resolvedAt": null
     }
   ]
 }

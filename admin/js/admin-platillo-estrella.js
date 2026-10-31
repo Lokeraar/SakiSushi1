@@ -4,7 +4,10 @@
     window.platillosTop5 = [];
     window.platilloCarouselIndex = 0;
     window.platilloCarouselInterval = null;
-    window.CAROUSEL_INTERVAL_MS = 6000; // 6 segundos por platillo
+    // 5 segundos por platillo, como se pidió. Antes eran 6.
+    // La rotación solo arranca con 2 o más platillos: con uno solo no hay
+    // nada que rotar y el temporizador sería un parpadeo sin sentido.
+    window.CAROUSEL_INTERVAL_MS = 5000;
     window.isHoveringPlatillo = false;
     window.isTouchingPlatillo = false;
     
@@ -75,7 +78,7 @@
         }
         
         if (tituloEl) tituloEl.textContent = 'Sin actividad';
-        if (descEl) descEl.textContent = 'No hay ventas registradas esta semana';
+        if (descEl) descEl.textContent = 'Aún no hay cobros esta semana. El ranking se arma solo cuando el cajero confirma el cobro de un pedido.';
         if (badgeEl) badgeEl.textContent = '-';
         if (ordenesEl) ordenesEl.textContent = '0 unidades';
         if (totalUsdEl) totalUsdEl.textContent = '0.00';
