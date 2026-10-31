@@ -408,8 +408,20 @@
                        _opcionBCV('Próxima', d.proxima, actual);
 
             if (!html) {
-                cont.innerHTML = '<p style="text-align:center;opacity:.7;font-size:.85rem;padding:1rem">' +
-                    'No hay ninguna tasa del BCV capturada todavía.</p>';
+                // Desde la migración 37 la ventana solo ofrece lo que publicó
+                // una fuente. Si el admin cargó un número a mano y todavía no
+                // hay captura del BCV, el mensaje tiene que decir eso y no
+                // dejar creer que el sistema está roto.
+                var manual = Number(actual || 0);
+                cont.innerHTML =
+                    '<p style="text-align:center;opacity:.75;font-size:.85rem;padding:.5rem 1rem;line-height:1.45">' +
+                        'El BCV todavía no tiene ninguna tasa capturada.' +
+                        (manual > 0
+                            ? '<br><br>Estás cobrando con <strong>' + manual.toFixed(2) +
+                              '</strong>, que se cargó a mano. Esa cifra no la publicó el BCV, ' +
+                              'así que no aparece acá.'
+                            : '') +
+                    '</p>';
                 return;
             }
             cont.innerHTML = html;
