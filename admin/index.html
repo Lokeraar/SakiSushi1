@@ -10,13 +10,13 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
     <script src="../assets/errores-legibles.js?v=1793000170" defer></script>
 <script src="../supabase-config.js?v=1793000030"></script>
-    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/admin.css?v=1793478554">
     <link rel="stylesheet" href="../assets/tasa-ventana.css?v=1793000120">
     <!-- Módulos JS (orden correcto) -->
     <script src="js/admin-core.js?v=1793000160" defer></script>
     <script src="js/admin-auth.js?v=1793000160" defer></script>
     <script src="js/admin-realtime.js?v=1793000160" defer></script>
-    <script src="js/admin-config.js?v=1793472565" defer></script>
+    <script src="js/admin-config.js?v=1793478545" defer></script>
     <script src="js/admin-helpers.js?v=1793000070" defer></script>
     <script src="js/admin-ui.js?v=1793472565" defer></script>
     <script src="js/admin-tasa-aviso.js?v=1793000160" defer></script>
@@ -381,9 +381,12 @@
                             </div>
                         </div>
                         <div class="tcb-save-wrap">
-                            <!-- Dos líneas: en un teléfono "Guardar cambios en tasa" no entra
-                                 en una sola y desbordaba el ancho del bloque. -->
-                            <button class="btn-primary tcb-save-btn" id="saveAllButton"><i class="fas fa-save"></i><span>Guardar<br>cambios en tasa</span></button>
+                            <!-- El texto se quiebra solo segun el ancho, sin <br> fijo:
+                                 en el telefono cae en dos lineas, en escritorio entra
+                                 en una. El <br> de antes obligaba a dos siempre y
+                                 dejaba el bloque desproporcionado en pantallas
+                                 anchas. -->
+                            <button class="btn-primary tcb-save-btn" id="saveAllButton"><i class="fas fa-save"></i><span>Guardar cambios en tasa</span></button>
                         </div>
 
                         <!-- ============================================================

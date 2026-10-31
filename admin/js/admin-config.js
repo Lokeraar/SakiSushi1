@@ -460,9 +460,10 @@
         btn.id = 'btnObtenerTasaBCV';
         btn.className = 'btn-secondary tcb-save-btn';
         btn.style.marginLeft = '8px';
-        // Dos líneas: en un teléfono "Consultar el BCV" no entra en una sola y
-        // desbordaba al lado del botón Guardar.
-        btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Consultar<br>el BCV';
+        // Sin <br>: el texto quiebra segun el ancho, igual que "Guardar
+        // cambios en tasa". Con el <br> fijo quedaba en dos lineas tambien en
+        // escritorio, donde habia lugar de sobra para una.
+        btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Consultar el BCV';
         btn.onclick = function () { window.abrirModalBCV(btn); };
         saveWrap.appendChild(btn);
     })();

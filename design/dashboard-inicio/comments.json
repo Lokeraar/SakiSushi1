@@ -187,6 +187,17 @@
       "status": "resolved",
       "sentAt": "2026-10-31T17:42:35.434Z",
       "resolvedAt": "2026-10-31T17:46:23.470Z"
+    },
+    {
+      "id": "27n3ljtw",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#saveAllButton",
+      "excerpt": "Guardar cambios en tasa",
+      "comment": "Que el contenido quepa en el botón responsivamente.",
+      "createdAt": "2026-10-31T20:27:54.672Z",
+      "status": "resolved",
+      "sentAt": "2026-10-31T20:27:54.835Z",
+      "resolvedAt": "2026-10-31T20:29:34.878Z"
     }
   ]
 }

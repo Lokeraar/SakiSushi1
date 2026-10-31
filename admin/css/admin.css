@@ -946,17 +946,22 @@ html.dark-theme .toggle-slider { background-color: rgba(255,255,255,.2); }
     padding: .55rem 1.1rem;
     white-space: nowrap;
 }
-/* Los dos botones del bloque de tasa llevan dos líneas en móvil: el texto no
-   entra en una sola y desbordaba el ancho de la tarjeta. El text-align y el
-   line-height evitan que la segunda línea quede pegada al borde. */
+/* Los botones del bloque de tasa llevan el texto con quiebre natural, sin <br>
+   fijo: el rótulo dice cuantas lineas necesita segun el ancho disponible.
+   overflow-wrap es la red de seguridad: si un dia entra un texto mas largo
+   que el ancho del boton, quiebra igual en vez de desbordar la tarjeta. */
 @media (max-width: 768px) {
     .tcb-save-btn {
         white-space: normal;
+        overflow-wrap: anywhere;
         text-align: center;
         line-height: 1.25;
+        /* min-width:0 permite que el boton se encoja por debajo del contenido
+           minimo; sin eso el texto empuja y desborda el contenedor flex. */
+        min-width: 0;
         max-width: 46%;
         /* El icono no debe encogerse ni estirarse con el boton: queda del
-           tamano del texto y centrado respecto de las dos lineas. */
+           tamano del texto y centrado respecto de las lineas. */
         justify-content: center;
         gap: .35rem;
     }
@@ -975,6 +980,7 @@ html.dark-theme .toggle-slider { background-color: rgba(255,255,255,.2); }
         flex-wrap: wrap;
         gap: .4rem;
         align-items: center;
+        min-width: 0;
     }
 }
 /* Tablet responsive for save button - fit in same row */
