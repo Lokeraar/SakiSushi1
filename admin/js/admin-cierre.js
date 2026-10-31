@@ -4,12 +4,13 @@
 //
 // El admin elige uno de cuatro modos:
 //
-//   HOY          cierra desde ahora, sin fecha de fin. Se reabre a mano.
+//   HOY          cierra ahora y termina solo: hasta las 07:00 del día
+//                siguiente, cuando arranca el ciclo de comercio. No hay que
+//                acordarse de reabrir.
 //   DESDE/HASTA  cierra una ventana concreta. Se puede programar a futuro:
 //                cargar el cierre del lunes un viernes.
-//   INDEFINIDO   lo mismo que HOY pero explícito: sin fecha de fin, activo
-//                hasta que un admin lo desactive. Es el caso "cerramos por
-//                tiempo indeterminado" (vaciones, mudanza, duelo largo).
+//   INDEFINIDO   sin fecha de fin: activo hasta que un admin lo desactive.
+//                Es el caso "cerramos hasta nuevo aviso".
 //   DESACTIVADO  reabre. Deja de bloquear y los pedidos vuelven a entrar.
 //
 // EL CANDADO NO ESTÁ ACÁ
@@ -186,6 +187,25 @@
         return isNaN(d.getTime()) ? null : d.toISOString();
     }
 
+    // ── El fin del día de comercio ──
+    //
+    // El local no cierra a medianoche: el ciclo termina a las 07:00 del día
+    // siguiente. Un cierre "solo por hoy" tiene que durar hasta las 06:59:59
+    // de mañana, no hasta siempre.
+    //
+    // Devuelve el instante del próximo 07:00 local a partir de ahora.
+    function finDelDiaDeComercio() {
+        var ahora = new Date();
+        var fin = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 7, 0, 0, 0);
+        if (fin <= ahora) fin.setDate(fin.getDate() + 1);
+        // 06:59:59.999 y no 07:00: a las 07:00:00 exactas arranca el ciclo
+        // siguiente, y `hasta >= momento` incluiría ese instante.
+        // setMilliseconds(-1) y no setSeconds(-0.001): setSeconds trunca la
+        // fracción y dejaba el fin justo en 07:00:00.000.
+        fin.setMilliseconds(-1);
+        return fin;
+    }
+
     // ============================================================
     // Abrir y cerrar el modal
     // ============================================================
@@ -247,12 +267,20 @@
                 window.mostrarToast('⚠️ Indique desde cuándo rige el cierre', 'warning');
                 return;
             }
+        } else if (_modoActual === 'hoy') {
+            // "Hoy" NO es un cierre sin fin: es hasta que termine el día de
+            // comercio, o sea las 07:00 del día siguiente. Se mandaba con
+            // ambas fechas en null y el candado de la base lo leía como
+            // "nunca termina": el diálogo prometía hasta mañana y el local
+            // quedaba cerrado hasta desactivarlo a mano.
+            desde = new Date().toISOString();
+            hasta = finDelDiaDeComercio().toISOString();
         }
 
         // Confirmación: cerrar el local deja sin pedidos a todo el que entre.
         // No es un botón para tocar de paso.
         var cuando = (_modoActual === 'hoy')
-            ? 'desde ahora y sin fecha de fin'
+            ? 'hasta las 07:00 de mañana, cuando arranca el ciclo siguiente'
             : (_modoActual === 'indefinido')
             ? 'por tiempo indefinido, hasta que lo desactive'
             : ('desde ' + new Date(desde).toLocaleString('es-VE') +
@@ -279,7 +307,6 @@
             document.getElementById('cierreMensaje').value = '';
             document.getElementById('cierreMotivo').value = '';
             await window.cargarEstadoCierre();
-
         } catch (e) {
             window.mostrarToast('⚠️ No se pudo cerrar: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error');
         }
