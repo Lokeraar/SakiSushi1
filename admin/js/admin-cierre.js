@@ -348,11 +348,14 @@
                   'Los clientes van a poder <strong>ver el menú</strong>, pero ' +
                   '<strong>no van a poder hacer pedidos</strong> ' + cuando + '.' +
                 '</div>' +
-                '<div style="font-size:.8rem;opacity:.65;line-height:1.45;margin-bottom:1.1rem">' +
-                  (modo === 'hoy'
-                    ? 'El cierre se libera solo; también podés abrirlo antes desde este mismo botón.'
-                    : 'Para volver a abrirlo tiene que entrar acá y tocarlo de nuevo.') +
-                '</div>';
+                // "Indefinido" necesita el aviso de reapertura manual, porque no
+                // hay otra salida. En "Hoy" sobra: el párrafo de arriba ya dice
+                // que se libera a las 07:00 o al activarlo a mano.
+                (modo === 'hoy'
+                    ? ''
+                    : '<div style="font-size:.8rem;opacity:.65;line-height:1.45;margin-bottom:1.1rem">' +
+                      'Para volver a abrirlo tiene que entrar acá y tocarlo de nuevo.' +
+                      '</div>');
 
             var fila = document.createElement('div');
             fila.style.cssText = 'display:flex;gap:.5rem';
