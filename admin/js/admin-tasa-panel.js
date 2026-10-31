@@ -167,44 +167,14 @@ function nombreFuenteTasa(f) {
                 '</div>';
         }
 
-        // ── Bloque 3: la próxima y la elección ──
-        if (proxima) {
-            var difProx = Number(proxima.valor) - Number(aplicada.tasa_cambio || 0);
-            html +=
-                '<div class="tbp-caja tbp-proxima">' +
-                    '<div class="tbp-titulo"><i class="fas fa-forward"></i> Ya está publicada la próxima' +
-                        '<span class="tbp-chip">' + (proxima.fuente || '—') + '</span>' +
-                    '</div>' +
-                    '<div class="tbp-pregunta">' +
-                        'La próxima del <strong>' + fechaEnPalabras(proxima.fecha_valor) + '</strong> ' +
-                        '<span class="tbp-tenue">(' + cuandoFalta(proxima.dias_para) + ')</span> ' +
-                        'es <strong>' + Number(proxima.valor).toFixed(2) + '</strong>. ¿Cuál usamos?' +
-                    '</div>' +
-                    '<div class="tbp-difprox">' +
-                        (difProx === 0
-                            ? 'Es la misma que estás aplicando.'
-                            : 'Diferencia con la que aplicás: <strong>' + (difProx > 0 ? '+' : '') +
-                              difProx.toFixed(2) + '</strong> Bs por dólar.') +
-                    '</div>' +
-                    '<div class="tbp-botones">' +
-                        '<button class="tbp-btn tbp-btn-vigente" onclick="window.elegirTasa(\'vigente\')">' +
-                            '<i class="fas fa-check"></i> Usar la vigente' +
-                            '<span class="tbp-btn-sub">' + Number(bcv ? bcv.valor : aplicada.tasa_cambio || 0).toFixed(2) + '</span>' +
-                        '</button>' +
-                        '<button class="tbp-btn tbp-btn-proxima" onclick="window.elegirTasa(\'proxima\')">' +
-                            '<i class="fas fa-forward"></i> Usar la próxima' +
-                            '<span class="tbp-btn-sub">' + Number(proxima.valor).toFixed(2) + '</span>' +
-                        '</button>' +
-                        '<button class="tbp-btn tbp-btn-manual" onclick="window.elegirTasa(\'manual\')">' +
-                            '<i class="fas fa-pen"></i> Poner otra a mano' +
-                        '</button>' +
-                    '</div>' +
-                    '<div class="tbp-aviso">' +
-                        'Elegir la próxima la cobra antes de su fecha valor. Queda registrado como ' +
-                        'decisión tuya, con el motivo escrito.' +
-                    '</div>' +
-                '</div>';
-        }
+        // ── Bloque 3: retirado ──
+        //
+        // Mostraba "Ya está publicada la próxima" con tres botones (usar la
+        // vigente / la próxima / poner otra a mano). Es exactamente la elección
+        // que ofrece la ventana "Consultar el BCV", adonde se llega desde el
+        // botón junto al campo de la tasa. Dos caminos para la misma decisión
+        // compiten y ocupan pantalla: la elección vive solo en el modal.
+        // El dato de la próxima sigue visible en el propio modal.
 
         // ── Bloque 3b: retirado ──
         //
@@ -248,31 +218,13 @@ function nombreFuenteTasa(f) {
                 '</div>';
         }
 
-        // ── Bloque 3d: cómo fue la captura de hoy ──
-        var cadena = _datos.cadena_hoy || [];
-        if (cadena.length) {
-            var eslabones = cadena.map(function (c) {
-                var icono = c.estado === 'ok' ? 'fa-circle-check'
-                          : c.estado === 'fallido' ? 'fa-circle-xmark'
-                          : 'fa-clock';
-                var cls = c.estado === 'ok' ? 'tbp-es-ok'
-                        : c.estado === 'fallido' ? 'tbp-es-fallo'
-                        : 'tbp-es-curso';
-                return '<div class="tbp-eslabon ' + cls + '">' +
-                    '<i class="fas ' + icono + '"></i>' +
-                    '<span class="tbp-es-nombre">' + (c.fuente || '—') + '</span>' +
-                    '<span class="tbp-es-hora">' + (c.hora || '') + '</span>' +
-                    (c.detalle ? '<span class="tbp-es-detalle">' + c.detalle + '</span>' : '') +
-                '</div>';
-            }).join('');
-
-            html +=
-                '<div class="tbp-caja">' +
-                    '<div class="tbp-titulo"><i class="fas fa-diagram-project"></i> ' +
-                        'Cómo fue la captura de hoy</div>' +
-                    '<div class="tbp-eslabones">' + eslabones + '</div>' +
-                '</div>';
-        }
+        // ── Bloque 3d: retirado ──
+        //
+        // Mostraba "Cómo fue la captura de hoy" con la cadena de fuentes y sus
+        // horas. Repite lo que ya dice el tooltip de la tarjeta "Tasa Base"
+        // (fuente, fecha valor, hora de captura), que está junto al campo donde
+        // se usa el número. El diagnóstico fino de la cadena queda para el
+        // historial, que muestra todas las capturas con su fuente y estado.
 
         // ── Bloque 4: acceso al historial ──
         var cuantas = (_datos.capturas || []).length;
@@ -313,132 +265,16 @@ function nombreFuenteTasa(f) {
     };
 
     // ============================================================
-    // Elegir
+    // Elegir: retirado
     // ============================================================
-    window.elegirTasa = async function (origen) {
-        if (!_datos) return;
+    //
+    // `elegirTasa` y `enviarTasa` aplicaban la tasa desde los tres botones del
+    // bloque "Ya está publicada la próxima", que fue retirado: esa elección
+    // vive ahora solo en la ventana "Consultar el BCV" y el guardado del
+    // panel, ambos con su propia firma. Sin callers, el código muerto se va:
+    // quedaría invitando a que alguien vuelva a llamarlo y abra un segundo
+    // camino sin los controles del camino bueno.
 
-        var valor, fechaValor, etiqueta;
-
-        if (origen === 'vigente') {
-            if (!_datos.bcv) { window.mostrarToast('No hay tasa del BCV capturada', 'error'); return; }
-            valor      = Number(_datos.bcv.valor);
-            fechaValor = _datos.bcv.fecha_valor;
-            etiqueta   = 'la vigente del BCV (' + fechaEnPalabras(fechaValor) + ')';
-
-        } else if (origen === 'proxima') {
-            if (!_datos.proxima) { window.mostrarToast('No hay tasa próxima capturada', 'error'); return; }
-            valor      = Number(_datos.proxima.valor);
-            fechaValor = _datos.proxima.fecha_valor;
-            etiqueta   = 'la próxima (' + fechaEnPalabras(fechaValor) + ')';
-        } else {
-            var entrada = prompt(
-                'Escribí la tasa que querés aplicar.\n\n' +
-                'Se va a registrar como carga manual, con la fecha de hoy.'
-            );
-            if (entrada === null) return;
-            valor = parseFloat(String(entrada).replace(',', '.'));
-            if (!(valor > 0)) { window.mostrarToast('Esa tasa no es un número válido', 'error'); return; }
-            fechaValor = hoyISO();
-            etiqueta   = 'la que escribiste a mano';
-        }
-
-        var baseActual = Number((_datos.aplicada || {}).tasa_cambio || 0);
-
-        // Se pregunta UNA VEZ, y solo cuando la respuesta no es obvia.
-        //
-        // Quien decide cuánta fricción hace falta es la base
-        // (`_nivel_confirmacion_tasa`), no este archivo. Acá solo se respeta:
-        //
-        //   0 -> aplicar y nada más (es redondeo o el usuario ya escribió el
-        //        número a mano; preguntar otra vez sería preguntar dos veces
-        //        lo mismo)
-        //   1 -> una confirmación
-        //   2 -> una confirmación acá, y la base va a pedir la segunda si el
-        //        salto es brusco
-        //
-        // El adelanto de la fecha valor siempre cae en nivel 1: no es fricción,
-        // es una decisión con consecuencia y tiene que quedar registrada.
-        var salto = baseActual > 0
-            ? Math.abs(valor - baseActual) / baseActual * 100
-            : 0;
-        var nivel = 0;
-        if (origen === 'proxima')                    nivel = 1;
-        else if (baseActual > 0 && salto >= 0.5)     nivel = (salto > 50 ? 2 : 1);
-        if (origen === 'manual' && salto <= 50)      nivel = 0;
-
-        if (nivel === 0) {
-            // Sin diálogo: el toast de resultado alcanza y sobra.
-            await enviarTasa(valor, origen, fechaValor, false);
-            return;
-        }
-
-        var texto;
-        if (origen === 'proxima') {
-            texto =
-                'Vas a cobrar con ' + etiqueta + ': ' + valor.toFixed(2) + ' Bs por dólar.\n\n' +
-                'Ojo: esa tasa tiene fecha valor ' + fechaEnPalabras(fechaValor) +
-                ', o sea que todavía NO RIGE. La actual es ' + baseActual.toFixed(2) + '.\n\n' +
-                'Queda registrado como decisión tuya. ¿Seguimos?';
-        } else {
-            texto =
-                'Vas a aplicar ' + etiqueta + ': ' + valor.toFixed(2) + ' Bs por dólar.\n\n' +
-                'La actual es ' + baseActual.toFixed(2) + '.\n\n' +
-                'El aumento acumulado se conserva: la tasa efectiva se recalcula manteniendo el mismo factor.\n\n' +
-                '¿Confirmás?';
-        }
-
-        if (!confirm(texto)) return;
-
-        await enviarTasa(valor, origen, fechaValor, false);
-    };
-
-    async function enviarTasa(valor, origen, fechaValor, confirmado) {
-        try {
-            var r = await window.supabaseClient.rpc('aplicar_tasa_elegida', {
-                p_valor:       valor,
-                p_origen:      origen,
-                p_fecha_valor: fechaValor,
-                p_confirmar:   confirmado
-            });
-
-            if (r.error) {
-                if (window.mostrarErrorLegible) window.mostrarErrorLegible(r.error, 'aplicar la tasa'); else if (window.mostrarToast) window.mostrarToast('\u274C ' + (r.error && r.error.message || r.error), 'error'); else console.error('[aplicar la tasa]', r.error);
-                return;
-            }
-
-            var d = r.data || {};
-
-            // La función se niega a un salto mayor al 50% sin confirmación.
-            // Es la guarda contra el dedazo (8862 en vez de 886).
-            if (d.requiere_confirmacion) {
-                if (!confirm('⚠️ ' + d.error + '\n\n¿Confirmás que es intencional?')) return;
-                return enviarTasa(valor, origen, fechaValor, true);
-            }
-
-            if (!d.success) {
-                window.mostrarToast('❌ ' + (d.error || 'No se pudo aplicar la tasa'), 'error');
-                return;
-            }
-
-            window.mostrarToast(
-                '💱 Tasa aplicada: ' + Number(d.tasa_aplicada).toFixed(2) +
-                '. El precio al cliente sale con ' + Number(d.tasa_efectiva).toFixed(2) + '.',
-                d.adelanto ? 'warning' : 'success'
-            );
-
-            // Refrescar el resto del panel con el valor nuevo, sin recargar
-            // la página: el admin tiene que ver el efecto de lo que hizo.
-            if (window.cargarConfiguracion) await window.cargarConfiguracion();
-            if (window.actualizarTasaUI)   window.actualizarTasaUI();
-            await window.cargarTasaPanel();
-            if (window.renderizarMenu) window.renderizarMenu();
-
-        } catch (e) {
-            console.error('Error aplicando tasa:', e);
-            window.mostrarToast('❌ Error de conexión al aplicar la tasa', 'error');
-        }
-    }
 
     // ============================================================
     // Confirmar una tasa de respaldo
