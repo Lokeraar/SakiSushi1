@@ -176,6 +176,17 @@
       "status": "resolved",
       "sentAt": "2026-10-30T23:50:59.515Z",
       "resolvedAt": "2026-10-30T23:56:27.989Z"
+    },
+    {
+      "id": "22ecwcu6",
+      "file": "00-estado-actual-movil.html",
+      "selector": "#aumentoDiarioInput",
+      "excerpt": "",
+      "comment": "Aunque este desactivado el toggle de aumento diario o semanal, aún se puede escribir aquí cuando se recién abre la página, y no debería.",
+      "createdAt": "2026-10-31T17:42:35.234Z",
+      "status": "resolved",
+      "sentAt": "2026-10-31T17:42:35.434Z",
+      "resolvedAt": "2026-10-31T17:46:23.470Z"
     }
   ]
 }

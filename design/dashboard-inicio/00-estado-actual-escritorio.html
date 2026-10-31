@@ -4724,7 +4724,12 @@ html.dark-theme .status-inactivo {
                                  tipear 0.1, que es DIEZ VECES el valor buscado y
                                  descuadra todos los precios. max=100 evita un
                                  dedazo tipo 1000. -->
-                            <input type="number" step="0.01" min="0" max="100" id="aumentoDiarioInput" class="tcb-input" inputmode="decimal" oninput="window.recalcularTasaEfectiva && window.recalcularTasaEfectiva()">
+                            <!-- disabled en el markup a propósito: nace bloqueado y
+                                 solo se habilita cuando un toggle de aumento está
+                                 encendido (lo maneja _actualizarLabelAumento). Sin
+                                 esto quedaba un instante editable antes de que
+                                 corriera el JS, y el dueño lo notaba al abrir. -->
+                            <input type="number" step="0.01" min="0" max="100" id="aumentoDiarioInput" class="tcb-input" inputmode="decimal" disabled style="opacity:.4;cursor:not-allowed" oninput="window.recalcularTasaEfectiva && window.recalcularTasaEfectiva()">
                         </div>
                         <div class="tcb-card tcb-card-efectiva">
                             <div class="tcb-label">Tasa Efectiva:</div>

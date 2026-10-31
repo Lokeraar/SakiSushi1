@@ -117,6 +117,12 @@
         function _mostrarFechasAumento(visible) {
             document.getElementById('tasaFechasDiv').style.display = visible ? 'flex' : 'none';
         }
+        // Se expone en window porque admin-config.js necesita llamarla al
+        // cargar la configuración, y la comprobación local de antes
+        // (`typeof _actualizarLabelAumento === 'function'`) siempre daba
+        // falso: la función vivía en este ámbito, no en el global. El
+        // resultado era que el input del porcentaje nacía habilitado aunque
+        // los dos toggles estuvieran apagados.
         function _actualizarLabelAumento() {
             const diario   = document.getElementById('aumentoActivoToggle').checked;
             const semanal  = document.getElementById('aumentoSemanalToggle').checked;
@@ -129,11 +135,22 @@
                 inputPct.style.opacity = alguno ? '1' : '0.4';
                 inputPct.style.cursor  = alguno ? '' : 'not-allowed';
             }
-            _mostrarFechasAumento(alguno);
+            // La tarjeta de fechas también se muestra con el aumento
+            // "indefinido" marcado, que es lo que ya hacía
+            // `actualizarTasaUI`. Sin esto, ahora que la función sí corre al
+            // cargar, le tapaba la tarjeta a ese estado.
+            const indef = document.getElementById('aumentoIndefinido');
+            _mostrarFechasAumento(alguno || (indef ? indef.checked : false));
             if (alguno && !document.getElementById('aumentoDesde').value) {
                 document.getElementById('aumentoDesde').value = new Date().toISOString().split('T')[0];
             }
         }
+        window._actualizarLabelAumento = _actualizarLabelAumento;
+        // Estado inicial: sin toggles encendidos, el campo nace bloqueado.
+        // Sin esta llamada el input solo se deshabilitaba al tocar un toggle,
+        // así que en la primera carga dejaba escribir un porcentaje que el
+        // sistema después ignoraba al calcular.
+        _actualizarLabelAumento();
         document.getElementById('aumentoActivoToggle').addEventListener('change', function() {
             if (this.checked) document.getElementById('aumentoSemanalToggle').checked = false;
             _actualizarLabelAumento();
