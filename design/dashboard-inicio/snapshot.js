@@ -168,11 +168,45 @@ function runModule(rel) {
 
 // ── 3. Renderizadores reales del proyecto ────────────────────────────────
 async function render(view) {
+// Cada vista necesita su propio DOM y su propio contexto. Antes esto se creaba
+// una sola vez arriba y render() se llamaba dos veces: los módulos corrían dos
+// veces sobre el mismo documento y admin-config.js insertaba dos veces el botón
+// "Consultar el BCV", con el mismo id. Un artboard por vista, un DOM por vista.
+const shell = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${markup}</body></html>`;
+const { window, document } = parseHTML(shell);
+Object.assign(globalThis, { window, document });
+
+window.formatBs = (n) => 'Bs ' + Number(n || 0).toFixed(2).replace('.', ',');
+window.formatUSD = (n) => '$' + Number(n || 0).toFixed(2);
+window.mostrarToast = () => {};
+window.supabaseClient = null;
+window.configGlobal = { tasa_efectiva: 889.26, tasa_cambio: 889.26 };
+document.documentElement.classList = { add() {}, remove() {}, toggle() {}, contains: () => false };
+
+const context = vm.createContext({
+  window,
+  document,
+  console: { log() {}, warn() {}, error() {} },
+  Date, Math, Number, String, JSON, parseInt, parseFloat, isNaN,
+  setTimeout: () => 0, clearTimeout: () => {}, setInterval: () => 0, clearInterval: () => {},
+  Promise,
+});
+
+function runLocal(rel) {
+  try {
+    vm.runInContext(read(rel), context, { filename: rel });
+    return true;
+  } catch (err) {
+    console.error(`  aviso: ${rel} no cargó (${err.message})`);
+    return false;
+  }
+}
+void runModule;
 console.log('renderizadores:');
-runModule('admin/js/admin-tasa-panel.js');
-runModule('admin/js/admin-cierre.js');
-runModule('admin/js/admin-platillo-estrella.js');
-runModule('admin/js/admin-config.js');
+runLocal('admin/js/admin-tasa-panel.js');
+runLocal('admin/js/admin-cierre.js');
+runLocal('admin/js/admin-platillo-estrella.js');
+runLocal('admin/js/admin-config.js');
 
 // El cuadro de la tasa del BCV. Los datos son los de la captura; la forma del
 // HTML la decide tasa_panel.js.
@@ -253,16 +287,11 @@ setText('tasaEfectivaDisplay', '889.26');
 setText('tasaBaseInput', '');
 setText('aumentoDiarioInput', '');
 
-// El botón "Consultar el BCV" lo agrega admin-config.js al cargar.
-const saveWrap = document.querySelector('.tcb-save-wrap');
-if (saveWrap && !document.getElementById('btnObtenerTasaBCV')) {
-  const btn = document.createElement('button');
-  btn.id = 'btnObtenerTasaBCV';
-  btn.className = 'btn-secondary tcb-save-btn';
-  btn.setAttribute('style', 'margin-left:8px');
-  btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Consultar<br>el BCV';
-  saveWrap.appendChild(btn);
-}
+// El botón "Consultar el BCV" ya lo agrega admin-config.js al cargarse (ver
+// runLocal más arriba). No se vuelve a insertar acá: hacerlo dejaba dos
+// botones con el mismo id dentro del .tcb-save-wrap. La guarda por
+// getElementById no bastaba porque buscaba en el documento del snapshot y el
+// módulo escribe en su propio window, así que ambos caminos creaban uno.
 
 // El modal BCV se deja cerrado en el snapshot: en el canvas se abre tocando
 // "Consultar el BCV", igual que en la app.
