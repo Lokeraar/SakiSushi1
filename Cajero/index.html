@@ -1220,7 +1220,16 @@ await window.cargarVentasHoy();await window.cargarPropinas();const modal=documen
       // El vuelto se descuenta del primer método de efectivo
       let vueltoRestante = vueltoP;
       pagos.forEach(pg=>{
-        const mbs=pg.metodo==='efectivo_usd'?(pg.monto||0)*tasa:(pg.montoBs||pg.monto||0);
+        // `montoBs` se guardó al confirmar el cobro con la tasa de ESE
+        // momento. Recalcularlo con la tasa de hoy hace que el arqueo de un
+        // día viejo cambie cada vez que la tasa se mueve: el cierre de ayer
+        // dejaría de cuadrar solo. Se prefiere el valor guardado.
+        //
+        // El `monto * tasa` queda solo como respaldo para filas viejas que
+        // se grabaron antes de que `montoBs` existiera.
+        const mbs=(pg.montoBs!=null&&pg.montoBs!=='')
+          ? Number(pg.montoBs)
+          : (pg.metodo==='efectivo_usd'?(pg.monto||0)*tasa:(pg.monto||0));
         if(pg.metodo==='efectivo_bs'){
           const neto=Math.max(0,mbs-vueltoRestante); vueltoRestante=Math.max(0,vueltoRestante-mbs); vt_ebs+=neto;
         } else if(pg.metodo==='efectivo_usd'){
