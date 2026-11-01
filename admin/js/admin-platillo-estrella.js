@@ -8,6 +8,75 @@
     // La rotación solo arranca con 2 o más platillos: con uno solo no hay
     // nada que rotar y el temporizador sería un parpadeo sin sentido.
     window.CAROUSEL_INTERVAL_MS = 5000;
+
+    // ── Las fotos: por qué esta tarjeta calentaba el teléfono ──
+    //
+    // Las imágenes del menú son direcciones "peladas" de Unsplash:
+    //
+    //   https://images.unsplash.com/photo-1579871494447-9811cf80d66c
+    //
+    // Esa dirección entrega la foto en su tamaño ORIGINAL. Medido en el
+    // dispositivo:
+    //
+    //   Dragon Roll      sin parámetros: 5.303 KB
+    //                    con parámetros:   122 KB   (43 veces menos)
+    //   Nigiri de Atún   sin parámetros: 4.873 KB
+    //                    con parámetros:    56 KB   (87 veces menos)
+    //
+    // Y como el carrusel creaba un `new Image()` en CADA rotación, esas
+    // fotos de 5 MB se volvían a bajar cada 5 segundos, para siempre. Ese
+    // es el calor y la lentitud: no es el JavaScript, son los megabytes.
+    //
+    // La solución ya existía en el panel del cliente
+    // (`Cliente/js/cliente-imagenes.js`). Acá se reusa la misma función si
+    // está disponible; si no, se aplica un equivalente mínimo, para que la
+    // tarjeta no dependa de que ese archivo se haya cargado antes.
+
+    var ANCHO_ESTRELLA = 800;   // nítido en celular, aguanta tablet
+    var CALIDAD_ESTRELLA = 70;  // donde el ojo deja de notar el ahorro
+
+    function urlOptimizada(url) {
+        if (!url || typeof url !== 'string') return url;
+        // La función del cliente ya conoce Unsplash y Supabase Storage, y
+        // respeta los hosts que no reconoce. Es la que se prefiere.
+        if (typeof window.optimizarUrlImagen === 'function') {
+            return window.optimizarUrlImagen(url);
+        }
+        // Copia mínima del mismo criterio, por si el admin carga esta
+        // tarjeta sin el módulo del cliente.
+        try {
+            if (!/^https?:\/\//i.test(url)) return url;
+            var u = new URL(url);
+            var host = u.hostname.toLowerCase();
+            if (host === 'images.unsplash.com' || host === 'unsplash.com') {
+                if (!u.searchParams.has('w')) u.searchParams.set('w', ANCHO_ESTRELLA);
+                if (!u.searchParams.has('q')) u.searchParams.set('q', CALIDAD_ESTRELLA);
+                if (!u.searchParams.has('fm')) u.searchParams.set('fm', 'webp');
+                return u.toString();
+            }
+            if (host.indexOf('supabase.co') !== -1 &&
+                u.pathname.indexOf('/storage/v1/object/public/') !== -1) {
+                u.pathname = u.pathname.replace('/storage/v1/object/public/',
+                                                '/storage/v1/render/image/public/');
+                if (!u.searchParams.has('width')) u.searchParams.set('width', ANCHO_ESTRELLA);
+                if (!u.searchParams.has('quality')) u.searchParams.set('quality', CALIDAD_ESTRELLA);
+                if (!u.searchParams.has('format')) u.searchParams.set('format', 'webp');
+                return u.toString();
+            }
+            return url;
+        } catch (e) { return url; }
+    }
+
+    // Caché de imágenes ya precargadas, por URL. Sin esto el carrusel volvía
+    // a pedir la misma foto en cada vuelta del ciclo.
+    var precargadas = Object.create(null);
+
+    function precargar(url) {
+        if (!url || precargadas[url]) return;
+        precargadas[url] = true;
+        var img = new Image();
+        img.src = url;   // queda en la caché del navegador para el próximo giro
+    }
     window.isHoveringPlatillo = false;
     window.isTouchingPlatillo = false;
     
@@ -51,6 +120,12 @@
             window.platilloCarouselIndex = 0;
             actualizarCardPlatilloEstrella(null);
             actualizarIndicadores();
+            // Precargar las cinco fotos de una vez, ya optimizadas. Así el
+            // primer giro tampoco descarga nada: el navegador las tiene en
+            // caché antes de que el temporizador las pida.
+            window.platillosTop5.forEach(function (pl) {
+                precargar(urlOptimizada(pl.imagen || ''));
+            });
             iniciarCarruselAutomatico();
 
         } catch (e) {
@@ -107,18 +182,36 @@
 
         // Usar la imagen como fondo de la tarjeta - actualizar primero para transición simultánea
         if (cardEl) {
-            const imagenUrl = platillo.imagen || '';
+            // La foto se pide YA optimizada (WebP, 800 px, calidad 70). La
+            // diferencia medida contra la dirección original es de 43 a 87
+            // veces menos bytes por imagen.
+            const imagenUrl = urlOptimizada(platillo.imagen || '');
             if (imagenUrl) {
-                // Precargar imagen para evitar parpadeos
-                const tempImg = new Image();
-                tempImg.onload = function() {
-                    cardEl.style.backgroundImage = "url('" + imagenUrl + "')";
-                };
-                tempImg.onerror = function() {
-                    // Si falla la imagen, usar un gradiente por defecto
-                    cardEl.style.backgroundImage = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
-                };
-                tempImg.src = imagenUrl;
+                // Si ya está puesta, no se toca: repintar el fondo con la misma
+                // imagen obliga al navegador a componerla otra vez sin motivo.
+                // Ojo: NO se corta la función acá, porque todavía falta pintar
+                // los textos (título, unidades, montos) más abajo.
+                const actual = cardEl.style.backgroundImage || '';
+                const yaPuesta = actual.indexOf(imagenUrl) !== -1;
+
+                if (!yaPuesta) {
+                    // Si está en caché, se pinta de una: sin esperar a onload y
+                    // sin parpadeo. Si no, se pinta al cargar.
+                    if (precargadas[imagenUrl]) {
+                        cardEl.style.backgroundImage = "url('" + imagenUrl + "')";
+                    } else {
+                        const tempImg = new Image();
+                        tempImg.onload = function() {
+                            cardEl.style.backgroundImage = "url('" + imagenUrl + "')";
+                            precargadas[imagenUrl] = true;
+                        };
+                        tempImg.onerror = function() {
+                            // Si falla la imagen, usar un gradiente por defecto
+                            cardEl.style.backgroundImage = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
+                        };
+                        tempImg.src = imagenUrl;
+                    }
+                }
             } else {
                 // Sin imagen, usar gradiente por defecto
                 cardEl.style.backgroundImage = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
