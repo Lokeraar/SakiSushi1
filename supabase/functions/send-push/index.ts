@@ -3,9 +3,19 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
 
+// Las dos claves estaban en el formato equivocado y `web-push` las rechazaba
+// al arrancar. Como esa validación corre al importar el módulo, la función
+// moría antes de atender una sola petición: TODA invocación devolvía
+// WORKER_ERROR, incluso un simple OPTIONS. Así estuvo desde siempre, no lo
+// introdujo el modo broadcast.
+//
+//   · La pública terminaba en '='. VAPID exige base64url SIN relleno.
+//   · La privada venía en DER (138 bytes, formato de archivo PEM). `web-push`
+//     quiere la clave CRUDA de 32 bytes. Se extrajo el OCTET STRING interno
+//     del DER: son los mismos 32 bytes, en base64url.
 const vapidKeys = {
-  publicKey: 'BC6oJ4E+5pGIn4icpzCBLMi6/nk+1JJenrUA41uJrAs1ELraSw5ctvRAlh8sHVldqzBXUtEwEeFKBm0/hmuM9EY=',
-  privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgXtMIlXsmnVqvOCkQZ8NC++EaOulDNL7LBFFCWqkY4nShRANCAAQuqCeBPuaRiJ+InKcwgSzIuv55PtSSXp61AONbiawLNRC62ksOXLb0QJYfLB1ZXaswV1LRMBHhSgZtP4ZrjPRG'
+  publicKey: 'BC6oJ4E-5pGIn4icpzCBLMi6_nk-1JJenrUA41uJrAs1ELraSw5ctvRAlh8sHVldqzBXUtEwEeFKBm0_hmuM9EY',
+  privateKey: 'XtMIlXsmnVqvOCkQZ8NC--EaOulDNL7LBFFCWqkY4nQ'
 }
 
 webpush.setVapidDetails('mailto:admin@sakisushi.com', vapidKeys.publicKey, vapidKeys.privateKey)

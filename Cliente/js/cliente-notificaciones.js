@@ -61,14 +61,21 @@
                 var auth   = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('auth'))));
                 var sid = sessionIdDePush();
                 if (!sid) return;
-                window.supabaseClient.from('push_subscriptions').upsert([{
-                    session_id: sid,
-                    endpoint:   sub.endpoint,
-                    p256dh:     p256dh,
-                    auth:       auth,
-                    rol:        'cliente',
-                    user_agent: navigator.userAgent
-                }], { onConflict: 'endpoint' }).catch(function() {});
+                // Se registra por RPC y no con un upsert directo.
+                //
+                // El upsert desde el navegador no puede funcionar: RLS le
+                // exige poder LEER la fila para actualizarla, y al visitante
+                // anónimo no se le da SELECT a propósito (leería los
+                // endpoints de todos los demás dispositivos). La función
+                // hace el upsert del lado del servidor, fuerza rol 'cliente'
+                // y no expone ninguna lectura.
+                window.supabaseClient.rpc('registrar_push_cliente', {
+                    p_session_id: sid,
+                    p_endpoint:   sub.endpoint,
+                    p_p256dh:     p256dh,
+                    p_auth:       auth,
+                    p_user_agent: navigator.userAgent
+                }).catch(function() {});
             }).catch(function() {});
         });
     }
