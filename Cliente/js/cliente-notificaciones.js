@@ -43,15 +43,55 @@
         } catch (e) { return null; }
     }
 
+    // Clave pública VAPID. Tiene que ser exactamente la pareja de la privada
+    // que usa la edge function `send-push`, y en base64url SIN relleno.
+    //
+    // Antes acá había otra clave (BHRvBz9v...), distinta de la del servidor.
+    // El navegador rechazaba el push firmado con la privada del otro par, así
+    // que aunque el registro funcionara, ninguna notificación llegaba.
+    var VAPID_PUBLICA = 'BC6oJ4E-5pGIn4icpzCBLMi6_nk-1JJenrUA41uJrAs1ELraSw5ctvRAlh8sHVldqzBXUtEwEeFKBm0_hmuM9EY';
+
     function solicitarPermisoPushAuto() {
         if (!('Notification' in window)) return;
-        if (Notification.permission !== 'granted') return;
         if (!('serviceWorker' in navigator)) return;
         if (!window.supabaseClient) return; // sin DB no hay dónde registrar
-        navigator.serviceWorker.ready.then(function(reg) {
+
+        // El permiso se PIDE acá. Antes la función arrancaba con
+        // `if (Notification.permission !== 'granted') return;`, y nadie más
+        // en la carta lo solicitaba: quedaba esperando un permiso que nunca
+        // se pedía, así que el registro no ocurría nunca.
+        //
+        // Se pide al cargar, que es el único momento en que el navegador lo
+        // permite sin requerir un gesto previo del usuario.
+        if (Notification.permission === 'denied') return; // ya dijo no: no insistir
+        var pedirPermiso = Notification.permission === 'granted'
+            ? Promise.resolve('granted')
+            : Notification.requestPermission();
+        pedirPermiso.then(function(permiso) {
+            if (permiso !== 'granted') return;
+            registrarSuscripcion();
+        }).catch(function() {});
+    }
+
+    function registrarSuscripcion() {
+        // El service worker se registra ACÁ, no se asume registrado.
+        //
+        // `Cliente/index.html` no lo registraba en ninguna parte, así que
+        // `navigator.serviceWorker.ready` era una promesa que nunca se
+        // resolvía: el push quedaba esperando para siempre, en silencio.
+        //
+        // La ruta es relativa a propósito. El sitio se publica en
+        // `/SakiSushi0/`, y las tres pantallas pedían `/sw.js` (ruta
+        // absoluta), que en ese hosting da 404: verificaba contra el sitio
+        // publicado, /SakiSushi0/sw.js responde 200 y /sw.js responde 404.
+        // Con ruta relativa funciona igual en local y en Pages.
+        navigator.serviceWorker.register('../../sw.js')
+            .catch(function() { /* sin SW no hay push, pero la carta anda */ })
+            .then(function() { return navigator.serviceWorker.ready; })
+            .then(function(reg) {
             reg.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array('BHRvBz9vUsBOfNF7KGb14R7WjfaBoFy7rG8RYUuRs4IYQcKCJ-3H7iVQOmL1gstnHIClAC_5PR1J2GuxyBj2BqI')
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLICA)
             }).then(function(sub) {
                 // ANTES: solo suscribía en el navegador, y la suscripción se
                 // quedaba afuera de la base: el servidor no podía avisarle

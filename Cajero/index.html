@@ -269,7 +269,7 @@
 <div class="modal-overlay" id="deliveryModal"><div class="modal-content"><div class="modal-header delivery"><h2><i class="fas fa-motorcycle"></i> Acumulado Deliverys (Hoy)</h2><button class="modal-close" onclick="window.cerrarModal('deliveryModal')" data-tooltip="Cerrar (ESC)"><i class="fas fa-times"></i></button></div><div class="modal-body" id="deliveryModalBody"></div><div class="modal-footer"><button class="btn btn-primary" onclick="window.cerrarModal('deliveryModal')">Cerrar (ESC)</button></div></div></div>
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i><div><p id="toastText" style="margin:0;color:#fff">Operación completada</p></div></div>
 <script src="../assets/errores-legibles.js?v=1793000170" defer></script>
-<script src="../supabase-config.js?v=1793000160"></script>
+<script src="../supabase-config.js?v=1793539937"></script>
 <script>
 // ============================================ VARIABLES GLOBALES ============================================
 window.currentUser=null;window.jwtToken=null;window.pedidos=[];window.ventasHoy=[];window.propinas=[];window.menuItems=[];window.inventario=[];window.mesas=[];window.currentPedido=null;window.enProcesoDeCobro=false;window.pedidoParaAccion=null;window.accionPendiente=null;window.__tasaUnica=400;Object.defineProperty(window,'tasaEfectiva',{get:function(){var c=window.configGlobal;var v=c&&parseFloat(c.tasa_efectiva);return v>0?v:(window.__tasaUnica>0?window.__tasaUnica:400)},set:function(v){window.__tasaUnica=v},configurable:true});window.currentPropinaPedido=null;window.mesoneros=[];window.deliverys=[];window.alarmaAudio=document.getElementById('alarmaSonido');window.alarmaActiva=false;window.suscripciones=[];window.paginaVisible=true;window.reconectando=false;window.intervaloVerificacion=null;window.ultimaActualizacion=Date.now();window.propinaSeleccionada={mesonero:null,mesa:'',metodo:'efectivo_bs',monto:0,referencia:''};window.referenciaPropina=['','','','','',''];window.pendingLoginUser=null;window.stockCache={data:{},lastUpdate:0,duration:5e3,get:function(id){const ahora=Date.now();if(ahora-this.lastUpdate>this.duration)this.clear();return this.data[id]},set:function(id,v){this.data[id]=v;this.lastUpdate=Date.now()},clear:function(){this.data={};this.lastUpdate=0},invalidate:function(){this.data={};this.lastUpdate=0}};
@@ -577,11 +577,11 @@ window.cargarDatosIniciales=async function(){try{await window.cargarConfiguracio
                         }
                         const _reg = async () => {
                             try {
-                                const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                                const reg = await navigator.serviceWorker.register('../sw.js');
                                 await navigator.serviceWorker.ready;
                                 let sub = await reg.pushManager.getSubscription();
                                 if (!sub) {
-                                    const vapid = 'BC6oJ4E+5pGIn4icpzCBLMi6/nk+1JJenrUA41uJrAs1ELraSw5ctvRAlh8sHVldqzBXUtEwEeFKBm0/hmuM9EY=';
+                                    const vapid = 'BC6oJ4E-5pGIn4icpzCBLMi6_nk-1JJenrUA41uJrAs1ELraSw5ctvRAlh8sHVldqzBXUtEwEeFKBm0_hmuM9EY';
                                     const pad = '='.repeat((4 - vapid.length % 4) % 4);
                                     const raw = atob((vapid + pad).replace(/-/g, '+').replace(/_/g, '/'));
                                     const key = new Uint8Array(raw.length);
@@ -590,11 +590,19 @@ window.cargarDatosIniciales=async function(){try{await window.cargarConfiguracio
                                 }
                                 const p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('p256dh'))));
                                 const auth   = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('auth'))));
-                                await window.supabaseClient.from('push_subscriptions').upsert([{
-                                    session_id: sid, endpoint: sub.endpoint, p256dh, auth,
-                                    rol: 'cajero', user_agent: navigator.userAgent
-                                }], { onConflict: 'endpoint' });
-                                console.log('✅ Push cajero registrado:', sid);
+                                // Por RPC: el upsert directo lo rechaza RLS
+                                // (necesita leer la fila para actualizarla).
+                                // La función deduce el rol de la sesión.
+                                const { data: regP, error: errReg } = await window.supabaseClient
+                                    .rpc('registrar_push', {
+                                        p_session_id: sid,
+                                        p_endpoint:   sub.endpoint,
+                                        p_p256dh:     p256dh,
+                                        p_auth:       auth,
+                                        p_user_agent: navigator.userAgent
+                                    });
+                                if (errReg) throw errReg;
+                                console.log('✅ Push cajero registrado:', sid, 'rol:', regP && regP.rol);
                             } catch (e) { console.warn('⚠️ Push cajero no disponible:', e.message); }
                         };
                         if (Notification.permission === 'granted') { await _reg(); }

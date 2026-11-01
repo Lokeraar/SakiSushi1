@@ -166,11 +166,11 @@
 
         const _registrar = async () => {
             try {
-                const reg  = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                const reg  = await navigator.serviceWorker.register('../../sw.js');
                 await navigator.serviceWorker.ready;
                 let sub = await reg.pushManager.getSubscription();
                 if (!sub) {
-                    const vapid = 'BC6oJ4E+5pGIn4icpzCBLMi6/nk+1JJenrUA41uJrAs1ELraSw5ctvRAlh8sHVldqzBXUtEwEeFKBm0/hmuM9EY=';
+                    const vapid = 'BC6oJ4E-5pGIn4icpzCBLMi6_nk-1JJenrUA41uJrAs1ELraSw5ctvRAlh8sHVldqzBXUtEwEeFKBm0_hmuM9EY';
                     const key   = (function(b64) {
                         const pad = '='.repeat((4 - b64.length % 4) % 4);
                         const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
@@ -182,14 +182,21 @@
                 }
                 const p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('p256dh'))));
                 const auth   = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('auth'))));
-                await window.supabaseClient.from('push_subscriptions').upsert([{
-                    session_id: sid,
-                    endpoint:   sub.endpoint,
-                    p256dh, auth,
-                    rol: 'admin',
-                    user_agent: navigator.userAgent
-                }], { onConflict: 'endpoint' });
-                console.log('📢 Push admin registrado:', sid);
+                // Por RPC, no con upsert directo: RLS exige permiso de tabla
+                // UPDATE y poder LEER la fila, y la policy `push_propias`
+                // compara session_id con auth.uid(), que acá nunca coincide
+                // (el session_id es propio de la app). La función deduce el
+                // rol de la sesión y hace el upsert con permisos de dueño.
+                const { data: regP, error: errReg } = await window.supabaseClient
+                    .rpc('registrar_push', {
+                        p_session_id: sid,
+                        p_endpoint:   sub.endpoint,
+                        p_p256dh:     p256dh,
+                        p_auth:       auth,
+                        p_user_agent: navigator.userAgent
+                    });
+                if (errReg) throw errReg;
+                console.log('📢 Push admin registrado:', sid, 'rol:', regP && regP.rol);
             } catch (e) { console.warn('⚠️ Push admin no disponible:', e.message); }
         };
 

@@ -2,7 +2,11 @@
 // Maneja: notificaciones push entrantes (vía VAPID) y
 //         notificaciones locales solicitadas por la página cuando está en segundo plano.
 
-const CACHE_NAME = 'saki-sushi-v1';
+// El nombre de la caché incluye la versión. Al cambiarlo, el navegador
+// descarta la caché vieja en `activate` y toma este archivo. Sin esto, un
+// service worker ya instalado puede quedar congelado con el código viejo
+// durante días, porque el navegador no lo vuelve a pedir.
+const CACHE_NAME = 'saki-sushi-v1793539937';
 
 // ─────────────────────────────────────────
 // INSTALACIÓN Y ACTIVACIÓN

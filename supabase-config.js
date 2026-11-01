@@ -201,7 +201,7 @@ window.utcToGMT4 = function(utcTimestamp) {
 // ============================================
 // FUNCIONES DE NOTIFICACIONES PUSH
 // ============================================
-window.VAPID_PUBLIC_KEY = 'BC6oJ4E+5pGIn4icpzCBLMi6/nk+1JJenrUA41uJrAs1ELraSw5ctvRAlh8sHVldqzBXUtEwEeFKBm0/hmuM9EY=';
+window.VAPID_PUBLIC_KEY = 'BC6oJ4E-5pGIn4icpzCBLMi6_nk-1JJenrUA41uJrAs1ELraSw5ctvRAlh8sHVldqzBXUtEwEeFKBm0_hmuM9EY';
 
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -216,19 +216,29 @@ window.esBrave = function() {
     return navigator.brave && typeof navigator.brave.isBrave === 'function';
 };
 
+// Registro de push desde `supabase-config.js`.
+//
+// Estaba sin usar y con tres defectos: pedía `/sw.js` (ruta absoluta, 404 en
+// este hosting), hacía `upsert` directo —que RLS rechaza para un anónimo— y
+// ni siquiera mandaba el rol. Se reescribe sobre la función única
+// `registrar_push`, que deduce el rol de la sesión y no depende de policies
+// de lectura.
+//
+// Se conserva como utilidad porque `tienePermisoPush()` sí puede servir.
 window.solicitarPermisoPush = async function(sessionId) {
     if (!('Notification' in window)) return { success: false, error: 'no_support' };
     if (!('serviceWorker' in navigator)) return { success: false, error: 'no_sw' };
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost') return { success: false, error: 'no_https' };
-    
+    if (!window.supabaseClient) return { success: false, error: 'no_client' };
+
     try {
         const permiso = await Notification.requestPermission();
         if (permiso !== 'granted') return { success: false, error: 'denied' };
-        
-        const swUrl = '/sw.js';
-        const registration = await navigator.serviceWorker.register(swUrl);
+
+        // Ruta relativa: el sitio se publica en /SakiSushi0/, donde /sw.js
+        // responde 404 y /SakiSushi0/sw.js responde 200.
+        const registration = await navigator.serviceWorker.register('../../sw.js');
         await navigator.serviceWorker.ready;
-        
+
         let subscription = await registration.pushManager.getSubscription();
         if (!subscription) {
             subscription = await registration.pushManager.subscribe({
@@ -236,23 +246,22 @@ window.solicitarPermisoPush = async function(sessionId) {
                 applicationServerKey: urlBase64ToUint8Array(window.VAPID_PUBLIC_KEY)
             });
         }
-        
+
         const p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh'))));
-        const auth = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))));
-        
-        const { error } = await window.supabaseClient
-            .from('push_subscriptions')
-            .upsert([{
-                session_id: sessionId,
-                endpoint: subscription.endpoint,
-                p256dh: p256dh,
-                auth: auth,
-                user_agent: navigator.userAgent
-            }], { onConflict: 'endpoint' });
-            
+        const auth   = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))));
+
+        const { data, error } = await window.supabaseClient.rpc('registrar_push', {
+            p_session_id: sessionId,
+            p_endpoint:   subscription.endpoint,
+            p_p256dh:     p256dh,
+            p_auth:       auth,
+            p_user_agent: navigator.userAgent
+        });
+
         if (error) throw error;
-        return { success: true, subscription };
-        
+        if (data && data.success === false) return { success: false, error: data.error };
+        return { success: true, subscription, rol: data && data.rol };
+
     } catch (error) {
         console.error('❌ Error en push:', error);
         return { success: false, error: error.message };
