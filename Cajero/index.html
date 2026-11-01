@@ -1206,7 +1206,7 @@ await window.cargarVentasHoy();await window.cargarPropinas();const modal=documen
         });
         return t;
     })();
-  let vt_ebs=0,vt_eusd=0,vt_pm=0,vt_pv=0,vt_cond=0,vt_favor=0,vt_inv=0,vt_delivery=0,vt_inv_count=0,vt_inv_acum=0,vt_inv_pedidos=[];
+  let vt_ebs=0,vt_eusd=0,vt_eusd_usd=0,vt_pm=0,vt_pv=0,vt_cond=0,vt_favor=0,vt_inv=0,vt_delivery=0,vt_inv_count=0,vt_inv_acum=0,vt_inv_pedidos=[];
   const tasa=(window.configGlobal&&window.configGlobal.tasa_cambio)||window.tasaEfectiva||400;
   window.ventasHoy.forEach(v=>{
     const p=window.pedidos.find(pd=>pd.id===v.pedido_id);
@@ -1234,6 +1234,12 @@ await window.cargarVentasHoy();await window.cargarPropinas();const modal=documen
           const neto=Math.max(0,mbs-vueltoRestante); vueltoRestante=Math.max(0,vueltoRestante-mbs); vt_ebs+=neto;
         } else if(pg.metodo==='efectivo_usd'){
           const neto=Math.max(0,mbs-vueltoRestante); vueltoRestante=Math.max(0,vueltoRestante-mbs); vt_eusd+=neto;
+          // El billete de dólar se acumula en DÓLARES, nunca en bolívares.
+          // 15 USD son 15 USD hoy y mañana; lo que flota es su expresión en
+          // Bs. Si el vuelto se comió parte del pago, se descuenta en la
+          // misma proporción para no inflar el conteo del cajón.
+          const brutoUsd=Number(pg.monto)||0;
+          vt_eusd_usd += (mbs>0 ? brutoUsd*(neto/mbs) : brutoUsd);
         } else if(pg.metodo==='pago_movil') vt_pm+=mbs;
         else if(pg.metodo==='punto_venta') vt_pv+=mbs;
         else if(pg.metodo==='invitacion'){ vt_inv=0; vt_inv_count++; const _invSubt1=(p?.items||[]).reduce((s,i)=>s+window.usdToBs((i.precioUnitarioUSD||0)*(i.cantidad||1)),0); vt_inv_acum+=_invSubt1+(p?.costo_delivery_bs||0); vt_inv_pedidos.push(p?.id); }
@@ -1243,7 +1249,14 @@ await window.cargarVentasHoy();await window.cargarPropinas();const modal=documen
       const metodo=(p?.metodo_pago||v.metodo_pago||'');
       const bs=window._netoCobradoPedido(p);
       if(metodo==='efectivo_bs')vt_ebs+=bs;
-      else if(metodo==='efectivo_usd')vt_eusd+=bs;
+      else if(metodo==='efectivo_usd'){
+        vt_eusd+=bs;
+        // Fila vieja, sin pagos_mixtos: el monto original en dólares no se
+        // guardó. Se reconstruye con la tasa del pedido si está, y si no con
+        // la vigente. Queda aproximado y así se documenta en el bloque.
+        const tP = Number(p?.tasa_aplicada)||tasa;
+        vt_eusd_usd += tP>0 ? bs/tP : 0;
+      }
       else if(metodo==='pago_movil')vt_pm+=bs;
       else if(metodo==='punto_venta')vt_pv+=bs;
       else if(metodo==='invitacion'){ vt_inv=0; vt_inv_count++; const _invSubt2=(p?.items||[]).reduce((s,i)=>s+window.usdToBs((i.precioUnitarioUSD||0)*(i.cantidad||1)),0); vt_inv_acum+=_invSubt2+(p?.costo_delivery_bs||0); vt_inv_pedidos.push(p?.id); }
@@ -1268,6 +1281,23 @@ await window.cargarVentasHoy();await window.cargarPropinas();const modal=documen
       ${vt_cond>0?vcol('fas fa-hand-holding-heart','Condonado',vt_cond,'var(--condonar)'):''}
       ${vt_favor>0?vcol('fas fa-piggy-bank','A favor de caja',vt_favor,'var(--favordecaja)'):''}
     </div>
+    ${vt_eusd_usd>0?`<div style="margin:4px 0 10px;padding:10px 12px;background:rgba(76,175,80,.10);border-left:3px solid #4CAF50;border-radius:8px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <span style="font-size:.8rem;color:var(--text-secondary)"><i class="fas fa-money-bill-alt" style="color:#4CAF50"></i> Efectivo en caja (billetes)</span>
+        <span style="font-weight:800;color:#4CAF50;font-size:1rem">${window.formatUSD(vt_eusd_usd)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.76rem;color:var(--text-secondary);margin-top:3px">
+        <span>Equivalente a la tasa de hoy (${window.formatBs(tasa)})</span>
+        <span>${window.formatBs(vt_eusd_usd*tasa)}</span>
+      </div>
+      ${Math.abs(vt_eusd_usd*tasa - vt_eusd)>0.5?`<div style="display:flex;justify-content:space-between;font-size:.76rem;margin-top:2px">
+        <span style="color:var(--text-secondary)">Revalorización desde que se cobraron</span>
+        <span style="font-weight:700;color:${(vt_eusd_usd*tasa-vt_eusd)>=0?'#4CAF50':'var(--danger)'}">${(vt_eusd_usd*tasa-vt_eusd)>=0?'+':''}${window.formatBs(vt_eusd_usd*tasa-vt_eusd)}</span>
+      </div>`:''}
+      <div style="font-size:.7rem;color:var(--text-secondary);margin-top:5px;line-height:1.35;opacity:.85">
+        Son billetes, no bolívares: valen lo mismo en dólares siempre. Lo que cambia es cuánto valen en Bs.
+      </div>
+    </div>`:''}
   </div>
   <div style="font-size:.85rem;color:var(--text-secondary);margin-bottom:8px;font-weight:600">Detalle por cobro:</div>
   ${window.ventasHoy.map(v=>{const p=window.pedidos.find(p=>p.id===v.pedido_id);return window.crearDetalleVentaCompacto(v,p)}).join('')}`;
