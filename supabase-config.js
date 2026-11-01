@@ -236,7 +236,7 @@ window.solicitarPermisoPush = async function(sessionId) {
 
         // Ruta relativa: el sitio se publica en /SakiSushi0/, donde /sw.js
         // responde 404 y /SakiSushi0/sw.js responde 200.
-        const registration = await navigator.serviceWorker.register('../../sw.js');
+        const registration = await navigator.serviceWorker.register('../sw.js');
         await navigator.serviceWorker.ready;
 
         let subscription = await registration.pushManager.getSubscription();

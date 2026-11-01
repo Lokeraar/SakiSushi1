@@ -166,7 +166,7 @@
 
         const _registrar = async () => {
             try {
-                const reg  = await navigator.serviceWorker.register('../../sw.js');
+                const reg  = await navigator.serviceWorker.register('../sw.js');
                 await navigator.serviceWorker.ready;
                 let sub = await reg.pushManager.getSubscription();
                 if (!sub) {

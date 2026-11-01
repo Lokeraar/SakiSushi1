@@ -80,12 +80,20 @@
         // `navigator.serviceWorker.ready` era una promesa que nunca se
         // resolvía: el push quedaba esperando para siempre, en silencio.
         //
-        // La ruta es relativa a propósito. El sitio se publica en
-        // `/SakiSushi0/`, y las tres pantallas pedían `/sw.js` (ruta
-        // absoluta), que en ese hosting da 404: verificaba contra el sitio
-        // publicado, /SakiSushi0/sw.js responde 200 y /sw.js responde 404.
-        // Con ruta relativa funciona igual en local y en Pages.
-        navigator.serviceWorker.register('../../sw.js')
+        // La ruta tiene que ser '../sw.js', NO '../../sw.js'.
+        //
+        // Este archivo se sirve desde /Cliente/js/, pero un service worker
+        // se resuelve contra la URL del DOCUMENTO, que es /Cliente/. Desde
+        // ahí 'sw.js' ya alcanza, y '../../' se sale del ámbito del sitio:
+        // pedía /SakiSushi1/Cliente/../../sw.js, que normaliza fuera del
+        // proyecto y da 404. Lo confirmé con el navegador real por CDP:
+        //
+        //   A bad HTTP response code (404) was received when fetching the
+        //   script.
+        //
+        // Comprobado con curl: /SakiSushi1/Cliente/../../sw.js -> 404,
+        // /SakiSushi1/sw.js -> 200.
+        navigator.serviceWorker.register('../sw.js')
             .catch(function() { /* sin SW no hay push, pero la carta anda */ })
             .then(function() { return navigator.serviceWorker.ready; })
             .then(function(reg) {
