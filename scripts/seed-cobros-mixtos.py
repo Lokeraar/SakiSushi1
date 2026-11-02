@@ -77,6 +77,13 @@ for c in COBROS:
     j_pagos = json.dumps(pagos)
 
     # Un solo statement por tabla para respetar el límite del CLI.
+    #
+    # Las tres columnas del envío son distintas a propósito:
+    #   costo_delivery      -> el pacto en DÓLARES (como se cargó)
+    #   costo_delivery_usd  -> el mismo valor, en su columna explícita
+    #   costo_delivery_bs   -> la conversión congelada a la tasa del día
+    # No duplicar la de Bs en las dos primeras: el día que se audite el envío
+    # en divisa no habría de dónde leerlo.
     sql_pedido = f"""
 INSERT INTO pedidos (id, tipo, estado, total, fecha, fecha_cobro, cliente_nombre, items,
     metodo_pago, pagos_mixtos, cajero, costo_delivery, costo_delivery_usd,
