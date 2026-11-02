@@ -32,11 +32,14 @@
 --
 -- QUÉ HACE ESTA MIGRACIÓN
 --
--- Recrea `crear_pedido_con_reserva` para que escriba:
+-- Recrea `crear_pedido_con_reserva` para que escriba SOLO DOS columnas:
 --
---   costo_delivery      = dólares pactados
---   costo_delivery_usd  = dólares pactados
+--   costo_delivery_usd  = dólares pactados (única fuente de la divisa)
 --   costo_delivery_bs   = conversión congelada a la tasa BASE del día
+--
+-- `costo_delivery` NO se escribe: duplicaba exactamente a costo_delivery_usd
+-- y nadie la lee. Los pedidos nuevos la dejan en su default 0, y las filas
+-- viejas conservan el valor histórico que se les cargó a mano.
 --
 -- La conversión se congela al crear el pedido: si la tasa sube mañana, el
 -- envío de ayer no se revaloriza. Y se usa la tasa base (`config.tasa_cambio`)
@@ -50,7 +53,6 @@
 
 BEGIN;
 
--- Se borra la firma anterior para no dejar una sobrecarga huérfana.
 DROP FUNCTION IF EXISTS public.crear_pedido_con_reserva(
     JSONB, TEXT, NUMERIC, NUMERIC, TEXT, TEXT, TEXT, TEXT, NUMERIC, TEXT
 );
@@ -237,7 +239,7 @@ BEGIN
         id, fecha, estado, tipo, total, session_id,
         mesa, cliente_nombre, items, tasa_aplicada,
         tasa_sin_firma, tasa_sin_firma_detalle,
-        costo_delivery, costo_delivery_usd, costo_delivery_bs, parroquia
+        costo_delivery_usd, costo_delivery_bs, parroquia
     ) VALUES (
         v_pedido_id,
         NOW(),
@@ -252,8 +254,7 @@ BEGIN
              ELSE (SELECT tasa_efectiva FROM config WHERE id = 1) END,
         NOT v_firmado,
         v_detalle,
-        v_costo_usd,   -- costo_delivery: el pacto en dólares, como se cargó
-        v_costo_usd,   -- costo_delivery_usd
+        v_costo_usd,   -- costo_delivery_usd: el pacto en dólares (única fuente)
         v_costo_bs,    -- costo_delivery_bs: la conversión congelada
         v_parroquia
     );
