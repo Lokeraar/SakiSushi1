@@ -81,3 +81,12 @@
     window.mostrarToast = mostrarToast;
     
 })();
+// usdToBsBase(usd) — multiplica por configGlobal.tasa_cambio (la tasa BASE del día,
+// sin el aumento). Se usa para el costo de envío de delivery, que el admin fija
+// en dólares y el cliente ve convertido a la tasa de referencia vigente.
+function usdToBsBase(usd) {
+    const tasa = window.configGlobal?.tasa_cambio || 400;
+    return parseFloat(usd) * tasa;
+}
+window.Saki.utils.usdToBsBase = usdToBsBase;
+window.usdToBsBase = usdToBsBase;

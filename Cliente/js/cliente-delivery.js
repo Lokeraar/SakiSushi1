@@ -200,12 +200,13 @@
         }
 
         cont.innerHTML = lista.map(function(nombre) {
-            var precio = _preciosPorParroquia[nombre];
+            var precioUsd = _preciosPorParroquia[nombre];
+            var precioBs = S.utils.usdToBsBase ? S.utils.usdToBsBase(precioUsd) : precioUsd;
             var activa = deliveryFormData.parroquia === nombre ? ' activa' : '';
             return '<div class="parroquia-opcion' + activa + '" role="option" data-parroquia="' +
                    nombre.replace(/"/g, '&quot;') + '">' +
                    '<span class="parroquia-nombre">' + nombre + '</span>' +
-                   '<span class="parroquia-precio">$' + precio + '</span>' +
+                   '<span class="parroquia-precio">' + S.utils.formatBs(precioBs) + '</span>' +
                    '</div>';
         }).join('');
 
@@ -289,7 +290,12 @@
             document.getElementById('deliveryTotal').textContent = 'Primero seleccione parroquia a enviar';
             return;
         }
-        var costoEnvio = _preciosPorParroquia[deliveryFormData.parroquia] || 0;
+        // _preciosPorParroquia guarda dólares. El envío se convierte a Bs con la
+        // tasa BASE del día (tasa_cambio), no con la tasa efectiva (que incluye
+        // el aumento y es la que usa el menú). Así el envío refleja la tasa de
+        // referencia vigente.
+        var costoEnvioUsd = _preciosPorParroquia[deliveryFormData.parroquia] || 0;
+        var costoEnvio = S.utils.usdToBsBase ? S.utils.usdToBsBase(costoEnvioUsd) : costoEnvioUsd;
         var subtotal = 0;
         S.state.carrito.forEach(function(i) { subtotal += (i.precio || 0) * (i.cantidad || 1); });
         var total = subtotal + costoEnvio;
@@ -376,7 +382,10 @@
 
         return window.conAccionUnica('confirmDeliveryOrder', function () {
 
-        var costoEnvio = _preciosPorParroquia[deliveryFormData.parroquia] || 0;
+        // El costo de envío se guarda en Bs (convertido a tasa base), igual que
+        // se muestra en el modal. _preciosPorParroquia guarda dólares.
+        var costoEnvioUsd = _preciosPorParroquia[deliveryFormData.parroquia] || 0;
+        var costoEnvio = S.utils.usdToBsBase ? S.utils.usdToBsBase(costoEnvioUsd) : costoEnvioUsd;
         var items = S.state.carrito.map(function(i) {
             return {
                 // El id real de `menu` es TEXT con forma `plat_<uuid>_<n>`.
