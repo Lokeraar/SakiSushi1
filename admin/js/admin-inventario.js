@@ -680,6 +680,69 @@ validarPrecios();
         }
     };
 
+    // ── Marquesina de stock bajo del dashboard ──
+    //
+    // Reusa EXACTAMENTE el mismo criterio que ya usa el contador "Alertas
+    // Stock" y el semáforo del módulo de inventario:
+    //
+    //     disponible <= minimo  &&  minimo > 0
+    //
+    // No se inventa un umbral nuevo ni se hace otra consulta. Si mañana cambia
+    // el criterio, cambia en un lugar y las tres cosas siguen coincidiendo: el
+    // contador, el semáforo y la franja.
+    //
+    // El interruptor `config.alerta_stock_minimo` decide si la franja aparece.
+    // El umbral sigue siendo por ingrediente (`inventario.minimo`), que es lo
+    // que el dueño ya configura en cada uno.
+    window.actualizarMarquesinaStock = function() {
+        var banda = document.getElementById('marquesinaStock');
+        if (!banda) return;
+
+        // Interruptor general. Ausente o true = aparece. Solo se apaga con
+        // un `false` explícito, para no ocultarla por una config incompleta.
+        var cfg = window.configGlobal || {};
+        var activa = cfg.alerta_stock_minimo !== false;
+        if (!activa) { banda.style.display = 'none'; return; }
+
+        var items = window.inventarioItems || [];
+        var criticos = items.filter(function(item) {
+            var disponible = (item.stock || 0) - (item.reservado || 0);
+            var minimo = item.minimo || 0;
+            return disponible <= minimo && minimo > 0;
+        });
+
+        if (criticos.length === 0) { banda.style.display = 'none'; return; }
+
+        // ¿Hay alguno agotado del todo? Cambia el tono del aviso.
+        var agotados = criticos.filter(function(item) {
+            return ((item.stock || 0) - (item.reservado || 0)) <= 0;
+        });
+
+        var titulo = document.getElementById('marquesinaStockTitulo');
+        var pista  = document.getElementById('marquesinaStockPista');
+
+        if (titulo) {
+            titulo.textContent = agotados.length > 0
+                ? agotados.length + (agotados.length === 1 ? ' ingrediente agotado' : ' ingredientes agotados')
+                : criticos.length + (criticos.length === 1 ? ' ingrediente bajo mínimo' : ' ingredientes bajo mínimo');
+        }
+
+        if (pista) {
+            // Nombres de los tres primeros; el resto se resume en "+N".
+            var nombres = criticos.slice(0, 3).map(function(i) { return i.nombre; });
+            var resto = criticos.length - nombres.length;
+            var texto = nombres.join(', ');
+            if (resto > 0) texto += ' y ' + resto + ' más';
+            pista.textContent = texto;
+            // Título completo al pasar el dedo o el mouse, por si se recorta.
+            pista.title = criticos.map(function(i) { return i.nombre; }).join(', ');
+        }
+
+        banda.classList.toggle('es-agotado', agotados.length > 0);
+        banda.style.display = 'flex';
+    };
+    window.S.modules.inventario.actualizarMarquesinaStock = window.actualizarMarquesinaStock;
+
     window.verificarStockCritico = async function() {
         const stockCriticoDiv = document.getElementById('stockCritico');
         if (!stockCriticoDiv) return;
@@ -710,6 +773,9 @@ validarPrecios();
             stockCriticoDiv.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem">No hay alertas de stock</p>';
             document.getElementById('alertasStock').textContent = '0';
         }
+        // La franja del dashboard se refresca junto con el contador: mismo
+        // dato, mismo momento, no pueden mostrar cosas distintas.
+        if (window.actualizarMarquesinaStock) window.actualizarMarquesinaStock();
     };
 
     window.actualizarStockCriticoHeader = function() {

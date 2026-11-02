@@ -10,13 +10,13 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
     <script src="../assets/errores-legibles.js?v=1793000170" defer></script>
 <script src="../supabase-config.js?v=1793549751"></script>
-    <link rel="stylesheet" href="css/admin.css?v=1793478554">
+    <link rel="stylesheet" href="css/admin.css?v=1793653765">
     <link rel="stylesheet" href="../assets/tasa-ventana.css?v=1793000120">
     <!-- Módulos JS (orden correcto) -->
     <script src="js/admin-core.js?v=1793648713" defer></script>
     <script src="js/admin-auth.js?v=1793000160" defer></script>
     <script src="js/admin-realtime.js?v=1793549751" defer></script>
-    <script src="js/admin-config.js?v=1793648713" defer></script>
+    <script src="js/admin-config.js?v=1793653765" defer></script>
     <script src="js/admin-helpers.js?v=1793648713" defer></script>
     <script src="js/admin-ui.js?v=1793472565" defer></script>
     <script src="js/admin-tasa-aviso.js?v=1793000160" defer></script>
@@ -26,7 +26,7 @@
     <script src="js/admin-cierre.js?v=1793474406"></script>
     <script src="js/admin-ofertas.js?v=1792867143"></script>
     <script src="js/admin-menu.js?v=1793000150" defer></script>
-    <script src="js/admin-inventario.js?v=1793648713" defer></script>
+    <script src="js/admin-inventario.js?v=1793653765" defer></script>
     <script src="js/admin-usuarios.js?v=1793000160" defer></script>
     <script src="js/admin-mesoneros.js?v=1793648713" defer></script>
     <script src="js/admin-delivery.js?v=1793648713" defer></script>
@@ -208,6 +208,25 @@
                         <span id="cierreEstadoChip" style="font-size:.72rem;font-weight:700;padding:.15rem .5rem;border-radius:6px;background:rgba(74,222,128,.15);color:#2e7d32">Abierto</span>
                     </button>
                 </div>
+                <!-- ── Marquesina de stock bajo ──────────────────────────
+                     Avisa qué ingredientes están por debajo de su mínimo, sin
+                     que haya que entrar al módulo de inventario. Se oculta sola
+                     cuando no hay alertas o cuando el dueño la apaga desde
+                     Configuración (`config.alerta_stock_minimo`).
+
+                     El umbral NO es global: cada ingrediente trae el suyo en
+                     `inventario.minimo`, que es lo que ya usa el semáforo del
+                     módulo de inventario. El interruptor de config solo decide
+                     si la franja aparece o no.
+                     ──────────────────────────────────────────────────────── -->
+                <div id="marquesinaStock" class="marquesina-stock" style="display:none" role="status" aria-live="polite">
+                    <div class="marquesina-stock-icono"><i class="fas fa-triangle-exclamation"></i></div>
+                    <div class="marquesina-stock-cuerpo">
+                        <div class="marquesina-stock-titulo" id="marquesinaStockTitulo">Stock bajo</div>
+                        <div class="marquesina-stock-pista" id="marquesinaStockPista"></div>
+                    </div>
+                    <button type="button" class="marquesina-stock-accion" onclick="window.irAStockCritico&&window.irAStockCritico()">Ver</button>
+                </div>
                 <div class="tasa-cards-bar" id="tasaBar">
                     <div class="tcb-cards">
                         <div class="tcb-card tcb-card-base">
@@ -376,6 +395,34 @@
                                 </span>
                                 <label class="toggle-switch" style="flex-shrink:0">
                                     <input type="checkbox" id="descuentoAlQuitar">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- ============================================================
+                             Aviso de stock bajo en el dashboard
+                             ============================================================
+                             Enciende o apaga la franja que aparece en Inicio cuando un
+                             ingrediente baja de su mínimo.
+
+                             El umbral NO se configura acá: cada ingrediente trae el
+                             suyo (`inventario.minimo`). Este interruptor solo decide
+                             si la franja aparece.
+
+                             Apagado por defecto si el dueño no la quiere; encendido
+                             si la config no dice nada, para no perder el aviso sin
+                             darse cuenta. -->
+                        <div style="border-top:1px solid rgba(255,255,255,.12);margin-top:.9rem;padding-top:.9rem">
+                            <div class="tcb-toggle-top">
+                                <span class="tcb-toggle-label" style="font-size:.92rem;color:var(--text-dark)">
+                                    Avisar stock bajo en Inicio
+                                    <span class="tooltip-wrap" style="cursor:help;margin-left:.3rem" onmouseenter="this.querySelector('.tooltip-text').style.display='block'" onmouseleave="this.querySelector('.tooltip-text').style.display='none'">
+                                        <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--text-muted);color:#fff;border-radius:50%;font-size:.6rem;font-weight:700">?</span>
+                                        <span class="tooltip-text" style="width:260px">Muestra una franja en Inicio con los ingredientes que están por debajo de su mínimo, sin tener que entrar al inventario. El mínimo de cada ingrediente se configura en el módulo de Inventario, no acá.</span>
+                                    </span>
+                                </span>
+                                <label class="toggle-switch" style="flex-shrink:0">
+                                    <input type="checkbox" id="alertaStockMinimo">
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>

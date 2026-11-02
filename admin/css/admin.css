@@ -4478,3 +4478,93 @@ html.dark-theme .status-inactivo {
     border-color: rgba(239, 68, 68, .35);
 }
 .tbp-aviso-fallo i { color: #ef4444; }
+
+/* ══════════════════════════════════════════════════════════════
+   MARQUESINA DE STOCK BAJO (dashboard de Inicio)
+   ══════════════════════════════════════════════════════════════
+   Avisa qué ingredientes están por debajo de su mínimo sin que haya
+   que entrar al módulo de inventario. Se arma desde
+   `window.actualizarMarquesinaStock()`, que reusa la misma lista de
+   críticos que ya calcula el contador "Alertas Stock": una sola
+   fuente, sin consultas nuevas.
+   ══════════════════════════════════════════════════════════════ */
+.marquesina-stock {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .7rem .9rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(245, 124, 0, .45);
+    background: rgba(245, 124, 0, .10);
+    color: var(--text-primary);
+    /* El contenido cambia por JS; la transición evita el salto brusco. */
+    transition: opacity .18s ease, transform .18s ease;
+}
+
+.marquesina-stock-icono {
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(245, 124, 0, .18);
+    color: var(--warning);
+    font-size: .95rem;
+}
+
+.marquesina-stock-cuerpo {
+    flex: 1 1 auto;
+    min-width: 0; /* permite el recorte del texto en pantallas angostas */
+}
+
+.marquesina-stock-titulo {
+    font-weight: 700;
+    font-size: .88rem;
+    line-height: 1.25;
+    margin-bottom: .1rem;
+}
+
+.marquesina-stock-pista {
+    font-size: .8rem;
+    line-height: 1.35;
+    color: var(--text-muted);
+    /* Los nombres de ingredientes pueden ser largos: se recortan en una
+       línea en lugar de empujar el botón fuera de la pantalla. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.marquesina-stock-accion {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: .4rem .85rem;
+    border-radius: 8px;
+    border: 1px solid rgba(245, 124, 0, .55);
+    background: rgba(245, 124, 0, .15);
+    color: var(--text-primary);
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+.marquesina-stock-accion:hover,
+.marquesina-stock-accion:focus-visible { background: rgba(245, 124, 0, .28); }
+
+/* Cuando hay algo agotado de verdad (no solo bajo), el aviso sube de tono. */
+.marquesina-stock.es-agotado {
+    border-color: rgba(239, 68, 68, .5);
+    background: rgba(239, 68, 68, .10);
+}
+.marquesina-stock.es-agotado .marquesina-stock-icono {
+    background: rgba(239, 68, 68, .18);
+    color: var(--danger);
+}
+
+@media (max-width: 480px) {
+    .marquesina-stock { padding: .6rem .7rem; gap: .55rem; }
+    .marquesina-stock-titulo { font-size: .84rem; }
+    .marquesina-stock-pista { font-size: .76rem; }
+}
