@@ -53,7 +53,7 @@
         for (var i = 0; i < sorted.length; i++) {
             var d = sorted[i];
             var acumulado = await window.obtenerAcumuladoDelivery(d.id);
-            var tasa = window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400;
+            var tasa = window.tasaEfectivaActual();
             var acumUsd = tasa > 0 ? acumulado / tasa : 0;
             
             var inicial = d.nombre.charAt(0).toUpperCase();
@@ -288,7 +288,7 @@
     // ════════════════════════════════════════
     window._actualizarDeliverysHoyStats = async function() {
         try {
-            var tasa = window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400;
+            var tasa = window.tasaEfectivaActual();
             var hoy  = new Date(); hoy.setHours(0,0,0,0);
             var man  = new Date(hoy); man.setDate(man.getDate()+1);
             var ra = await window.supabaseClient.from('entregas_delivery').select('monto_bs');
@@ -317,7 +317,7 @@
         var tbody = document.getElementById('ultimosViajesTbody');
         if (!tbody) return;
         try {
-            var tasa = window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400;
+            var tasa = window.tasaEfectivaActual();
             var r = await window.supabaseClient.from('entregas_delivery')
                 .select('*, deliverys(nombre), pedidos(id, mesa, cliente_nombre, items, parroquia)')
                 .order('fecha_entrega', { ascending: false }).limit(5);
@@ -357,7 +357,7 @@
     // ════════════════════════════════════════
     window.verHistorialEnviosHoy = async function() {
         try {
-            var tasa = window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400;
+            var tasa = window.tasaEfectivaActual();
             var hoy  = new Date(); hoy.setHours(0,0,0,0);
             var man  = new Date(hoy); man.setDate(man.getDate()+1);
             var r = await window.supabaseClient.from('entregas_delivery')

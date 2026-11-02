@@ -49,8 +49,43 @@
         }
     };
     
+    // ── Tasa de cambio: una sola fuente en todo el admin ──
+    //
+    // Antes cada archivo recalculaba la tasa por su cuenta. `admin-mesoneros.js`
+    // lo hacía en 12 lugares, y `usdToBs` acá usaba un fallback distinto:
+    //
+    //     acá ............ tasa_efectiva || 400
+    //     mesoneros ...... tasa_efectiva || tasa_cambio || 400
+    //
+    // Es decir: sin tasa efectiva, el admin mostraba 400 en las pantallas que
+    // usaban `usdToBs` y la tasa base en las de mesoneros. Dos resultados
+    // distintos para la misma moneda.
+    //
+    // Las dos funciones de abajo son ahora la única vía. La regla de respaldo
+    // vive en un solo lugar.
+    window.TASA_RESPALDO = 400;
+
+    // Tasa EFECTIVA: la que se usa para precios del menú (lleva el aumento).
+    window.tasaEfectivaActual = function() {
+        const cfg = window.configGlobal;
+        if (!cfg) return window.TASA_RESPALDO;
+        return Number(cfg.tasa_efectiva || cfg.tasa_cambio || window.TASA_RESPALDO);
+    };
+
+    // Tasa BASE: la de referencia del día, sin el aumento. Se usa para el
+    // costo de envío y para mostrar equivalencias en dólares.
+    window.tasaBaseActual = function() {
+        const cfg = window.configGlobal;
+        if (!cfg) return window.TASA_RESPALDO;
+        return Number(cfg.tasa_cambio || cfg.tasa_efectiva || window.TASA_RESPALDO);
+    };
+
     window.usdToBs = function(u) {
-        return u * (window.configGlobal?.tasa_efectiva || 400);
+        return Number(u) * window.tasaEfectivaActual();
+    };
+
+    window.usdToBsBase = function(u) {
+        return Number(u) * window.tasaBaseActual();
     };
     
     window.generarId = function(prefix = '') {
@@ -161,8 +196,8 @@
     window.calcularDiferenciaTasa = function() {
         // Ganancia extra en Bs = ventas_USD * (tasaEfectiva - tasaBase)
         // Ej: $50 ventas, tasa base 100, efectiva 120 → $50*(120-100) = Bs 1000 extra
-        const tasaBase     = window.configGlobal?.tasa_cambio   || 400;
-        const tasaEfectiva = window.configGlobal?.tasa_efectiva || 400;
+        const tasaBase     = window.tasaBaseActual();
+        const tasaEfectiva = window.tasaEfectivaActual();
         const diff = tasaEfectiva - tasaBase;
         if (diff <= 0) return 0;
         

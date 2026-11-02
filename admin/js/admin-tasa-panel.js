@@ -60,10 +60,6 @@ function nombreFuenteTasa(f) {
 
     var _datos = null;
 
-    function hoyISO() {
-        return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
-    }
-
     // "2026-10-23" -> "viernes 23/10"
     function fechaEnPalabras(iso) {
         if (!iso) return '—';

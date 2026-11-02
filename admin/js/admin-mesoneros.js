@@ -49,7 +49,7 @@
             // Sumar monto_bs por mesonero_id, separando USD y Bs, restando pagos parciales
             const acumuladoBs = {};
             const acumuladoUSDCrudo = {}; // monto original en USD
-            const tasaBase = Number(window.configGlobal?.tasa_cambio || 400);
+            const tasaBase = window.tasaBaseActual();
             
             (ingresos || []).forEach(function(p) {
                 const mid = p.mesonero_id;
@@ -74,8 +74,8 @@
                 const mesoneroId = card.getAttribute('data-mesonero-id');
                 const pendienteEl = card.querySelector('.mesonero-pendiente');
                 
-                const tasaEfectiva = Number(window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400);
-                const tasaBaseActual = Number(window.configGlobal?.tasa_cambio || 400);
+                const tasaEfectiva = window.tasaEfectivaActual();
+                const tasaBaseActual = window.tasaBaseActual();
                 const usdCrudo = acumuladoUSDCrudo[mesoneroId] || 0;
                 const bsTotal = acumuladoBs[mesoneroId] || 0;
                 const usdEnBs = usdCrudo * tasaBaseActual;
@@ -331,7 +331,7 @@
         
         let totalBs = 0;
         let totalUSDCrudo = 0;
-        const tasaBase = Number(window.configGlobal?.tasa_cambio || 400);
+        const tasaBase = window.tasaBaseActual();
         
         (ingresos || []).forEach(function(p) {
             const pagosDeEstaPropina = pagosPorPropina[p.id] || { bs: 0, usd: 0 };
@@ -362,7 +362,7 @@
         if (!m) return;
 
         const acumulado = await calcularAcumuladoPendiente(mesoneroId);
-        const tasa = Number(window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400) || 400;
+        const tasa = window.tasaEfectivaActual();
         const usd = tasa > 0 ? acumulado / tasa : 0;
 
         const modalContent = document.getElementById('pagoModalContent');
@@ -441,7 +441,7 @@
         let acumuladoRestante = 0;
         if (mesoneroParaPagoId) {
             try {
-                const tasaBase = Number(window.configGlobal?.tasa_cambio || 400);
+                const tasaBase = window.tasaBaseActual();
                 
                 // Consultar ingresos pendientes
                 let queryIngresos = window.supabaseClient
@@ -532,8 +532,8 @@
             return;
         }
         
-        const tasaBase = Number(window.configGlobal?.tasa_cambio || 400);
-        const tasaEfectiva = Number(window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400);
+        const tasaBase = window.tasaBaseActual();
+        const tasaEfectiva = window.tasaEfectivaActual();
         
         let montoEnBs = montoIngresado;
         let esUSD = false;
@@ -777,7 +777,7 @@
             });
             
             // Calcular el restante real (total acumulado menos pagos parciales ya realizados)
-            const tasaBase = Number(window.configGlobal?.tasa_cambio || 400);
+            const tasaBase = window.tasaBaseActual();
             let totalUSDCrudo = 0;
             let totalBsCrudo = 0;
             
@@ -1017,7 +1017,7 @@
             return;
         }
 
-        const tasaBase = Number(window.configGlobal?.tasa_cambio || 400);
+        const tasaBase = window.tasaBaseActual();
         let montoEnMonedaSeleccionada = monto; // Monto en la moneda seleccionada (USD o Bs)
         let montoEsUSD = false;
         
@@ -1297,7 +1297,7 @@
         }, 0);
         const cantidad = propinas.length;
         const promedio = cantidad > 0 ? total/cantidad : 0;
-        const tasa     = Number(window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400) || 400;
+        const tasa     = window.tasaEfectivaActual();
         const totalUsd = tasa > 0 ? total / tasa : 0;
         const promUsd  = tasa > 0 ? promedio / tasa : 0;
         var el;
@@ -1352,7 +1352,7 @@
         try {
             const h   = new Date(); h.setHours(0,0,0,0);
             const m   = new Date(h); m.setDate(m.getDate()+1);
-            const tasa = window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400;
+            const tasa = window.tasaEfectivaActual();
             // Mostrar TODOS los registros (sin filtrar por entregado) para historial completo
             const { data, error } = await window.supabaseClient
                 .from('propinas').select('*, mesoneros(nombre)')

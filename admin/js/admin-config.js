@@ -69,7 +69,7 @@
         // Se restaura el toggle de "detener" con el valor guardado.
         const detEl = document.getElementById('aumentoDetenidoToggle');
         if (detEl) detEl.checked = window.configGlobal.aumento_detenido === true;
-        document.getElementById('tasaEfectivaDisplay').textContent = (window.configGlobal.tasa_efectiva || 400).toFixed(2);
+        document.getElementById('tasaEfectivaDisplay').textContent = (window.tasaEfectivaActual()).toFixed(2);
 
         // Interruptor de descuento al quitar ingredientes. Si la columna no
         // llegó (versión vieja), se muestra encendido: es el comportamiento

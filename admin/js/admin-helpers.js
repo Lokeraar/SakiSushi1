@@ -187,7 +187,7 @@
         console.log('Semanas simuladas:', semanas);
         console.log('Acumulado simulado:', acum.toFixed(2) + '%');
         console.log('Tasa efectiva simulada: Bs', efectiva.toFixed(2));
-        console.log('Diferencia vs actual: Bs', (efectiva - (window.configGlobal?.tasa_efectiva || base)).toFixed(2));
+        console.log('Diferencia vs actual: Bs', (efectiva - (window.tasaEfectivaActual() || base)).toFixed(2));
         console.groupEnd();
         console.log('%c💡 Tip: prueba window._simularPeriodoSemanal(3) para 3 semanas', 'color:gray');
     };

@@ -423,7 +423,7 @@
     };
 
     window.convertirCostoTotalBs = function() {
-        const tasaBase = window.configGlobal?.tasa_cambio || 1;
+        const tasaBase = window.tasaBaseActual();
         const costoTotalBs = parseFloat(document.getElementById('costoTotalBs').value) || 0;
         const costoTotalInput = document.getElementById('costoTotal');
         if (costoTotalBs > 0 && tasaBase > 0) {
@@ -438,7 +438,7 @@
         const costoTotalInput = document.getElementById('costoTotal');
         if (costoTotalInput) {
             costoTotalInput.addEventListener('input', function() {
-                const tasaBase = window.configGlobal?.tasa_cambio || 1;
+                const tasaBase = window.tasaBaseActual();
                 const costoTotalUSD = parseFloat(costoTotalInput.value) || 0;
                 const costoTotalBsInput = document.getElementById('costoTotalBs');
                 if (costoTotalUSD > 0 && tasaBase > 0 && costoTotalBsInput) {

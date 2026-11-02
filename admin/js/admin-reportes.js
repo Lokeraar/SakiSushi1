@@ -36,7 +36,7 @@
         let platilloTop = '-', maxCount = 0;
         for (const [n, c] of Object.entries(platillosCount)) { if (c > maxCount) { maxCount = c; platilloTop = n; } }
         
-        const tasa = window.configGlobal?.tasa_efectiva || 400;
+        const tasa = window.tasaEfectivaActual();
         const _s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
         _s('ventasDia',      `${window.formatUSD(ventasHoy)} / ${window.formatBs(ventasHoy * tasa)}`);
         _s('ventasSemana',   `${window.formatUSD(ventasSemana)} / ${window.formatBs(ventasSemana * tasa)}`);
@@ -71,7 +71,7 @@
         if (window.charts.pagos) window.charts.pagos.destroy();
         window.charts.pagos = new Chart(document.getElementById('pagosChart'), {
             type: 'bar',
-            data: { labels: Object.keys(metodos).map(m => { const n = { efectivo_bs: 'Efectivo Bs', efectivo_usd: 'Efectivo USD', pago_movil: 'Pago Móvil', punto_venta: 'Punto de Venta', mixto: 'Mixto', invitacion: 'Invitación' }; return n[m] || m; }), datasets: [{ label: 'Monto (USD)', data: Object.values(metodos).map(v => v / (window.configGlobal?.tasa_efectiva || 400)), backgroundColor: 'var(--info)' }] }
+            data: { labels: Object.keys(metodos).map(m => { const n = { efectivo_bs: 'Efectivo Bs', efectivo_usd: 'Efectivo USD', pago_movil: 'Pago Móvil', punto_venta: 'Punto de Venta', mixto: 'Mixto', invitacion: 'Invitación' }; return n[m] || m; }), datasets: [{ label: 'Monto (USD)', data: Object.values(metodos).map(v => v / (window.tasaEfectivaActual())), backgroundColor: 'var(--info)' }] }
         });
         
         const horas = {}; for (let i = 0; i < 24; i++) horas[i] = 0;
@@ -85,7 +85,7 @@
 
     window.actualizarTablaVentas = function(pedidos) {
         const tbody = document.getElementById('ventasTableBody');
-        const tasa = (window.configGlobal && window.configGlobal.tasa_efectiva) || window.configGlobal?.tasa_cambio || 400;
+        const tasa = window.tasaEfectivaActual();
         tbody.innerHTML = pedidos.slice(0, 50).map(p => {
             const items = p.items || [];
             const totalItems = items.reduce((s, i) => s + (i.cantidad || 0), 0);
@@ -156,7 +156,7 @@
             } catch(e){ window.mostrarToast('Error al cargar pedido','error'); return; }
         }
         if (!pedido){ window.mostrarToast('Pedido no encontrado','error'); return; }
-        const tasa=(window.configGlobal?.tasa_efectiva||window.configGlobal?.tasa_cambio||400);
+        const tasa=window.tasaEfectivaActual();
         const tipoIcon=pedido.tipo==='delivery'?'🛵':pedido.tipo==='reserva'?'📅':'🍽️';
         const tipoLabel=pedido.tipo==='delivery'?'Delivery':pedido.tipo==='reserva'?'Reserva':('Mesa '+(pedido.mesa||''));
         const ecols={entregado:'var(--success)',cobrado:'var(--success)',en_camino:'var(--delivery)',enviado:'var(--delivery)',en_cocina:'var(--warning)'};
@@ -222,7 +222,7 @@
             const _netoCobradoPedido = (pedido) => {
                 if (!pedido) return 0;
                 if (pedido.metodo_pago === 'invitacion') return 0;
-                const tasa = window.configGlobal?.tasa_cambio || window.configGlobal?.tasa_efectiva || 400;
+                const tasa = window.configGlobal?.tasa_cambio || window.tasaEfectivaActual();
                 let recibido = 0;
                 if (pedido.pagos_mixtos && pedido.pagos_mixtos.length) {
                     pedido.pagos_mixtos.forEach(pg => {
@@ -234,7 +234,7 @@
             };
             let netoBs = 0;
             pedidosData.forEach(pedido => { netoBs += _netoCobradoPedido(pedido); });
-            const tasa = window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400;
+            const tasa = window.tasaEfectivaActual();
             const netoUSD = netoBs / tasa;
             const el = document.getElementById('ventasHoy');
             if (el) el.textContent = `${window.formatUSD(netoUSD)} / ${window.formatBs(netoBs)}`;
@@ -274,7 +274,7 @@
             
             let totalDeliverysBs = 0;
             (pedidosDelivery || []).forEach(p => { totalDeliverysBs += p.costo_delivery_bs || p.costoDelivery || 0; });
-            const tasa = window.configGlobal?.tasa_efectiva || window.configGlobal?.tasa_cambio || 400;
+            const tasa = window.tasaEfectivaActual();
             const totalDeliverysUsd = tasa > 0 ? totalDeliverysBs / tasa : 0;
             const el = document.getElementById('deliverysHoyDashboard');
             if (el) el.textContent = window.formatUSD(totalDeliverysUsd) + ' / ' + window.formatBs(totalDeliverysBs);
@@ -406,7 +406,7 @@
                 }
                 throw errorPedidos;
             }
-            const tasa = window.configGlobal?.tasa_cambio || window.configGlobal?.tasa_efectiva || 400;
+            const tasa = window.configGlobal?.tasa_cambio || window.tasaEfectivaActual();
             const fmtBs = window.formatBs;
             const _netoCobradoPedido = (pedido) => {
                 if (!pedido) return 0;

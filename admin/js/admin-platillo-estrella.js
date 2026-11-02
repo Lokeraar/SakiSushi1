@@ -425,7 +425,7 @@
             return parseFloat(normalized) || null;
         }
         // Fallback a configGlobal si no hay display
-        return window.configGlobal?.tasa_efectiva || 400;
+        return window.tasaEfectivaActual();
     };
 
     // Setup de event listeners
