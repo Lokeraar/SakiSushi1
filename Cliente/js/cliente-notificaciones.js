@@ -24,23 +24,19 @@
     window.urlBase64ToUint8Array = urlBase64ToUint8Array;
     S.modules.notificaciones.urlBase64ToUint8Array = urlBase64ToUint8Array;
 
-    // ── Identidad de push del visitante ──
+    // ── Identidad del visitante ──
     //
-    // La tabla push_subscriptions indexa por session_id. Cajero y admin usan
-    // su sesión; el visitante no tiene ninguna, así que se le da un id
-    // estable por navegador: se genera una vez, cae en localStorage y se
-    // reutiliza. Con eso "todos los dispositivos que alguna vez abrieron la
-    // carta" es simplemente "todas las filas con rol cliente".
-    function sessionIdDePush() {
-        try {
-            var k = 'saki_push_session';
-            var v = localStorage.getItem(k);
-            if (!v) {
-                v = 'cli-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
-                localStorage.setItem(k, v);
-            }
-            return v;
-        } catch (e) { return null; }
+    // El identificador ya NO se inventa acá. Antes era
+    // `cli-<fecha en base36>-<8 de Math.random()>`, con dos problemas:
+    // `Math.random()` no es criptográfico, y 8 caracteres son unos 41 bits,
+    // algo que una computadora puede recorrer. Además ese valor se usaba tal
+    // cual, sin que el servidor pudiera comprobar que era de quien decía.
+    //
+    // Ahora lo emite la base con 128 bits reales y lo devuelve FIRMADO. Todo
+    // el manejo vive en cliente-identidad.js.
+    function fichaDeCliente() {
+        if (!window.SakiCliente) return Promise.resolve(null);
+        return window.SakiCliente.obtenerFicha();
     }
 
     // Clave pública VAPID. Tiene que ser exactamente la pareja de la privada
@@ -107,23 +103,28 @@
                 // llegarle como push.
                 var p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('p256dh'))));
                 var auth   = btoa(String.fromCharCode.apply(null, new Uint8Array(sub.getKey('auth'))));
-                var sid = sessionIdDePush();
-                if (!sid) return;
+
                 // Se registra por RPC y no con un upsert directo.
                 //
                 // El upsert desde el navegador no puede funcionar: RLS le
                 // exige poder LEER la fila para actualizarla, y al visitante
                 // anónimo no se le da SELECT a propósito (leería los
-                // endpoints de todos los demás dispositivos). La función
-                // hace el upsert del lado del servidor, fuerza rol 'cliente'
-                // y no expone ninguna lectura.
-                window.supabaseClient.rpc('registrar_push_cliente', {
-                    p_session_id: sid,
-                    p_endpoint:   sub.endpoint,
-                    p_p256dh:     p256dh,
-                    p_auth:       auth,
-                    p_user_agent: navigator.userAgent
-                }).catch(function() {});
+                // endpoints de todos los demás dispositivos). La función hace
+                // el upsert del lado del servidor, fuerza rol 'cliente' y no
+                // expone ninguna lectura.
+                //
+                // La identidad va como FICHA firmada, no como un id suelto:
+                // la base comprueba la firma antes de guardar nada.
+                return fichaDeCliente().then(function(ficha) {
+                    if (!ficha) return; // sin identidad no hay a quién avisar
+                    return window.supabaseClient.rpc('registrar_push_cliente', {
+                        p_ficha:      ficha,
+                        p_endpoint:   sub.endpoint,
+                        p_p256dh:     p256dh,
+                        p_auth:       auth,
+                        p_user_agent: navigator.userAgent
+                    });
+                }).catch(function() { /* sin push, pero la carta anda */ });
             }).catch(function() {});
         });
     }
@@ -206,13 +207,26 @@
 
     function recargarNotificacionesCompletas() {
         if (!window.supabaseClient) return;
-        window.supabaseClient
-            .from('notificaciones')
-            .select('*')
-            .order('fecha', { ascending: false })
-            .limit(50)
-            .then(function(resp) {
-                if (resp.error) return;
+
+        // La campanita lee por FUNCIÓN, no por consulta directa.
+        //
+        // Consultar la tabla directamente nunca funcionó para un invitado: la
+        // regla es `session_id = auth.uid()::text`, y un anónimo tiene
+        // auth.uid() = NULL. En SQL, NULL = NULL no es verdadero: es NULL. Por
+        // eso la campanita del cliente estaba vacía SIEMPRE, no por un fallo
+        // puntual sino por construcción.
+        //
+        // La función comprueba la firma de la ficha y devuelve solo las filas
+        // de ese cliente. Un cliente registrado también puede usarla: la
+        // función prefiere auth.uid() cuando hay sesión.
+        var conFicha = window.SakiCliente
+            ? window.SakiCliente.obtenerFicha()
+            : Promise.resolve(null);
+
+        conFicha.then(function (ficha) {
+            return window.supabaseClient.rpc('notificaciones_de_cliente', { p_ficha: ficha });
+        }).then(function (resp) {
+                if (!resp || resp.error) return;
                 var datos = resp.data || [];
                 if (datos.length === 0) return;
                 datos.sort(function(a, b) {
@@ -221,7 +235,7 @@
                 notisCompletas = datos;
                 notisNoLeidas = datos.filter(function(n) { return !n.leida; }).length;
                 actualizarNotificacionesUI();
-            });
+            }).catch(function() { /* sin conexión: se queda lo que hubiera */ });
     }
     window.recargarNotificacionesCompletas = recargarNotificacionesCompletas;
     S.modules.notificaciones.recargarNotificacionesCompletas = recargarNotificacionesCompletas;

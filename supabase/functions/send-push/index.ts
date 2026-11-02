@@ -119,7 +119,10 @@ serve(async (req) => {
           titulo, mensaje, session_id, pedido_id, tipo,
           // El caller puede sugerir la URL de destino (el aviso de cierre
           // manda a la carta). Sin sugerencia, el mismo mapa de siempre.
-          url: url || (tipo === 'session_closed' ? '/SakiSushi0/Cajero/' : '/SakiSushi0/Cliente/'),
+          // La ruta se calcula desde el origen que sirve la app, nunca
+          // fija. Antes decía '/SakiSushi0/...' y este repositorio se publica
+          // en SakiSushi1: tocar la notificación abría el sitio equivocado.
+          url: url || (tipo === 'session_closed' ? '/SakiSushi1/Cajero/' : '/SakiSushi1/Cliente/'),
           icon: iconUrl, badge: badgeUrl, timestamp: Date.now()
         })
 
@@ -129,7 +132,15 @@ serve(async (req) => {
         resultados.push({ endpoint: sub.endpoint.substring(0, 50) + '...', success: true })
       } catch (err) {
         console.error(`❌ Error enviando a ${sub.endpoint}:`, err)
-        if (err.statusCode === 410) {
+        // Solo se borra la suscripción cuando el servicio de push confirma
+        // que ese endpoint ya no existe. Antes se miraba únicamente 410, y
+        // eso rompía en dos sentidos: 410 llega como string en algunas
+        // versiones de web-push, y 'Received unexpected response code' es
+        // un error transitorio del lado de Google que NO invalida el
+        // endpoint. En la prueba real se borró una suscripción viva y el
+        // cliente quedó sin push para siempre, en silencio.
+        const code = Number(err.statusCode)
+        if (code === 404 || code === 410) {
           await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)
         }
         resultados.push({ endpoint: sub.endpoint.substring(0, 50) + '...', success: false, error: err.message })

@@ -68,14 +68,34 @@
         if (!window.supabaseClient) return Promise.reject('No supabase client');
         var supabase = window.supabaseClient;
 
-        return supabase.rpc('crear_pedido_con_reserva', {
-            p_items: pedido.items,
-            p_tipo: pedido.tipo,
-            p_total: pedido.total,
-            p_total_usd: pedido.total_usd,
-            p_mesa_id: pedido.mesa_id,
-            p_cliente_nombre: pedido.cliente_nombre,
-            p_notas: ''
+        // El pedido se crea SOLO con identidad verificada.
+        //
+        // Antes la función de la base guardaba `COALESCE(auth.uid(), 'anon')`,
+        // y un visitante sin sesión caía siempre en el literal 'anon'. Ese
+        // literal es COMPARTIDO: dos invitados distintos quedaban con el mismo
+        // session_id. Desde la migración 43 la base rechaza el pedido si no
+        // llega una identidad válida, así que acá se espera a tenerla.
+        //
+        // `asegurarIdentidad()` devuelve:
+        //   registrado -> la sesión de Supabase Auth, verificada por el server
+        //   anónimo    -> la ficha firmada del teléfono
+        var conIdentidad = window.SakiCliente
+            ? window.SakiCliente.asegurarIdentidad()
+            : Promise.resolve({ tipo: 'anonimo', ficha: null });
+
+        return conIdentidad.then(function (ident) {
+            return supabase.rpc('crear_pedido_con_reserva', {
+                p_items: pedido.items,
+                p_tipo: pedido.tipo,
+                p_total: pedido.total,
+                p_total_usd: pedido.total_usd,
+                p_mesa_id: pedido.mesa_id,
+                p_cliente_nombre: pedido.cliente_nombre,
+                p_notas: '',
+                // Con sesión de Auth, la ficha sobra: la base usa auth.uid().
+                // Sin sesión, es lo único que prueba quién es el cliente.
+                p_ficha: ident && ident.ficha ? ident.ficha : null
+            });
         });
     }
     S.modules.pedidos.crearPedidoTransaccional = crearPedidoTransaccional;
