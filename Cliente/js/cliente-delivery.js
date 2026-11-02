@@ -421,14 +421,30 @@
         };
 
         if (!window.supabaseClient) return;
-        window.supabaseClient.rpc('crear_pedido_con_reserva', {
+        // La identidad va como ficha firmada. Desde la migración 43 la base
+        // rechaza cualquier pedido sin identidad verificada, así que sin esto
+        // el delivery respondía 403 "Falta la identidad del cliente".
+        var conIdentidad = window.SakiCliente
+            ? window.SakiCliente.asegurarIdentidad()
+            : Promise.resolve({ tipo: 'anonimo', ficha: null });
+
+        conIdentidad.then(function (ident) {
+        return window.supabaseClient.rpc('crear_pedido_con_reserva', {
             p_items: pedido.items,
             p_tipo: 'delivery',
             p_total: pedido.total,
             p_total_usd: pedido.total_usd,
             p_mesa_id: null,
             p_cliente_nombre: '',
-            p_notas: 'Delivery - ' + deliveryFormData.parroquia + ' - Ref: ' + deliveryFormData.referencia
+            p_notas: 'Delivery - ' + deliveryFormData.parroquia + ' - Ref: ' + deliveryFormData.referencia,
+            p_ficha: ident && ident.ficha ? ident.ficha : null,
+            // El costo va en DÓLARES, que es como lo fija el admin. La base lo
+            // convierte a Bs con la tasa base del día y guarda las tres
+            // columnas congeladas. Mandarlo ya convertido haría que la base
+            // lo volviera a multiplicar.
+            p_costo_delivery_usd: costoEnvioUsd,
+            p_parroquia: deliveryFormData.parroquia
+        });
         }).then(function(resp) {
             if (resp.error) throw resp.error;
             if (window.agregarPedidoAHistorial) window.agregarPedidoAHistorial(pedido);
