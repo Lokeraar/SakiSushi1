@@ -2061,26 +2061,42 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             color:var(--text-primary);
         }
         .parroquia-search:focus{box-shadow:0 0 0 3px rgba(255,152,0,.1)}
+        /* La lista es un contenedor con divs, no un <select>.
+           Con <option> la propiedad display no es fiable entre navegadores y
+           era justo lo que dejaba la lista vacía en el teléfono. */
         .parroquia-select {
             width:100%;
-            padding:.5rem;
+            padding:.35rem;
             border:2px solid var(--accent);
             border-radius:0 0 var(--radius-md) var(--radius-md);
             font-size:1rem;
             background:rgba(0,0,0,.5);
             color:var(--text-primary);
-            max-height:200px;
+            max-height:260px;
             overflow-y:auto;
+            -webkit-overflow-scrolling:touch;
         }
-        .parroquia-select option {
-            padding:.8rem 1rem;
+        .parroquia-opcion {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:.75rem;
+            /* 44px de alto mínimo: es el tamaño que un dedo acierta sin
+               esfuerzo. Antes las opciones eran más bajas y se erraba el toque. */
+            min-height:44px;
+            padding:.6rem .8rem;
             border-bottom:1px solid rgba(128,128,128,.2);
             cursor:pointer;
-            transition:background .2s;
-            background:rgba(0,0,0,.5);
-            color:var(--text-primary);
+            border-radius:var(--radius-sm);
+            transition:background .15s;
         }
-        .parroquia-select option:hover,.parroquia-select option:checked{background:linear-gradient(135deg,var(--primary),#b71c1c);color:white}
+        .parroquia-opcion:last-child{border-bottom:none}
+        .parroquia-opcion:hover,.parroquia-opcion:active{background:rgba(255,152,0,.15)}
+        .parroquia-opcion.activa{background:linear-gradient(135deg,var(--primary),#b71c1c);color:#fff}
+        .parroquia-nombre{flex:1;min-width:0;overflow-wrap:anywhere}
+        .parroquia-precio{color:var(--accent);font-weight:600;white-space:nowrap}
+        .parroquia-opcion.activa .parroquia-precio{color:#fff}
+        .parroquia-vacia{justify-content:center;color:var(--gray-400);cursor:default}
 
         /* ═══════════════════════════════════════════════════════
            DATOS DE PAGO (modal delivery / reserva)
@@ -2691,41 +2707,13 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                                     <i class="fas fa-chevron-down" id="parroquiaChevron"></i>
                                 </div>
                                 <input type="text" id="parroquiaSearch" class="parroquia-search" placeholder="Buscar parroquia..." style="display:none">
-                                <select id="parroquiaSelect" class="parroquia-select" size="5" style="display:none" onchange="seleccionarParroquia(this)">
-                                    <option value="">Seleccionar parroquia</option>
-                                    <option value="Altagracia">Altagracia</option>
-                                    <option value="Antímano">Antímano</option>
-                                    <option value="Candelaria">Candelaria</option>
-                                    <option value="Caricuao">Caricuao</option>
-                                    <option value="Caucagüita">Caucagüita</option>
-                                    <option value="Catedral">Catedral</option>
-                                    <option value="Chacao">Chacao</option>
-                                    <option value="Coche">Coche</option>
-                                    <option value="El Cafetal">El Cafetal</option>
-                                    <option value="El Junquito">El Junquito</option>
-                                    <option value="El Paraíso">El Paraíso</option>
-                                    <option value="El Recreo">El Recreo</option>
-                                    <option value="El Valle">El Valle</option>
-                                    <option value="Fila de Mariches">Fila de Mariches</option>
-                                    <option value="La Dolorita">La Dolorita</option>
-                                    <option value="La Pastora">La Pastora</option>
-                                    <option value="La Vega">La Vega</option>
-                                    <option value="Las Minas">Las Minas</option>
-                                    <option value="Leoncio Martínez">Leoncio Martínez</option>
-                                    <option value="Macarao">Macarao</option>
-                                    <option value="Nuestra Señora del Rosario">Nuestra Señora del Rosario</option>
-                                    <option value="Petare">Petare</option>
-                                    <option value="San Agustín">San Agustín</option>
-                                    <option value="San Bernardino">San Bernardino</option>
-                                    <option value="San José">San José</option>
-                                    <option value="San Juan">San Juan</option>
-                                    <option value="San Pedro">San Pedro</option>
-                                    <option value="Santa Rosalía">Santa Rosalía</option>
-                                    <option value="Santa Rosalía de Palermo">Santa Rosalía de Palermo</option>
-                                    <option value="Santa Teresa">Santa Teresa</option>
-                                    <option value="Sucre">Sucre</option>
-                                    <option value="23 de Enero">23 de Enero</option>
-                                </select>
+                                <!-- La lista se genera por JS desde _preciosPorParroquia.
+                                     Antes era un <select size="5"> con 33 <option> y el
+                                     buscador las ocultaba con display:none inline. En el
+                                     navegador real eso deja la lista VACÍA: 31 de 33
+                                     opciones quedaban con display:none, y además el evento
+                                     blur del buscador cerraba el panel justo al tocarlo. -->
+                                <div id="parroquiaSelect" class="parroquia-select" style="display:none" role="listbox" aria-label="Parroquias"></div>
                             </div>
                         </div>
                         
@@ -2960,7 +2948,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
     <script src="js/cliente-menu.js?v=1792867095"></script>
     <script src="js/cliente-scroll.js"></script>
-    <script src="js/cliente-ui.js?v=1792808939"></script>
+    <script src="js/cliente-ui.js?v=1793589027"></script>
     <script src="js/cliente-identidad.js?v=1793582360"></script>
     <script src="js/cliente-notificaciones.js?v=1793582360"></script>
     <script src="js/cliente-carrito.js?v=1792803284"></script>
@@ -2970,7 +2958,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-preview.js?v=1792843562"></script>
     <script src="js/cliente-historial.js"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
-    <script src="js/cliente-delivery.js?v=1792845401"></script>
+    <script src="js/cliente-delivery.js?v=1793589027"></script>
     <script src="js/cliente-reservas.js"></script>
     <script src="js/cliente-init.js?v=1792890551"></script>
     

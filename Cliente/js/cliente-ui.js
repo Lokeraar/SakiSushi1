@@ -279,17 +279,53 @@
         var closeDelivery = document.getElementById('closeDeliveryModal');
         if (closeDelivery) closeDelivery.addEventListener('click', function() { document.getElementById('deliveryModal').classList.remove('active'); });
 
+        // Elegir una parroquia de la lista.
+        //
+        // La lista se genera por JS, así que el clic se escucha en el
+        // contenedor y no en cada opción: sirve igual cuando la lista se
+        // vuelve a dibujar al escribir en el buscador.
+        var listaParroquias = document.getElementById('parroquiaSelect');
+        if (listaParroquias) {
+            listaParroquias.addEventListener('click', function(e) {
+                var op = e.target.closest('.parroquia-opcion[data-parroquia]');
+                if (op && window.seleccionarParroquia) {
+                    window.seleccionarParroquia(op.dataset.parroquia);
+                }
+            });
+        }
+
+        // Tocar fuera del bloque cierra la lista.
+        document.addEventListener('click', function(e) {
+            var bloque = document.getElementById('parroquiaSelectorDiv');
+            var lista = document.getElementById('parroquiaSelect');
+            if (!bloque || !lista || lista.style.display !== 'block') return;
+            if (!bloque.contains(e.target)) {
+                if (window.toggleParroquiaSelect) window.toggleParroquiaSelect();
+            }
+        });
+
         // Parroquia search
         var parroquiaSearch = document.getElementById('parroquiaSearch');
         if (parroquiaSearch) {
             parroquiaSearch.addEventListener('input', function() {
                 if (window.filtrarParroquias) window.filtrarParroquias();
             });
-            parroquiaSearch.addEventListener('blur', function() {
-                var pr = document.getElementById('parroquiaSelect');
-                if (pr) pr.style.display = 'none';
-                this.style.display = 'none';
-                document.getElementById('parroquiaChevron').className = 'fas fa-chevron-down';
+            // El blur ya NO cierra la lista.
+            //
+            // Antes, apenas el buscador perdía el foco, ocultaba el panel. En
+            // un teléfono eso pasa en el mismo instante en que el dedo baja
+            // hacia la lista: la lista desaparecía antes del toque y parecía
+            // vacía. Ahora se cierra solo al elegir una parroquia, al tocar
+            // fuera del bloque, o al volver a tocar el encabezado.
+            parroquiaSearch.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (window.toggleParroquiaSelect) window.toggleParroquiaSelect();
+                }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    var primera = document.querySelector('#parroquiaSelect .parroquia-opcion[data-parroquia]');
+                    if (primera) primera.click();
+                }
             });
         }
 

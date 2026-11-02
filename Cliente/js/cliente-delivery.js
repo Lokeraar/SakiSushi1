@@ -157,43 +157,108 @@
     window.irAParroquia = irAParroquia;
     S.modules.delivery.irAParroquia = irAParroquia;
 
+    // ── Selector de parroquia ──
+    //
+    // Antes esto era un <select size="5"> con las 33 <option> escritas a mano
+    // en el HTML. En el navegador real la lista salía VACÍA, y no por un dato
+    // faltante: las opciones estaban todas ahí, pero el buscador las marcaba
+    // con `display:none` inline. Esa propiedad no se comporta igual en un
+    // <option> según el navegador, y además el evento `blur` del buscador
+    // cerraba el panel justo cuando el usuario lo tocaba para escribir.
+    //
+    // Ahora la lista se genera desde `_preciosPorParroquia`, que ya era la
+    // fuente de verdad del costo de envío. Una sola fuente: si mañana cambia
+    // un precio o se agrega una parroquia, se toca un lugar y la lista y el
+    // costo siguen coincidiendo.
+
+    var _parroquiasRenderizadas = false;
+
+    function _listaParroquias() {
+        return Object.keys(_preciosPorParroquia).sort(function(a, b) {
+            return a.localeCompare(b, 'es');
+        });
+    }
+
+    function renderizarParroquias(termino) {
+        var cont = document.getElementById('parroquiaSelect');
+        if (!cont) return;
+
+        var t = (termino || '').trim().toLowerCase();
+        // Se compara sin acentos: "antimano" tiene que encontrar "Antímano".
+        var normalizar = function(x) {
+            return x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        };
+        var tn = normalizar(t);
+
+        var lista = _listaParroquias().filter(function(nombre) {
+            return !tn || normalizar(nombre).indexOf(tn) !== -1;
+        });
+
+        if (lista.length === 0) {
+            cont.innerHTML = '<div class="parroquia-opcion parroquia-vacia">Sin coincidencias</div>';
+            return;
+        }
+
+        cont.innerHTML = lista.map(function(nombre) {
+            var precio = _preciosPorParroquia[nombre];
+            var activa = deliveryFormData.parroquia === nombre ? ' activa' : '';
+            return '<div class="parroquia-opcion' + activa + '" role="option" data-parroquia="' +
+                   nombre.replace(/"/g, '&quot;') + '">' +
+                   '<span class="parroquia-nombre">' + nombre + '</span>' +
+                   '<span class="parroquia-precio">$' + precio + '</span>' +
+                   '</div>';
+        }).join('');
+
+        _parroquiasRenderizadas = true;
+    }
+    window.renderizarParroquias = renderizarParroquias;
+    S.modules.delivery.renderizarParroquias = renderizarParroquias;
+
     function toggleParroquiaSelect() {
         var select = document.getElementById('parroquiaSelect');
         var search = document.getElementById('parroquiaSearch');
         var chevron = document.getElementById('parroquiaChevron');
         if (!select) return;
+
         var isOpen = select.style.display === 'block';
-        select.style.display = isOpen ? 'none' : 'block';
-        if (search) search.style.display = isOpen ? 'none' : 'block';
-        if (chevron) chevron.className = isOpen ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
-        if (!isOpen && search) { search.value = ''; search.focus(); filtrarParroquias(); }
+
+        if (isOpen) {
+            select.style.display = 'none';
+            if (search) search.style.display = 'none';
+            if (chevron) chevron.className = 'fas fa-chevron-down';
+            return;
+        }
+
+        // Se limpia el término al abrir para que la lista aparezca completa.
+        if (search) search.value = '';
+        renderizarParroquias('');
+        select.style.display = 'block';
+        if (search) search.style.display = 'block';
+        if (chevron) chevron.className = 'fas fa-chevron-up';
     }
     window.toggleParroquiaSelect = toggleParroquiaSelect;
     S.modules.delivery.toggleParroquiaSelect = toggleParroquiaSelect;
 
-    function seleccionarParroquia(select) {
+    function seleccionarParroquia(valor) {
         var text = document.getElementById('selectedParroquiaText');
-        var value = select.value;
-        if (value) {
-            text.textContent = value;
-            deliveryFormData.parroquia = value;
-            toggleParroquiaSelect();
-            actualizarTotalDelivery();
-        }
+        var nombre = typeof valor === 'string' ? valor : (valor && valor.value) || '';
+        if (!nombre) return;
+        if (text) text.textContent = nombre;
+        deliveryFormData.parroquia = nombre;
+        var select = document.getElementById('parroquiaSelect');
+        if (select) select.style.display = 'none';
+        var search = document.getElementById('parroquiaSearch');
+        if (search) search.style.display = 'none';
+        var chevron = document.getElementById('parroquiaChevron');
+        if (chevron) chevron.className = 'fas fa-chevron-down';
+        actualizarTotalDelivery();
     }
     window.seleccionarParroquia = seleccionarParroquia;
     S.modules.delivery.seleccionarParroquia = seleccionarParroquia;
 
     function filtrarParroquias() {
         var search = document.getElementById('parroquiaSearch');
-        var select = document.getElementById('parroquiaSelect');
-        if (!search || !select) return;
-        var term = search.value.toLowerCase();
-        var options = select.querySelectorAll('option');
-        options.forEach(function(opt) {
-            if (opt.value === '') return;
-            opt.style.display = opt.textContent.toLowerCase().includes(term) ? 'block' : 'none';
-        });
+        renderizarParroquias(search ? search.value : '');
     }
     window.filtrarParroquias = filtrarParroquias;
     S.modules.delivery.filtrarParroquias = filtrarParroquias;
