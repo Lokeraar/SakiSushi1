@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "comments": [
+    {
+      "id": "v1cosia6",
+      "file": "01-inicio.html",
+      "selector": "#saveAllButton",
+      "excerpt": "Guardar cambios en tasa",
+      "comment": "El contenido ponlo en 2 líneas y que quedan responsivamente sin que desborden",
+      "createdAt": "2026-11-03T01:54:08.801Z",
+      "status": "resolved",
+      "sentAt": "2026-11-03T01:55:02.834Z",
+      "resolvedAt": "2026-11-03T02:39:48.440Z"
+    },
+    {
+      "id": "1vwc4tig",
+      "file": "01-inicio.html",
+      "selector": "#btnObtenerTasaBCV",
+      "excerpt": "Consultar el BCV",
+      "comment": "El contenido ponlo en 2 líneas y que quedan responsivamente sin que desborden",
+      "createdAt": "2026-11-03T01:54:39.880Z",
+      "status": "resolved",
+      "sentAt": "2026-11-03T01:55:02.834Z",
+      "resolvedAt": "2026-11-03T02:39:48.440Z"
+    }
+  ]
+}

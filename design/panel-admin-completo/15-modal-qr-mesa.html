@@ -969,19 +969,41 @@ html.dark-theme .toggle-slider { background-color: rgba(255,255,255,.2); }
    overflow-wrap es la red de seguridad: si un dia entra un texto mas largo
    que el ancho del boton, quiebra igual en vez de desbordar la tarjeta. */
 @media (max-width: 768px) {
-    .tcb-save-btn {
+    /* El selector se ancla en `.tcb-save-wrap` a propósito.
+       `.btn-primary` y `.btn-secondary` declaran `white-space: nowrap` más
+       abajo en este archivo (línea ~1144), con la MISMA especificidad que
+       `.tcb-save-btn`. En un empate gana la última regla, así que el
+       `white-space: normal` de acá perdía y el rótulo nunca se partía: los dos
+       botones se estiraban en una sola línea y desbordaban la tarjeta en el
+       teléfono.
+       Con el contenedor delante, la especificidad es mayor (0,2,0 contra 0,1,0)
+       y la regla gana sin depender del orden. Además dice lo que quiere decir:
+       aplica a los botones de ESTE bloque, no a cualquier botón del panel. */
+    .tcb-save-wrap .tcb-save-btn {
         white-space: normal;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
+        word-break: break-word;
         text-align: center;
         line-height: 1.25;
         /* min-width:0 permite que el boton se encoja por debajo del contenido
            minimo; sin eso el texto empuja y desborda el contenedor flex. */
         min-width: 0;
-        max-width: 46%;
+        /* Reparto del ancho entre los dos botones.
+           Se usa 48% y no 50%: con la mitad exacta, "Consultar el BCV" cae
+           justo en el límite (115px de texto contra 117px disponibles) y sale
+           en UNA línea, más alto que el otro botón que sí parte en dos. A 48%
+           quedan los dos en dos líneas y la fila se ve pareja.
+           Medido a 390px de ancho: 350px útiles, 168px por botón, 113px para
+           el texto. */
+        flex: 1 1 0;
+        max-width: 48%;
         /* El icono no debe encogerse ni estirarse con el boton: queda del
            tamano del texto y centrado respecto de las lineas. */
         justify-content: center;
         gap: .35rem;
+        /* Dos líneas de tope: si el rótulo crece más, se recorta a lo ancho
+           con puntos suspensivos en vez de romper el alto del bloque. */
+        align-items: center;
     }
     .tcb-save-btn > i {
         flex: 0 0 auto;
@@ -992,13 +1014,22 @@ html.dark-theme .toggle-slider { background-color: rgba(255,255,255,.2); }
     .tcb-save-btn > span {
         min-width: 0;
         text-align: center;
+        /* Sin esto, un texto largo empuja el ancho del botón en vez de partirse. */
+        flex: 1 1 auto;
+        overflow-wrap: break-word;
+        word-break: break-word;
     }
     .tcb-save-wrap {
         display: flex;
         flex-wrap: wrap;
         gap: .4rem;
-        align-items: center;
+        align-items: stretch;
         min-width: 0;
+        /* Los dos botones se reparten el ancho disponible en partes iguales:
+           así los dos caben en la misma fila y quiebran a dos líneas cada uno,
+           en vez de que uno se coma el espacio del otro. */
+        width: 100%;
+        margin-left: 0;
     }
 }
 /* Tablet responsive for save button - fit in same row */
@@ -2900,7 +2931,6 @@ a { color: var(--primary); }
     animation: pulse 1.5s infinite;
 }
 
-}
 .dark-theme .modal-body input,
 .dark-theme .modal-body select,
 .dark-theme .modal-body textarea {
@@ -2918,8 +2948,6 @@ a { color: var(--primary); }
 .dark-theme .modal-body label {
     color: #d0d0e8 !important;
     font-weight: 600;
-}
-    color: #a0a0c0;
 }
 .dark-theme .btn-icon.delete {
     background: rgba(239,68,68,.25);
