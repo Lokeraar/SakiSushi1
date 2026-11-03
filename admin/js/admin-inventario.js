@@ -1263,6 +1263,24 @@ validarPrecios();
             
             // Validar respuesta exactamente igual que en admin-auth.js
             if (data.success && data.user && data.user.rol === 'admin') {
+                // ── Sesión renovada ──────────────────────────────────────
+                //
+                // El login devuelve un `access_token` nuevo. Antes se
+                // descartaba: se desbloqueaba el campo y se seguía guardando
+                // con el token viejo. Como ese token dura una hora, pasado ese
+                // rato el RLS bloqueaba la escritura (HTTP 200 con lista
+                // vacía) aunque la contraseña fuera correcta.
+                //
+                // Pedir la contraseña es justo el momento de renovar la
+                // sesión: la persona acaba de demostrar que es admin.
+                if (data.token) {
+                    window.jwtToken = data.token;
+                    try {
+                        sessionStorage.setItem('admin_jwt_token', data.token);
+                    } catch (_) { /* sessionStorage lleno o bloqueado */ }
+                    window.supabaseClient = window.inicializarSupabaseCliente(data.token);
+                }
+
                 // Contraseña correcta → desbloquear stock
                 const stockInput = document.getElementById('stock-actual-input');
                 if (stockInput) {
