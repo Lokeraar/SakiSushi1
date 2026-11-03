@@ -39,21 +39,21 @@
         } catch (e) {}
     }
 
-    window.obtenerMesoneroActual = function () {
+    window.obtenerMesoneroActual = function obtenerMesoneroActual () {
         try {
             var raw = sessionStorage.getItem(CLAVE_SESION);
             return raw ? JSON.parse(raw) : null;
         } catch (e) { return null; }
     };
 
-    window.cerrarSesionMesonero = function () {
+    window.cerrarSesionMesonero = function cerrarSesionMesonero () {
         try { sessionStorage.removeItem(CLAVE_SESION); } catch (e) {}
         window.actualizarUiMesonero();
         if (window.mostrarToast) window.mostrarToast('Sesión de mesonero cerrada', 'info');
     };
 
     /** Muestra u oculta el distintivo "Atendido por: X". */
-    window.actualizarUiMesonero = function () {
+    window.actualizarUiMesonero = function actualizarUiMesonero () {
         var m = window.obtenerMesoneroActual();
         var chip = document.getElementById('mesoneroChip');
 
@@ -95,7 +95,7 @@
     }
     window.cerrarModalPinMesonero = cerrarModal;
 
-    window.abrirModalPinMesonero = function () {
+    window.abrirModalPinMesonero = function abrirModalPinMesonero () {
         // Si ya hay sesión, se ofrece cerrarla en vez de pedir el PIN otra vez.
         var actual = window.obtenerMesoneroActual();
         if (actual) {

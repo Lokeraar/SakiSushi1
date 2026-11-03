@@ -63,7 +63,7 @@
      * @param {*} err  Error, string, objeto de Supabase, o lo que venga.
      * @returns {string} Texto en castellano, listo para mostrar.
      */
-    window.mensajeDeError = function (err) {
+    window.mensajeDeError = function mensajeDeError (err) {
         if (err === null || err === undefined) return 'Ocurrió un error inesperado.';
 
         // Los errores de Supabase traen `.message`, `.details` y `.hint`.
@@ -95,7 +95,7 @@
      * llegó a completarse. El silencio ante un corte es lo más peligroso:
      * el cajero necesita saber si el cobro se registró o no.
      */
-    window.mensajeDeFallo = function (queSeIntentaba, err) {
+    window.mensajeDeFallo = function mensajeDeFallo (queSeIntentaba, err) {
         return 'No se pudo ' + queSeIntentaba + '. ' + window.mensajeDeError(err);
     };
 
@@ -112,7 +112,7 @@
      * Acá se pasa el error tal como llega. `mensajeDeError` ya sabe leer
      * `.message`, `.error_description` o un texto suelto.
      */
-    window.mostrarErrorLegible = function (err, queSeIntentaba) {
+    window.mostrarErrorLegible = function mostrarErrorLegible (err, queSeIntentaba) {
         var texto = queSeIntentaba
             ? window.mensajeDeFallo(queSeIntentaba, err)
             : window.mensajeDeError(err);

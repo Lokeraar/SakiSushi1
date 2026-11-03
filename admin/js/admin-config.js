@@ -1,6 +1,6 @@
 // admin-config.js - Configuración de tasa de cambio y parámetros globales
 (function() {
-    window.cargarConfiguracion = async function() {
+    window.cargarConfiguracion = async function cargarConfiguracion() {
         try {
             // Verificar que haya token JWT antes de hacer la consulta
             if (!window.jwtToken) {
@@ -53,14 +53,14 @@
     // decoración de un flujo que ya no existe, y el dato bueno (¿está firmada
     // hoy?) lo da `estado_revision_tasa()` en el panel de la tasa.
 
-    window.cargarConfiguracionInicial = async function() {
+    window.cargarConfiguracionInicial = async function cargarConfiguracionInicial() {
         await window.cargarConfiguracion();
         window.actualizarTasaUI();
         window.recalcularTasaEfectiva();
         window.actualizarMenuTasaBanner();
     };
 
-    window.actualizarTasaUI = function() {
+    window.actualizarTasaUI = function actualizarTasaUI() {
         document.getElementById('tasaBaseInput').value      = window.configGlobal.tasa_cambio || 400;
         document.getElementById('aumentoDiarioInput').value = window.configGlobal.aumento_diario || 0;
         document.getElementById('aumentoActivoToggle').checked = window.configGlobal.aumento_activo || false;
@@ -101,7 +101,7 @@
 
     window.actualizarMenuTasaBanner = window.actualizarTasaUI;
 
-    window.recalcularTasaEfectiva = function() {
+    window.recalcularTasaEfectiva = function recalcularTasaEfectiva() {
         const tasaBaseInput = document.getElementById('tasaBaseInput');
         if (tasaBaseInput && window.configGlobal) {
             window.configGlobal.tasa_cambio = parseFloat(tasaBaseInput.value) || 0;
@@ -204,7 +204,7 @@
         window.configGlobal.tasa_efectiva     = tasaEfectiva;
     };
 
-    window.guardarConfiguracion = async function() {
+    window.guardarConfiguracion = async function guardarConfiguracion() {
         try {
             const tasaBase = parseFloat(document.getElementById('tasaBaseInput').value) || 0;
             const aumentoPct = parseFloat(document.getElementById('aumentoDiarioInput').value) || 0;
@@ -329,7 +329,7 @@
     // Se retira el modal y queda solo la consulta, que es lo único que otro
     // módulo (`admin-tasa-aviso.js`) necesitaba. Es la misma limpieza que se
     // hizo con la ventana vieja "Tasa de Hoy" del cajero.
-    window.obtenerTasaBCV = async function() {
+    window.obtenerTasaBCV = async function obtenerTasaBCV() {
         try {
             const detalle = await window.obtenerTasaBCVDetalle({ forzar: true });
             if (!detalle || !(detalle.valor > 0)) return null;
@@ -394,12 +394,12 @@
             '</button>';
     }
 
-    window.cerrarModalBCV = function () {
+    window.cerrarModalBCV = function cerrarModalBCV () {
         var m = document.getElementById('bcvModal');
         if (m) m.classList.remove('active');
     };
 
-    window.abrirModalBCV = async function (btn) {
+    window.abrirModalBCV = async function abrirModalBCV (btn) {
         var cont = document.getElementById('bcvOpciones');
         var modal = document.getElementById('bcvModal');
         if (!cont || !modal) return;

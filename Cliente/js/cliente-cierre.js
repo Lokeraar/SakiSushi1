@@ -31,7 +31,7 @@
     // Consultar el estado
     // ============================================================
 
-    window.consultarCierreLocal = async function () {
+    window.consultarCierreLocal = async function consultarCierreLocal () {
         if (!window.supabaseClient) return null;
         try {
             var { data, error } = await window.supabaseClient.rpc('cierre_vigente');
@@ -55,7 +55,7 @@
     // La franja de aviso
     // ============================================================
 
-    window.pintarAvisoCierre = function (cierre) {
+    window.pintarAvisoCierre = function pintarAvisoCierre (cierre) {
         var viejo = document.getElementById('avisoCierreLocal');
         if (viejo) viejo.remove();
 
@@ -108,14 +108,14 @@
     // llaman (tarjeta, preview, personalizador...). El próximo botón que se
     // agregue nace protegido.
 
-    window.instalarBloqueoCarrito = function () {
+    window.instalarBloqueoCarrito = function instalarBloqueoCarrito () {
         if (window._bloqueoInstalado) return;
         window._bloqueoInstalado = true;
 
         var original = window.agregarAlCarrito;
         if (typeof original !== 'function') return;
 
-        window.agregarAlCarrito = function () {
+        window.agregarAlCarrito = function agregarAlCarrito () {
             if (window._localCerrado) {
                 window.mostrarAvisoCierreAlTocar();
                 return false;
@@ -124,7 +124,7 @@
         };
     };
 
-    window.mostrarAvisoCierreAlTocar = function () {
+    window.mostrarAvisoCierreAlTocar = function mostrarAvisoCierreAlTocar () {
         if (window.mostrarToast) {
             window.mostrarToast('🔒 El local está cerrado. No se pueden hacer pedidos hoy.', 'warning');
             return;
@@ -143,7 +143,7 @@
     // Arranque
     // ============================================================
 
-    window.iniciarCierreCliente = async function () {
+    window.iniciarCierreCliente = async function iniciarCierreCliente () {
         var cierre = await window.consultarCierreLocal();
         window.pintarAvisoCierre(cierre);
         window.instalarBloqueoCarrito();

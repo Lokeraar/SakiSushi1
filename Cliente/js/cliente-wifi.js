@@ -28,7 +28,7 @@
      * Pide el wifi a la base. Devuelve {ssid, password} o null.
      * Se llama una sola vez por carga: el dato cambia poco.
      */
-    window.obtenerWifiLocal = async function () {
+    window.obtenerWifiLocal = async function obtenerWifiLocal () {
         if (!window.supabaseClient) return null;
 
         try {
@@ -53,7 +53,7 @@
      * y el cliente puede cerrarlo; si lo cierra, no vuelve a molestar hasta
      * que abra de nuevo.
      */
-    window.mostrarOfertaWifi = async function () {
+    window.mostrarOfertaWifi = async function mostrarOfertaWifi () {
         try {
             if (sessionStorage.getItem(CLAVE_OCULTO) === '1') return;
         } catch (e) {}

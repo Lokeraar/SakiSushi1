@@ -28,7 +28,7 @@
     var enCurso = 0;
 
     /** ¿Hay algo confirmándose en este momento? */
-    window.hayAccionEnCurso = function () {
+    window.hayAccionEnCurso = function hayAccionEnCurso () {
         return enCurso > 0;
     };
 
@@ -40,7 +40,7 @@
      * @param {Object} opciones           { texto, textoCargando, silencioso }
      * @returns {Promise<any>|undefined}  undefined si se ignoró el toque.
      */
-    window.conAccionUnica = function (boton, fn, opciones) {
+    window.conAccionUnica = function conAccionUnica (boton, fn, opciones) {
         var el = typeof boton === 'string' ? document.getElementById(boton) : boton;
         var opc = opciones || {};
 

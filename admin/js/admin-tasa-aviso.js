@@ -48,7 +48,7 @@
      * Compara la tasa confirmada en config contra el BCV del día.
      * Devuelve un objeto con el diagnóstico, sin efectos secundarios.
      */
-    window.diagnosticarTasa = async function () {
+    window.diagnosticarTasa = async function diagnosticarTasa () {
         var cfg = window.configGlobal || {};
         var confirmada = parseFloat(cfg.tasa_cambio) || 0;
         var efectiva   = parseFloat(cfg.tasa_efectiva) || 0;
@@ -81,7 +81,7 @@
      * Muestra el aviso en el dashboard si hace falta. Reemplaza al toast
      * genérico: dice qué pasó, cuánto es la diferencia y qué hacer.
      */
-    window.avisarTasaVieja = async function () {
+    window.avisarTasaVieja = async function avisarTasaVieja () {
         var hoy = hoyISO();
         if (localStorage.getItem(claveVisto(hoy))) return;   // ya avisado hoy
 

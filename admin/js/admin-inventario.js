@@ -10,7 +10,7 @@
     let stockPasswordModalOpen = false;
     let pendingIngredientId = null;
 
-    window.cargarInventario = async function() {
+    window.cargarInventario = async function cargarInventario() {
         try {
             const { data, error } = await window.supabaseClient.from('inventario').select('*');
             if (error) throw error;
@@ -27,7 +27,7 @@
         }
     };
 
-    window.renderizarInventario = function(filtro) {
+    window.renderizarInventario = function renderizarInventario(filtro) {
         const grid = document.getElementById('inventarioGrid');
         if (!grid) return;
         grid.innerHTML = '';
@@ -93,7 +93,7 @@
 
     window._invActiveId = null;
 
-    window._invMostrarDetalle = function(item) {
+    window._invMostrarDetalle = function _invMostrarDetalle(item) {
         const isMobile   = window.innerWidth <= 768;
         const disponible = (item.stock||0) - (item.reservado||0);
         const minimo     = item.minimo || 0;
@@ -198,7 +198,7 @@
         }
     };
 
-    window._invCerrarDetalle = function(itemId) {
+    window._invCerrarDetalle = function _invCerrarDetalle(itemId) {
         window._invActiveId = null;
         document.querySelectorAll('.inv-list-item').forEach(el => el.classList.remove('active'));
         const mDet = document.querySelector('.inv-mobile-detail');
@@ -393,7 +393,7 @@
     }
 
 
-    window.agregarStock = function(ingredienteId) {
+    window.agregarStock = function agregarStock(ingredienteId) {
         const ingrediente = window.inventarioItems.find(i => i.id === ingredienteId);
         if (ingrediente) { 
             window.editarIngrediente(ingredienteId); 
@@ -404,7 +404,7 @@
         }
     };
 
-    window.calcularCostoUnitario = function() {
+    window.calcularCostoUnitario = function calcularCostoUnitario() {
         const costoTotal = parseFloat(document.getElementById('costoTotal').value) || 0;
         const cantidad   = parseFloat(document.getElementById('cantidadComprada').value) || 0;
         const resDiv = document.getElementById('calcResultado');
@@ -422,7 +422,7 @@
         }
     };
 
-    window.convertirCostoTotalBs = function() {
+    window.convertirCostoTotalBs = function convertirCostoTotalBs() {
         const tasaBase = window.tasaBaseActual();
         const costoTotalBs = parseFloat(document.getElementById('costoTotalBs').value) || 0;
         const costoTotalInput = document.getElementById('costoTotal');
@@ -434,7 +434,7 @@
     };
 
     // Agregar conversión inversa: cuando se modifica USD, actualizar Bs
-    window._setupConversionBidireccional = function() {
+    window._setupConversionBidireccional = function _setupConversionBidireccional() {
         const costoTotalInput = document.getElementById('costoTotal');
         if (costoTotalInput) {
             costoTotalInput.addEventListener('input', function() {
@@ -449,7 +449,7 @@
         }
     };
 
-    window._syncIngredientePreview = function() {
+    window._syncIngredientePreview = function _syncIngredientePreview() {
         const nuevo       = parseFloat(document.getElementById('ingredienteAgregar')?.value) || 0;
         const unidad      = document.getElementById('ingredienteUnidad')?.value || 'unidades';
         const sp = document.getElementById('stockTotalPreview');
@@ -486,7 +486,7 @@
 	}
 
 // Validación dinámica de precio de venta vs costo
-window._inicializarValidacionPrecioIngrediente = function() {
+window._inicializarValidacionPrecioIngrediente = function _inicializarValidacionPrecioIngrediente() {
 const costoInput = document.getElementById('ingredienteCosto');
 const ventaInput = document.getElementById('ingredienteVenta');
 
@@ -538,7 +538,7 @@ ventaInput.removeEventListener('input', validarPrecios);
 validarPrecios();
 };
 
-	window.abrirModalNuevoIngrediente = function() {
+	window.abrirModalNuevoIngrediente = function abrirModalNuevoIngrediente() {
 		window.ingredienteEditandoId = null;
 		const modalTitle = document.getElementById('ingredienteModalTitle');
 		if (modalTitle) modalTitle.textContent = 'Nuevo Ingrediente';
@@ -571,7 +571,7 @@ validarPrecios();
 		}, 50);
 	};
 
-	window.editarIngrediente = function(id) {
+	window.editarIngrediente = function editarIngrediente(id) {
 		const ingrediente = window.inventarioItems.find(i => i.id === id);
 		if (!ingrediente) return;
 		window.ingredienteEditandoId = id;
@@ -644,7 +644,7 @@ validarPrecios();
 	};
 
 	// Reemplazar eliminarIngrediente para usar confirmación premium
-	window.eliminarIngrediente = async function(id) {
+	window.eliminarIngrediente = async function eliminarIngrediente(id) {
 		const ingrediente = window.inventarioItems.find(i => i.id === id);
 		if (!ingrediente) return;
 		window.mostrarConfirmacionPremium(
@@ -663,7 +663,7 @@ validarPrecios();
 		);
 	};
 
-    window.actualizarAlertasStock = function() {
+    window.actualizarAlertasStock = function actualizarAlertasStock() {
         document.getElementById('alertasStock').textContent = window.inventarioItems.filter(i => i.stock <= i.minimo).length;
         // Hacer clic en la tarjeta redirige a stock crítico
         const alertCard = document.querySelector('.dashboard-card:nth-child(3)');
@@ -694,7 +694,7 @@ validarPrecios();
     // El interruptor `config.alerta_stock_minimo` decide si la franja aparece.
     // El umbral sigue siendo por ingrediente (`inventario.minimo`), que es lo
     // que el dueño ya configura en cada uno.
-    window.actualizarMarquesinaStock = function() {
+    window.actualizarMarquesinaStock = function actualizarMarquesinaStock() {
         var banda = document.getElementById('marquesinaStock');
         if (!banda) return;
 
@@ -742,7 +742,7 @@ validarPrecios();
         banda.style.display = 'flex';
     };
 
-    window.verificarStockCritico = async function() {
+    window.verificarStockCritico = async function verificarStockCritico() {
         const stockCriticoDiv = document.getElementById('stockCritico');
         if (!stockCriticoDiv) return;
         const criticos = (window.inventarioItems || []).filter(item => {
@@ -777,7 +777,7 @@ validarPrecios();
         if (window.actualizarMarquesinaStock) window.actualizarMarquesinaStock();
     };
 
-    window.actualizarStockCriticoHeader = function() {
+    window.actualizarStockCriticoHeader = function actualizarStockCriticoHeader() {
         const container = document.getElementById('stockCriticoTags');
         if (!container) return;
         const criticos = (window.inventarioItems || []).filter(item => {
@@ -806,7 +806,7 @@ validarPrecios();
         }).join('');
     };
 
-    window._irAIngrediente = function(ingredienteId) {
+    window._irAIngrediente = function _irAIngrediente(ingredienteId) {
         const tabs = document.querySelectorAll('.tab');
         const panes = document.querySelectorAll('.tab-pane');
         tabs.forEach(tab => tab.classList.remove('active'));
@@ -835,7 +835,7 @@ validarPrecios();
         }, 200);
     };
 
-    window.setupStockRealtime = function() {
+    window.setupStockRealtime = function setupStockRealtime() {
         if (window.stockUpdateChannel) window.supabaseClient.removeChannel(window.stockUpdateChannel);
         window.stockUpdateChannel = window.supabaseClient
             .channel('stock-updates')
@@ -853,7 +853,7 @@ validarPrecios();
             .subscribe();
     };
 
-    window.verificarYNotificarStockReactivado = async function(ingredienteId, ingredienteNombre) {
+    window.verificarYNotificarStockReactivado = async function verificarYNotificarStockReactivado(ingredienteId, ingredienteNombre) {
         for (const platillo of window.menuItems) {
             if (!platillo.ingredientes || Object.keys(platillo.ingredientes).length === 0) continue;
             const usaIngrediente = Object.keys(platillo.ingredientes).some(id => id === ingredienteId);
@@ -887,7 +887,7 @@ validarPrecios();
         }
     };
 
-    window.recalcularStockPlatillos = async function() {
+    window.recalcularStockPlatillos = async function recalcularStockPlatillos() {
         for (const platillo of window.menuItems) {
             let stockDisponible = Infinity;
             let todosIngredientes = true;
@@ -912,7 +912,7 @@ validarPrecios();
         window.renderizarMenu();
     };
 
-    window.enviarNotificacionPush = async function(titulo, mensaje, sessionId = null) {
+    window.enviarNotificacionPush = async function enviarNotificacionPush(titulo, mensaje, sessionId = null) {
         try {
             const response = await fetch('https://iqwwoihiiyrtypyqzhgy.supabase.co/functions/v1/send-push', {
                 method: 'POST',
@@ -932,7 +932,7 @@ validarPrecios();
     // "enviar a todas las suscripciones". Lo usa el cierre del local para
     // avisar a los clientes cuando reabre. Fire-and-forget: si falla, no
     // bloquea la operación del admin; el cliente igual se entera al entrar.
-    window.enviarNotificacionPushBroadcast = async function(titulo, mensaje, url = null) {
+    window.enviarNotificacionPushBroadcast = async function enviarNotificacionPushBroadcast(titulo, mensaje, url = null) {
         try {
             const response = await fetch('https://iqwwoihiiyrtypyqzhgy.supabase.co/functions/v1/send-push', {
                 method: 'POST',
@@ -1011,7 +1011,7 @@ validarPrecios();
     }, 100);
     
     // Función auxiliar para eliminar ingrediente desde el modal
-    window._eliminarIngredienteDesdeModal = async function() {
+    window._eliminarIngredienteDesdeModal = async function _eliminarIngredienteDesdeModal() {
         const id = window.ingredienteEditandoId;
         if (!id) return;
         const ingrediente = window.inventarioItems.find(i => i.id === id);
@@ -1040,7 +1040,7 @@ validarPrecios();
     let isSavingIngrediente = false;
     
     // Función principal para guardar ingrediente
-    window.guardarIngrediente = async function() {
+    window.guardarIngrediente = async function guardarIngrediente() {
         // Prevenir múltiples clics
         if (isSavingIngrediente || isUploadingImage) return;
         
@@ -1147,7 +1147,7 @@ validarPrecios();
     // PHASE 4-6: Password Modal Functions
     // ============================================
     
-    window.abrirStockPasswordModal = function() {
+    window.abrirStockPasswordModal = function abrirStockPasswordModal() {
         console.log('Opening password modal...');
         
         if (stockPasswordModalOpen) return; // Prevent multiple openings
@@ -1183,7 +1183,7 @@ validarPrecios();
         }, 100);
     };
     
-    window.cerrarStockPasswordModal = function() {
+    window.cerrarStockPasswordModal = function cerrarStockPasswordModal() {
         const modal = document.getElementById('stockPasswordModal');
         const passwordInput = document.getElementById('stock-password-input');
         
@@ -1207,7 +1207,7 @@ validarPrecios();
         }
     };
     
-    window.validarPasswordStock = async function() {
+    window.validarPasswordStock = async function validarPasswordStock() {
         const passwordInput = document.getElementById('stock-password-input');
         const errorDiv = document.getElementById('stock-password-error');
         const password = passwordInput?.value.trim();
@@ -1317,7 +1317,7 @@ validarPrecios();
         
         // PHASE 7: Also reset on ingrediente modal close
         const originalCerrarModal = window.cerrarModal;
-        window.cerrarModal = function(modalId) {
+        window.cerrarModal = function cerrarModal(modalId) {
             if (modalId === 'ingredienteModal') {
                 const stockInput = document.getElementById('stock-actual-input');
                 if (stockInput) {

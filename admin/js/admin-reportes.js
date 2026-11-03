@@ -43,7 +43,7 @@
         });
     }
 
-    window.cargarReportes = async function() {
+    window.cargarReportes = async function cargarReportes() {
         // Se pide, pero no se espera para poder seguir: los datos no dependen
         // de que llegue la librería de dibujo.
         const chartListo = await cargarChartJS();
@@ -65,7 +65,7 @@
         } catch (e) { console.error('Error cargando reportes:', e); window.mostrarToast('Error cargando reportes', 'error'); }
     };
 
-    window.actualizarEstadisticasReportes = function(pedidos) {
+    window.actualizarEstadisticasReportes = function actualizarEstadisticasReportes(pedidos) {
         const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
         const ventasHoy = pedidos.filter(p => new Date(p.fecha) >= hoy).reduce((s, p) => s + (p.total || 0), 0);
         const semana = new Date(); semana.setDate(semana.getDate() - 7);
@@ -85,7 +85,7 @@
         _s('platilloTop',    platilloTop);
     };
 
-    window.actualizarGraficos = function(pedidos) {
+    window.actualizarGraficos = function actualizarGraficos(pedidos) {
         if (typeof Chart === 'undefined') return;
         const ventasPorDia = {};
         for (let i = 6; i >= 0; i--) { const f = new Date(); f.setDate(f.getDate() - i); ventasPorDia[f.toISOString().split('T')[0]] = 0; }
@@ -124,7 +124,7 @@
         });
     };
 
-    window.actualizarTablaVentas = function(pedidos) {
+    window.actualizarTablaVentas = function actualizarTablaVentas(pedidos) {
         const tbody = document.getElementById('ventasTableBody');
         const tasa = window.tasaEfectivaActual();
         tbody.innerHTML = pedidos.slice(0, 50).map(p => {
@@ -151,7 +151,7 @@
         }).join('');
     };
 
-    window.cargarPedidosRecientes = async function() {
+    window.cargarPedidosRecientes = async function cargarPedidosRecientes() {
         try {
             const { data, error } = await window.supabaseClient.from('pedidos').select('*').order('fecha', { ascending: false }).limit(5);
             if (error) throw error;
@@ -188,7 +188,7 @@
         } catch (e) { console.error('Error cargando pedidos recientes:', e); }
     };
 
-    window._abrirDetallePedidoAdmin = async function(pedidoId) {
+    window._abrirDetallePedidoAdmin = async function _abrirDetallePedidoAdmin(pedidoId) {
         let pedido = (window.pedidos||[]).find(p=>p.id===pedidoId);
         if (!pedido) {
             try {
@@ -221,7 +221,7 @@
         document.body.appendChild(ov);
     };
 
-    window._actualizarVentasHoyNeto = async function() {
+    window._actualizarVentasHoyNeto = async function _actualizarVentasHoyNeto() {
         try {
             // Verificar que haya token JWT antes de hacer la consulta
             if (!window.jwtToken) {
@@ -290,7 +290,7 @@
         }
     };
 
-    window._actualizarDeliverysHoy = async function() {
+    window._actualizarDeliverysHoy = async function _actualizarDeliverysHoy() {
         try {
             // Verificar que haya token JWT antes de hacer la consulta
             if (!window.jwtToken) {
@@ -330,7 +330,7 @@
         }
     };
 
-    window._abrirDetalleDeliverysAdmin = async function() {
+    window._abrirDetalleDeliverysAdmin = async function _abrirDetalleDeliverysAdmin() {
         try {
             const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
             const manana = new Date(hoy); manana.setDate(manana.getDate() + 1);
@@ -396,7 +396,7 @@
         } catch (e) { console.error('Error abriendo detalle deliverys admin:', e); window.mostrarToast('❌ Error al cargar datos de deliverys', 'error'); }
     };
 
-    window._toggleDeliveryDetalle = function(detalleId) {
+    window._toggleDeliveryDetalle = function _toggleDeliveryDetalle(detalleId) {
         const detalleEl = document.getElementById(detalleId);
         const iconEl = document.getElementById('icon_' + detalleId);
         if (detalleEl) {
@@ -410,7 +410,7 @@
         }
     };
 
-    window._abrirDetalleVentasAdmin = async function() {
+    window._abrirDetalleVentasAdmin = async function _abrirDetalleVentasAdmin() {
         try {
             // Verificar que haya token JWT antes de hacer la consulta
             if (!window.jwtToken) {

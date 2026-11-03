@@ -48,7 +48,7 @@
     // ============================================================
 
     /** Reinicia el plazo del carrito. Se llama en cada cambio del carrito. */
-    window.reiniciarContadorCarrito = function () {
+    window.reiniciarContadorCarrito = function reiniciarContadorCarrito () {
         try { localStorage.setItem(CLAVE_CARRITO_INICIO, String(Date.now())); } catch (e) {}
         // Cambiar el carrito invalida el plazo del modal: el cliente está
         // volviendo atrás a modificar, así que la fase 2 vuelve a empezar.
@@ -63,13 +63,13 @@
         } catch (e) { return null; }
     }
 
-    window.segundosCarritoRestantes = function () {
+    window.segundosCarritoRestantes = function segundosCarritoRestantes () {
         var t0 = inicioCarrito();
         if (!t0) return null;
         return Math.floor((t0 + minutos() * 60000 - Date.now()) / 1000);
     };
 
-    window.vencerCarrito = function () {
+    window.vencerCarrito = function vencerCarrito () {
         var tenia = window.Saki && window.Saki.state && window.Saki.state.carrito &&
                     window.Saki.state.carrito.length > 0;
 
@@ -114,7 +114,7 @@
      * Volver a abrir el mismo modal NO reinicia la cuenta; cambiar de tipo
      * (delivery <-> reserva) sí, porque es otro pedido.
      */
-    window.iniciarPlazoModal = function (tipo) {
+    window.iniciarPlazoModal = function iniciarPlazoModal (tipo) {
         var actual = leerPlazoModal();
         if (actual && actual.tipo === tipo && actual.inicio) {
             return false;   // ya estaba corriendo: se respeta
@@ -125,7 +125,7 @@
         return true;
     };
 
-    window.segundosModalRestantes = function () {
+    window.segundosModalRestantes = function segundosModalRestantes () {
         var p = leerPlazoModal();
         if (!p || !p.inicio) return null;
         return Math.floor((p.inicio + minutos() * 60000 - Date.now()) / 1000);
@@ -135,7 +135,7 @@
      * Vence el plazo del modal: se cierra el modal y se vacía el carrito.
      * Los campos NO se limpian (regla del dueño).
      */
-    window.vencerPlazoModal = function () {
+    window.vencerPlazoModal = function vencerPlazoModal () {
         var p = leerPlazoModal();
         var tipo = (p && p.tipo) || 'delivery';
 
@@ -201,7 +201,7 @@
         el.style.display = '';
     }
 
-    window.iniciarVigilanciaCarrito = function () {
+    window.iniciarVigilanciaCarrito = function iniciarVigilanciaCarrito () {
         if (_intervalo) return;
         _intervalo = setInterval(function () {
             // La fase 2 manda si está corriendo: es un plazo más urgente.
@@ -224,7 +224,7 @@
      * Al arrancar: reanuda los contadores que quedaron corriendo mientras el
      * navegador estaba cerrado, y vence lo que ya expiró.
      */
-    window.revisarCarritoAlCargar = function () {
+    window.revisarCarritoAlCargar = function revisarCarritoAlCargar () {
         if (!window.Saki || !window.Saki.state) return false;
 
         // Fase 2 primero: si el cliente cerró con el modal de pago abierto,

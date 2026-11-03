@@ -50,7 +50,7 @@
      * Muestra el diálogo de continuación.
      * `alAceptar` y `alCancelar` permiten que cada flujo decida qué hacer.
      */
-    window.mostrarDialogoReanudarCarrito = function (opciones) {
+    window.mostrarDialogoReanudarCarrito = function mostrarDialogoReanudarCarrito (opciones) {
         opciones = opciones || {};
         var alAceptar  = opciones.alAceptar  || function () {};
         var alCancelar = opciones.alCancelar || function () {};
@@ -114,7 +114,7 @@
      *   - el cliente no está a mitad de un pago (no interrumpir con un modal
      *     encima de otro).
      */
-    window.mostrarDialogoSiCorresponde = function () {
+    window.mostrarDialogoSiCorresponde = function mostrarDialogoSiCorresponde () {
         if (!window.Saki || !window.Saki.state) return false;
 
         var items = (window.Saki.state.carrito || []).length;

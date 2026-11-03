@@ -1,6 +1,6 @@
 // admin-ui.js - UI genérica: tabs, modales, eventos, helpers visuales
 (function() {
-    window.irADeliverys = function() {
+    window.irADeliverys = function irADeliverys() {
         var tabs = document.querySelectorAll('.tab');
         var panes = document.querySelectorAll('.tab-pane');
         tabs.forEach(function(t){ t.classList.remove('active'); });
@@ -10,7 +10,7 @@
         if (t) t.classList.add('active');
         if (p) { p.classList.add('active'); p.scrollIntoView({behavior:'smooth',block:'start'}); }
     };
-    window.irAMenu = function() {
+    window.irAMenu = function irAMenu() {
         var tabs = document.querySelectorAll('.tab');
         var panes = document.querySelectorAll('.tab-pane');
         tabs.forEach(function(t){ t.classList.remove('active'); });
@@ -20,7 +20,7 @@
         if (t) t.classList.add('active');
         if (p) { p.classList.add('active'); p.scrollIntoView({behavior:'smooth',block:'start'}); }
     };
-    window.irAStockCritico = function() {
+    window.irAStockCritico = function irAStockCritico() {
         var tabs = document.querySelectorAll('.tab');
         var panes = document.querySelectorAll('.tab-pane');
         tabs.forEach(function(t){ t.classList.remove('active'); });
@@ -44,7 +44,7 @@
             }
         }, 150);
     };
-    window._irAMesoneros = function() {
+    window._irAMesoneros = function _irAMesoneros() {
         var tabs = document.querySelectorAll('.tab');
         var panes = document.querySelectorAll('.tab-pane');
         tabs.forEach(function(t){ t.classList.remove('active'); });
@@ -54,15 +54,15 @@
         if (t) t.classList.add('active');
         if (p) { p.classList.add('active'); p.scrollIntoView({behavior:'smooth',block:'start'}); }
     };
-        window.setupEventListeners = function() {
+        window.setupEventListeners = function setupEventListeners() {
         // Funciones de scroll para tabs con doble chevron
-        window._scrollTabs = function(dir) {
+        window._scrollTabs = function _scrollTabs(dir) {
             const c = document.getElementById('tabsContainer');
             if (!c) return;
             c.scrollBy({ left: dir * 180, behavior: 'smooth' });
             setTimeout(window._updateTabChevrons, 200);
         };
-        window._updateTabChevrons = function() {
+        window._updateTabChevrons = function _updateTabChevrons() {
             const c = document.getElementById('tabsContainer');
             const lBtn = document.getElementById('tabsChevronLeft');
             const rBtn = document.getElementById('tabsChevronRight');
@@ -321,7 +321,7 @@
     });
 
     // Función para agregar tarjeta de diferencia de tasa al dashboard
-    window.agregarTarjetaDiferenciaTasa = function() {
+    window.agregarTarjetaDiferenciaTasa = function agregarTarjetaDiferenciaTasa() {
         const dashboardGrid = document.querySelector('.dashboard-grid');
         if (!dashboardGrid) return;
         // Verificar si ya existe
@@ -353,7 +353,7 @@
         window.actualizarTarjetaDiferenciaTasa();
     };
 
-    window.actualizarTarjetaDiferenciaTasa = function() {
+    window.actualizarTarjetaDiferenciaTasa = function actualizarTarjetaDiferenciaTasa() {
         const diff = window.calcularDiferenciaTasa();
         const valorEl = document.getElementById('diferenciaTasaValor');
         if (valorEl) valorEl.textContent = 'Bs ' + diff.toFixed(2);
@@ -362,7 +362,7 @@
     // ==================== SISTEMA DE TEMAS PREMIUM ====================
     
     // Inicializar tema al cargar
-    window.initTheme = function() {
+    window.initTheme = function initTheme() {
         const savedTheme = localStorage.getItem('sakiSushiTheme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         
@@ -384,7 +384,7 @@
     };
 
     // Cambiar tema con animación de partículas (sincronizar ambos toggles)
-    window.toggleTheme = function(e) {
+    window.toggleTheme = function toggleTheme(e) {
         const isDark = e.target.checked;
         const html = document.documentElement;
         
@@ -409,7 +409,7 @@
     };
 
     // Efecto de partículas al cambiar tema
-    window.createThemeParticles = function(element) {
+    window.createThemeParticles = function createThemeParticles(element) {
         const rect = element.getBoundingClientRect();
         const colors = ['#D32F2F', '#FF7043', '#FFB300', '#9FA8DA', '#5C6BC0'];
         

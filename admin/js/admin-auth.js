@@ -2,7 +2,7 @@
 (function() {
     let selectedAdmin = null;
 
-    window.cargarListaAdminsRecientes = async function() {
+    window.cargarListaAdminsRecientes = async function cargarListaAdminsRecientes() {
         const container = document.getElementById('loginAdminsList');
         if (!container) return;
         
@@ -75,7 +75,7 @@
         }
     };
 
-    window.hacerLogin = async function() {
+    window.hacerLogin = async function hacerLogin() {
         if (!selectedAdmin) {
             window.mostrarToast('Selecciona un administrador primero', 'error');
             return;
@@ -261,7 +261,7 @@
         }
     };
 
-    window.restaurarSesionAdmin = async function() {
+    window.restaurarSesionAdmin = async function restaurarSesionAdmin() {
         const token = sessionStorage.getItem('admin_jwt_token');
         const userData = sessionStorage.getItem('admin_user');
         if (!token || !userData) return false;
@@ -326,7 +326,7 @@
     // Siempre se cancela el anterior antes de crear el nuevo: sin eso, cada
     // login y cada restauración sumaba un temporizador más, y todos seguían
     // consultando la base para siempre.
-    window.iniciarResumenDia = function () {
+    window.iniciarResumenDia = function iniciarResumenDia () {
         window.detenerResumenDia();
         window._intervaloResumenDia = setInterval(async () => {
             await window._actualizarVentasHoyNeto();
@@ -335,7 +335,7 @@
         }, 60000);
     };
 
-    window.detenerResumenDia = function () {
+    window.detenerResumenDia = function detenerResumenDia () {
         if (window._intervaloResumenDia) {
             clearInterval(window._intervaloResumenDia);
             window._intervaloResumenDia = null;
@@ -354,12 +354,12 @@
     //
     // Ambos setups ya se cierran a sí mismos antes de abrir (ver
     // `cerrarRealtimeAdmin`), así que llamar acá siempre deja un solo juego.
-    window.iniciarTiempoRealAdmin = function () {
+    window.iniciarTiempoRealAdmin = function iniciarTiempoRealAdmin () {
         window.setupRealtimeSubscriptions();
         window.setupStockRealtime();
     };
 
-    window.detenerTiempoRealAdmin = function () {
+    window.detenerTiempoRealAdmin = function detenerTiempoRealAdmin () {
         if (typeof window.cerrarRealtimeAdmin === 'function') window.cerrarRealtimeAdmin();
         if (window.stockUpdateChannel) {
             try { window.supabaseClient.removeChannel(window.stockUpdateChannel); } catch (e) {}
@@ -367,7 +367,7 @@
         }
     };
 
-    window.cerrarSesion = function() {
+    window.cerrarSesion = function cerrarSesion() {
         // Se cancela el refresco periódico: si no, sigue consultando la base
         // con la sesión ya cerrada.
         window.detenerResumenDia();
@@ -438,7 +438,7 @@
     }
 
     // Inicializar la lista al cargar la página (se llama desde DOMContentLoaded)
-    window.iniciarLoginUI = async function() {
+    window.iniciarLoginUI = async function iniciarLoginUI() {
         // Esperar un poco para que supabaseClient se inicialice
         await new Promise(r => setTimeout(r, 300));
         await window.cargarListaAdminsRecientes();

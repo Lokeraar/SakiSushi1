@@ -65,7 +65,7 @@
      *
      * Devuelve el resultado del barrido, útil para depurar.
      */
-    window.cancelarPedidoPorVencimiento = async function (pedidoId) {
+    window.cancelarPedidoPorVencimiento = async function cancelarPedidoPorVencimiento (pedidoId) {
         if (!pedidoId) {
             // Sin id concreto: se pide un barrido general, que es idempotente.
             olvidarPedidoPendiente();
@@ -97,7 +97,7 @@
      * Revisa al cargar la app si quedó un pedido pendiente de una sesión
      * anterior y ya venció. Cubre el caso de cerrar la pestaña y volver.
      */
-    window.revisarPedidoPendienteAlCargar = async function () {
+    window.revisarPedidoPendienteAlCargar = async function revisarPedidoPendienteAlCargar () {
         var pendiente = leerPedidoPendiente();
         if (!pendiente || !pendiente.id) return null;
 

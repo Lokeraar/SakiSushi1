@@ -35,7 +35,7 @@
     var datosCargados = false;
 
     /** ¿Estamos en un servidor local de desarrollo? */
-    window.esEntornoLocal = function () {
+    window.esEntornoLocal = function esEntornoLocal () {
         var h = location.hostname;
         return h === '127.0.0.1' || h === 'localhost' || h === '::1' ||
                /^192\.168\.\d+\.\d+$/.test(h) ||
@@ -61,7 +61,7 @@
      *
      * Se llama SOLO cuando Supabase ya falló, así que nunca pisa datos reales.
      */
-    window.usarDatosDeEjemplo = async function (motivo) {
+    window.usarDatosDeEjemplo = async function usarDatosDeEjemplo (motivo) {
         if (!window.esEntornoLocal()) {
             // Fuera de local no se usan datos falsos nunca, ni por error.
             return false;
@@ -102,7 +102,7 @@
     };
 
     /** ¿Los datos que se están viendo son de ejemplo? */
-    window.estaUsandoDatosDeEjemplo = function () {
+    window.estaUsandoDatosDeEjemplo = function estaUsandoDatosDeEjemplo () {
         return datosCargados;
     };
 })();

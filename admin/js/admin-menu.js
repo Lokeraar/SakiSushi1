@@ -3,7 +3,7 @@
     let currentImagenUrl = '';
     let currentImagenFile = null;
 
-    window.cargarMenu = async function() {
+    window.cargarMenu = async function cargarMenu() {
         try {
             const { data, error } = await window.supabaseClient.from('menu').select('*');
             if (error) throw error;
@@ -13,7 +13,7 @@
         } catch (e) { console.error('Error cargando menú:', e); window.mostrarToast('Error cargando menú', 'error'); }
     };
 
-    window.renderizarMenu = function(filtro) {
+    window.renderizarMenu = function renderizarMenu(filtro) {
         const grid = document.getElementById('menuGrid');
         if (!grid) return;
         grid.innerHTML = '';
@@ -129,7 +129,7 @@
         });
     };
 
-    window.expandirImagen = function(src) {
+    window.expandirImagen = function expandirImagen(src) {
         if (!src) return;
         const modal = document.createElement('div');
         modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:pointer';
@@ -138,7 +138,7 @@
         document.body.appendChild(modal);
     };
 
-    window.toggleDisponiblePlatillo = async function(id, disponible) {
+    window.toggleDisponiblePlatillo = async function toggleDisponiblePlatillo(id, disponible) {
         try {
             const { error } = await window.supabaseClient.from('menu')
                 .update({ disponible: disponible })
@@ -162,7 +162,7 @@
         }
     };
 
-    window.limpiarImagenPreview = function() {
+    window.limpiarImagenPreview = function limpiarImagenPreview() {
         currentImagenFile = null;
         currentImagenUrl = '';
         const fileInput = document.getElementById('platilloImagen');
@@ -181,7 +181,7 @@
         if (removeBtn) removeBtn.remove();
     };
 
-    window.actualizarBotonEliminarImagen = function() {
+    window.actualizarBotonEliminarImagen = function actualizarBotonEliminarImagen() {
         const previewDiv = document.getElementById('imagenPreview');
         const previewImg = document.getElementById('previewImg');
         const urlInput = document.getElementById('platilloImagenUrl');
@@ -308,7 +308,7 @@
         }
     }
 
-    window.abrirModalNuevoPlatillo = function() {
+    window.abrirModalNuevoPlatillo = function abrirModalNuevoPlatillo() {
         document.getElementById('platilloModalTitle').textContent = 'Nuevo Platillo';
         document.getElementById('platilloForm').reset();
         document.getElementById('ingredientesContainer').innerHTML = '';
@@ -324,7 +324,7 @@
         document.getElementById('platilloModal').classList.add('active');
     };
 
-    window.cargarCategoriasSelect = function() {
+    window.cargarCategoriasSelect = function cargarCategoriasSelect() {
         const select = document.getElementById('platilloCategoria');
         select.innerHTML = '<option value="">Seleccionar</option>';
         Object.keys(window.categoriasMenu || {}).forEach(cat => {
@@ -336,7 +336,7 @@
         select.addEventListener('change', (e) => { window.cargarSubcategoriasSelect(e.target.value, null); });
     };
 
-    window.cargarSubcategoriasSelect = function(categoria, valorSubcategoria = null) {
+    window.cargarSubcategoriasSelect = function cargarSubcategoriasSelect(categoria, valorSubcategoria = null) {
         const select = document.getElementById('platilloSubcategoria');
         const wrap = document.getElementById('subcategoriaContainer');
         select.innerHTML = '<option value="">Ninguna</option>';
@@ -359,7 +359,7 @@
         }
     };
 
-    window.agregarIngredienteRow = function(ingredienteId, cantidad, unidad, esPrincipal) {
+    window.agregarIngredienteRow = function agregarIngredienteRow(ingredienteId, cantidad, unidad, esPrincipal) {
         ingredienteId = ingredienteId || '';
         cantidad = cantidad || '';
         esPrincipal = esPrincipal || false;
@@ -489,7 +489,7 @@
         window._recalcularStockPlatillo();
     };
 
-    window.editarPlatillo = function(id) {
+    window.editarPlatillo = function editarPlatillo(id) {
         const platillo = window.menuItems.find(p => p.id === id);
         if (!platillo) return;
         window.platilloEditandoId = id;
@@ -568,7 +568,7 @@
         document.getElementById('platilloModal').classList.add('active');
     };
 
-    window.eliminarPlatillo = async function(id) {
+    window.eliminarPlatillo = async function eliminarPlatillo(id) {
         const platillo = window.menuItems.find(p => p.id === id);
         if (!platillo) return;
         window.mostrarConfirmacionPremium(
@@ -590,7 +590,7 @@
         );
     };
 
-    window._eliminarPlatilloDesdeModal = async function() {
+    window._eliminarPlatilloDesdeModal = async function _eliminarPlatilloDesdeModal() {
         const id = window.platilloEditandoId;
         if (!id) return;
         const platillo = window.menuItems.find(p => p.id === id);
@@ -618,7 +618,7 @@
         );
     };
 
-    window.actualizarProductosActivos = function() {
+    window.actualizarProductosActivos = function actualizarProductosActivos() {
         const el = document.getElementById('productosActivos');
         if (el && window.menuItems) {
             const count = window.menuItems.filter(m => m.disponible).length;
@@ -626,7 +626,7 @@
         }
     };
 
-    window._onCategoriaChange = function(forceExpand = false) {
+    window._onCategoriaChange = function _onCategoriaChange(forceExpand = false) {
         const cat = document.getElementById('platilloCategoria')?.value;
         const wrap = document.getElementById('subcategoriaContainer');
         const sel  = document.getElementById('platilloSubcategoria');
@@ -657,21 +657,21 @@
         window._recalcularStockPlatillo();
     };
 
-    window._previewPrecioBs = function() {
+    window._previewPrecioBs = function _previewPrecioBs() {
         const precio = parseFloat(document.getElementById('platilloPrecio')?.value) || 0;
         const tasa   = (window.configGlobal?.tasa_efectiva) || (window.configGlobal?.tasa_cambio) || 0;
         const el = document.getElementById('platilloPrecioBsPreview');
         if (el) el.textContent = tasa > 0 && precio > 0 ? '💰 ' + window.formatBs(precio * tasa) : '';
     };
 
-    window._previewPlatilloUrl = function(url) {
+    window._previewPlatilloUrl = function _previewPlatilloUrl(url) {
         if (!url) return;
         const prev = document.getElementById('imagenPreview');
         const img  = document.getElementById('previewImg');
         if (prev && img) { img.src = url; prev.style.display = 'flex'; }
     };
 
-    window._recalcularStockPlatillo = function() {
+    window._recalcularStockPlatillo = function _recalcularStockPlatillo() {
         const wrap = document.getElementById('stockCalculadoWrap');
         const txt  = document.getElementById('stockCalculadoText');
         if (!wrap || !txt) return;
@@ -754,7 +754,7 @@
     }, 100);
     
     // Función principal para guardar platillo
-    window.guardarPlatillo = async function() {
+    window.guardarPlatillo = async function guardarPlatillo() {
         // Asegurar que las funciones de core estén disponibles
         if (!window.mostrarErrorInput) {
             console.error('Funciones de core no cargadas aún. Reintentando...');

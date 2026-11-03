@@ -94,7 +94,7 @@ function nombreFuenteTasa(f) {
     // ============================================================
     // Pintar el cuadro
     // ============================================================
-    window.renderizarTasaPanel = function () {
+    window.renderizarTasaPanel = function renderizarTasaPanel () {
         var cont = document.getElementById('tasaBcvPanel');
         if (!cont || !_datos) return;
 
@@ -237,7 +237,7 @@ function nombreFuenteTasa(f) {
     // ============================================================
     // Cargar
     // ============================================================
-    window.cargarTasaPanel = async function () {
+    window.cargarTasaPanel = async function cargarTasaPanel () {
         try {
             if (!window.supabaseClient) return;
             var r = await window.supabaseClient.rpc('tasa_panel');
@@ -280,7 +280,7 @@ function nombreFuenteTasa(f) {
     // es decir "yo verifiqué que esta es la que rige". Se aplica con el mismo
     // camino único de siempre (`aplicar_tasa_elegida`) y queda con el motivo
     // escrito en la captura.
-    window.confirmarTasaRespaldo = async function (btn) {
+    window.confirmarTasaRespaldo = async function confirmarTasaRespaldo (btn) {
         if (!btn) return;
 
         var id     = btn.getAttribute('data-id');
@@ -358,7 +358,7 @@ function nombreFuenteTasa(f) {
     // ============================================================
     // Historial
     // ============================================================
-    window.abrirHistorialTasa = function () {
+    window.abrirHistorialTasa = function abrirHistorialTasa () {
         if (!_datos) return;
         var capturas = _datos.capturas || [];
 
@@ -429,7 +429,7 @@ function nombreFuenteTasa(f) {
 
         var original = window.cargarConfiguracionInicial;
         if (typeof original === 'function') {
-            window.cargarConfiguracionInicial = async function () {
+            window.cargarConfiguracionInicial = async function cargarConfiguracionInicial () {
                 await original.apply(this, arguments);
                 await window.cargarTasaPanel();
 

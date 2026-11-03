@@ -1,6 +1,6 @@
 // admin-qr.js - Gestión de códigos QR (versión limpia)
 (function() {
-    window.cargarQRs = async function() {
+    window.cargarQRs = async function cargarQRs() {
         try {
             const { data, error } = await window.supabaseClient.from('codigos_qr').select('*').order('fecha', { ascending: false });
             if (error) throw error;
@@ -13,7 +13,7 @@
         } catch (e) { console.error('Error cargando QRs:', e); window.mostrarToast('Error cargando QRs', 'error'); }
     };
 
-    window.renderizarQRs = function() {
+    window.renderizarQRs = function renderizarQRs() {
         const grid = document.getElementById('qrGrid');
         if (!grid) return;
         grid.innerHTML = '';
@@ -54,7 +54,7 @@
         });
     };
 
-    window.generarQR = async function() {
+    window.generarQR = async function generarQR() {
         const nombre   = document.getElementById('qrNombreMesa').value.trim();
         const ssidEl   = document.getElementById('qrWifiSsid');
         const pwdEl    = document.getElementById('qrWifiPassword');
@@ -83,7 +83,7 @@
         } catch(e) { console.error('Error generando QR:', e); window.mostrarToast('❌ Error al generar QR: ' + (window.mensajeDeError ? window.mensajeDeError(e) : (e.message || e)), 'error'); }
     };
 
-    window.eliminarQR = async function(id) {
+    window.eliminarQR = async function eliminarQR(id) {
         window.mostrarConfirmacionPremium(
             'Eliminar QR',
             '¿Estás seguro de eliminar este código QR?',
@@ -97,7 +97,7 @@
         );
     };
 
-    window.ampliarQR = function(id, nombre, url) {
+    window.ampliarQR = function ampliarQR(id, nombre, url) {
         const container = document.getElementById('qrAmpliado');
         container.innerHTML = '';
         new QRCode(container, { text: url, width: 300, height: 300 });
@@ -137,7 +137,7 @@
     };
 
     // ==================== SELECTOR DE MESAS PARA ADMIN ====================
-    window.abrirSelectorMesaAdmin = async function() {
+    window.abrirSelectorMesaAdmin = async function abrirSelectorMesaAdmin() {
         try {
             // Cargar mesas desde codigos_qr
             const { data, error } = await window.supabaseClient.from('codigos_qr').select('*').order('nombre');
@@ -165,7 +165,7 @@
         }
     };
     
-    window.seleccionarMesaAdmin = function(mesaNombre) {
+    window.seleccionarMesaAdmin = function seleccionarMesaAdmin(mesaNombre) {
         // Redirigir a la página del cliente con la mesa específica
         const url = `${window.location.origin}/Cliente/index.html?mesa=${encodeURIComponent(mesaNombre)}`;
         window.open(url, '_blank');

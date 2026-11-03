@@ -10,7 +10,7 @@
     // ════════════════════════════════════════
     // ACTUALIZAR ACUMULADOS PENDIENTES
     // ════════════════════════════════════════
-    window.actualizarAcumuladosPendientes = async function() {
+    window.actualizarAcumuladosPendientes = async function actualizarAcumuladosPendientes() {
         try {
             // Consulta todas las propinas pendientes (ingresos no entregados)
             const { data: ingresos, error } = await window.supabaseClient
@@ -146,7 +146,7 @@
     // ════════════════════════════════════════
     // CARGAR / RENDERIZAR MESONEROS
     // ════════════════════════════════════════
-    window.cargarMesoneros = async function() {
+    window.cargarMesoneros = async function cargarMesoneros() {
         try {
             const { data, error } = await window.supabaseClient
                 .from('mesoneros').select('*').order('nombre');
@@ -221,7 +221,7 @@
     // ════════════════════════════════════════
     // GESTIÓN DE MESONEROS (CRUD)
     // ════════════════════════════════════════
-    window.editarMesonero = function(id) {
+    window.editarMesonero = function editarMesonero(id) {
         const m = (window.mesoneros || []).find(x => x.id === id);
         if (!m) return;
         window.mesoneroEditandoId = id;
@@ -243,7 +243,7 @@
         if (modal) modal.classList.add('active');
     };
 
-    window.toggleMesoneroActivo = async function(id, activo) {
+    window.toggleMesoneroActivo = async function toggleMesoneroActivo(id, activo) {
         try {
             await window.supabaseClient.from('mesoneros').update({ activo }).eq('id', id);
             await window.cargarMesoneros();
@@ -254,7 +254,7 @@
         }
     };
 
-    window.eliminarMesonero = async function(id) {
+    window.eliminarMesonero = async function eliminarMesonero(id) {
         const m = (window.mesoneros || []).find(x => x.id === id);
         if (!m) return;
         window.mostrarConfirmacionPremium(
@@ -272,7 +272,7 @@
         );
     };
 
-    window.agregarMesonero = async function() {
+    window.agregarMesonero = async function agregarMesonero() {
         const inp = document.getElementById('nuevoMesonero');
         const nombre = inp ? inp.value.trim() : '';
         if (!nombre) { window.mostrarToast('Ingresa un nombre', 'error'); return; }
@@ -356,7 +356,7 @@
     // ════════════════════════════════════════
     // MODAL DE PAGO (TOTAL O PARCIAL)
     // ════════════════════════════════════════
-    window.abrirModalPago = async function(mesoneroId) {
+    window.abrirModalPago = async function abrirModalPago(mesoneroId) {
         mesoneroParaPagoId = mesoneroId;
         const m = (window.mesoneros || []).find(x => x.id === mesoneroId);
         if (!m) return;
@@ -417,7 +417,7 @@
         window.actualizarLabelMontoPago();
     };
 
-    window.cerrarModalPago = function() {
+    window.cerrarModalPago = function cerrarModalPago() {
         const modal = document.getElementById('pagoModal');
         if (modal) modal.classList.remove('active');
         // Limpiar la vista previa al cerrar
@@ -430,7 +430,7 @@
     };
 
     // Actualizar label del monto según método seleccionado
-    window.actualizarLabelMontoPago = async function() {
+    window.actualizarLabelMontoPago = async function actualizarLabelMontoPago() {
         const metodo = document.getElementById('pagoMetodo')?.value;
         const label = document.getElementById('pagoParcialLabel');
         const input = document.getElementById('pagoParcialMonto');
@@ -518,7 +518,7 @@
     };
 
     // Actualizar vista previa del pago en tiempo real
-    window.actualizarVistaPreviaPago = async function() {
+    window.actualizarVistaPreviaPago = async function actualizarVistaPreviaPago() {
         const metodo = document.getElementById('pagoMetodo')?.value;
         const input = document.getElementById('pagoParcialMonto');
         const previewEl = document.getElementById('pagoPreviewSection');
@@ -684,7 +684,7 @@
         }
     };
 
-    window.togglePagoParcial = function() {
+    window.togglePagoParcial = function togglePagoParcial() {
         const section = document.getElementById('pagoParcialSection');
         const btnConfirmar = document.getElementById('btnConfirmarPagoParcial');
         const btnTotal = document.getElementById('btnPagoTotal');
@@ -716,7 +716,7 @@
         }
     };
 
-    window.confirmarPagoTotal = async function() {
+    window.confirmarPagoTotal = async function confirmarPagoTotal() {
         if (!mesoneroParaPagoId) return;
         
         const metodoPago = document.getElementById('pagoMetodo')?.value;
@@ -999,7 +999,7 @@
         }
     };
 
-    window.confirmarPagoParcial = async function() {
+    window.confirmarPagoParcial = async function confirmarPagoParcial() {
         if (!mesoneroParaPagoId) return;
         
         // Obtener el método de pago seleccionado
@@ -1272,7 +1272,7 @@
     // ════════════════════════════════════════
     // PROPINAS — cargar + renderizar + historial
     // ════════════════════════════════════════
-    window.cargarPropinas = async function() {
+    window.cargarPropinas = async function cargarPropinas() {
         try {
             const h = new Date(); h.setHours(0,0,0,0);
             const m = new Date(h); m.setDate(m.getDate()+1);
@@ -1288,7 +1288,7 @@
         }
     };
 
-    window.renderizarPropinas = function() {
+    window.renderizarPropinas = function renderizarPropinas() {
         const propinas = window.propinas || [];
         // Calcular total restando los egresos (pagos parciales)
         const total    = propinas.reduce(function(s,p){ 
@@ -1348,7 +1348,7 @@
         }
     };
 
-    window.verHistorialPropinaHoy = async function() {
+    window.verHistorialPropinaHoy = async function verHistorialPropinaHoy() {
         try {
             const h   = new Date(); h.setHours(0,0,0,0);
             const m   = new Date(h); m.setDate(m.getDate()+1);

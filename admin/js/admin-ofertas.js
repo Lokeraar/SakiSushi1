@@ -53,7 +53,7 @@
     // Cargar los datos de oferta al abrir un platillo
     // ============================================================
 
-    window.cargarOfertaEnModal = function (platillo) {
+    window.cargarOfertaEnModal = function cargarOfertaEnModal (platillo) {
         var precioEl = document.getElementById('platilloPrecioOferta');
         var desdeEl  = document.getElementById('platilloOfertaDesde');
         var hastaEl  = document.getElementById('platilloOfertaHasta');
@@ -76,7 +76,7 @@
     // Vista previa
     // ============================================================
 
-    window._previewOferta = function () {
+    window._previewOferta = function _previewOferta () {
         var cont = document.getElementById('ofertaPreview');
         if (!cont) return;
 
@@ -132,7 +132,7 @@
     // Quitar la oferta
     // ============================================================
 
-    window._quitarOfertaPlatillo = function () {
+    window._quitarOfertaPlatillo = function _quitarOfertaPlatillo () {
         document.getElementById('platilloPrecioOferta').value = '';
         document.getElementById('platilloOfertaDesde').value = '';
         document.getElementById('platilloOfertaHasta').value = '';
@@ -154,7 +154,7 @@
      * Se llama DESPUÉS de guardar el platillo, porque necesita que el platillo
      * ya exista. Devuelve true si hay oferta guardada.
      */
-    window.guardarOfertaDelPlatillo = async function (platilloId) {
+    window.guardarOfertaDelPlatillo = async function guardarOfertaDelPlatillo (platilloId) {
         if (!platilloId || !window.supabaseClient) return false;
 
         var ofertaEl = document.getElementById('platilloPrecioOferta');
@@ -193,7 +193,7 @@
     // Panel de ofertas: ver todas de un vistazo
     // ============================================================
 
-    window.cargarOfertasAdmin = async function () {
+    window.cargarOfertasAdmin = async function cargarOfertasAdmin () {
         if (!window.supabaseClient) return [];
         try {
             var { data, error } = await window.supabaseClient
@@ -210,7 +210,7 @@
         }
     };
 
-    window.renderizarOfertasAdmin = function () {
+    window.renderizarOfertasAdmin = function renderizarOfertasAdmin () {
         var cont = document.getElementById('adminOfertasLista');
         if (!cont) return;
 

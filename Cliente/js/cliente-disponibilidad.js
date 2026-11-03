@@ -233,7 +233,7 @@
     window.aplicarDisponibilidadAlDom = aplicarAlDom;
 
     /** Punto de entrada: recalcula y pinta. Idempotente y seguro de llamar. */
-    window.actualizarDisponibilidadMenu = function () {
+    window.actualizarDisponibilidadMenu = function actualizarDisponibilidadMenu () {
         if (!window.Saki || !window.Saki.state) return null;
         var r = calcularTodas(
             window.Saki.state.menuItems || [],

@@ -108,7 +108,7 @@
     // Excepción deliberada: si la FUNCIÓN no existe (migración no aplicada),
     // no es incertidumbre, es que la ventana no está instalada todavía. Eso
     // sí devuelve null para no romper instalaciones viejas.
-    window.consultarVentanaTasa = async function () {
+    window.consultarVentanaTasa = async function consultarVentanaTasa () {
         try {
             if (!window.supabaseClient) {
                 // Sin cliente no se puede saber nada. Es incertidumbre.
@@ -166,7 +166,7 @@
     //
     // `forzar` sirve para abrirla a mano desde el panel aunque ya se haya
     // revisado hoy: el admin tiene derecho a reconsiderar.
-    window.abrirVentanaTasa = async function (forzar) {
+    window.abrirVentanaTasa = async function abrirVentanaTasa (forzar) {
         if (!forzar && document.getElementById(_idVentana)) return;
 
         var e = _estado || await window.consultarVentanaTasa();
@@ -445,7 +445,7 @@
     // ============================================================
     // Se conserva el nombre por compatibilidad, pero ya NO es una salida libre:
     // el modal no se cierra sin decidir. Solo se llama desde `_decidirTasaVentana`.
-    window._cerrarVentanaTasa = function () {
+    window._cerrarVentanaTasa = function _cerrarVentanaTasa () {
         var o = document.getElementById(_idVentana);
         if (o) o.remove();
         liberarFondo();
@@ -465,7 +465,7 @@
     // ============================================================
     // Decidir
     // ============================================================
-    window._decidirTasaVentana = async function (accion) {
+    window._decidirTasaVentana = async function _decidirTasaVentana (accion) {
         var e = _estado || {};
         var bcv = e.bcv;
 
@@ -628,7 +628,7 @@
     //
     // Cuando un admin confirma en su equipo, el cajero que tenía la ventana
     // abierta la ve desaparecer. Ese es el "replicar" que pidió el dueño.
-    window.escucharRevisionTasaCompartida = function () {
+    window.escucharRevisionTasaCompartida = function escucharRevisionTasaCompartida () {
         if (!window.supabaseClient || window.__escuchaRevisionTasa) return;
         window.__escuchaRevisionTasa = true;
 
@@ -672,7 +672,7 @@
     // ============================================================
     //
     // Se llama después del login. No molesta si ya se revisó hoy.
-    window.arrancarVentanaTasa = async function (opciones) {
+    window.arrancarVentanaTasa = async function arrancarVentanaTasa (opciones) {
         opciones = opciones || {};
         try {
             // Ya no existe el "lo veo después": sin decisión del día no hay

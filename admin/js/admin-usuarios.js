@@ -3,14 +3,14 @@
     let currentUserFotoFile = null;
     let currentUserFotoUrl  = '';
     
-    window.toggleExpandirImagenUsuario = function() {
+    window.toggleExpandirImagenUsuario = function toggleExpandirImagenUsuario() {
         const previewImg = document.getElementById('usuarioPreviewImg');
         if (previewImg && previewImg.src) {
             window.expandirImagen(previewImg.src);
         }
     };
 
-    window.cargarUsuarios = async function() {
+    window.cargarUsuarios = async function cargarUsuarios() {
         try {
             const { data, error } = await window.supabaseClient.from('usuarios').select('*').order('nombre');
             if (error) throw error;
@@ -19,7 +19,7 @@
         } catch (e) { console.error('Error cargando usuarios:', e); window.mostrarToast('Error cargando usuarios', 'error'); }
     };
 
-    window.renderizarUsuarios = function() {
+    window.renderizarUsuarios = function renderizarUsuarios() {
         const grid = document.getElementById('usuariosGrid');
         if (!window.usuarios || !window.usuarios.length) {
             grid.innerHTML = '<p style="color:var(--text-muted);font-size:.88rem">No hay cajeros registrados.</p>';
@@ -97,7 +97,7 @@
         if(pi)pi.src=''; currentUserFotoFile=null; currentUserFotoUrl='';
     }
 
-    window.toggleUsuarioActivo = async function(userId, activo) {
+    window.toggleUsuarioActivo = async function toggleUsuarioActivo(userId, activo) {
         const user = window.usuarios.find(u => u.id === userId);
         if (user && user.rol === 'admin') {
             const adminsActivos = window.usuarios.filter(u => u.rol === 'admin' && u.activo === true);
@@ -113,7 +113,7 @@
         } catch (e) { console.error('Error actualizando usuario:', e); window.mostrarToast('❌ Error al actualizar usuario', 'error'); }
     };
 
-    window.abrirModalNuevoUsuario = function() {
+    window.abrirModalNuevoUsuario = function abrirModalNuevoUsuario() {
         var form=document.getElementById('usuarioForm');
         if(form)form.reset();
         var rolSelect=document.getElementById('usuarioRol');
@@ -137,7 +137,7 @@
         if(modal)modal.classList.add('active');
     };
 
-    window.editarUsuario = function(id) {
+    window.editarUsuario = function editarUsuario(id) {
         var user=window.usuarios.find(u=>u.id===id);
         if(!user)return;
         window.usuarioEditandoId=id;
@@ -176,7 +176,7 @@
         if(modal)modal.classList.add('active');
     };
 
-    window.eliminarUsuario = async function(userId) {
+    window.eliminarUsuario = async function eliminarUsuario(userId) {
         var user=window.usuarios.find(u=>u.id===userId);
         if(!user)return;
         if(user.rol==='admin'){

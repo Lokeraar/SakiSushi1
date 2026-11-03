@@ -32,7 +32,7 @@
     window.stockUpdateChannel = null;
     
     // ==================== FUNCIONES DE FORMATO Y UTILIDAD ====================
-    window.formatBs = function(m) {
+    window.formatBs = function formatBs(m) {
         if (m === undefined || m === null) m = 0;
         const valor = typeof m === 'number' ? m : parseFloat(m);
         if (isNaN(valor)) return 'Bs 0,00';
@@ -41,7 +41,7 @@
         return (valor < 0 ? '-Bs ' : 'Bs ') + entero + ',' + decimal;
     };
     
-    window.formatUSD = function(m) {
+    window.formatUSD = function formatUSD(m) {
         try {
             return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(m);
         } catch(e) {
@@ -66,7 +66,7 @@
     window.TASA_RESPALDO = 400;
 
     // Tasa EFECTIVA: la que se usa para precios del menú (lleva el aumento).
-    window.tasaEfectivaActual = function() {
+    window.tasaEfectivaActual = function tasaEfectivaActual() {
         const cfg = window.configGlobal;
         if (!cfg) return window.TASA_RESPALDO;
         return Number(cfg.tasa_efectiva || cfg.tasa_cambio || window.TASA_RESPALDO);
@@ -74,25 +74,25 @@
 
     // Tasa BASE: la de referencia del día, sin el aumento. Se usa para el
     // costo de envío y para mostrar equivalencias en dólares.
-    window.tasaBaseActual = function() {
+    window.tasaBaseActual = function tasaBaseActual() {
         const cfg = window.configGlobal;
         if (!cfg) return window.TASA_RESPALDO;
         return Number(cfg.tasa_cambio || cfg.tasa_efectiva || window.TASA_RESPALDO);
     };
 
-    window.usdToBs = function(u) {
+    window.usdToBs = function usdToBs(u) {
         return Number(u) * window.tasaEfectivaActual();
     };
 
-    window.usdToBsBase = function(u) {
+    window.usdToBsBase = function usdToBsBase(u) {
         return Number(u) * window.tasaBaseActual();
     };
     
-    window.generarId = function(prefix = '') {
+    window.generarId = function generarId(prefix = '') {
         return `${prefix}${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     };
     
-    window.cerrarModal = function(modalId) {
+    window.cerrarModal = function cerrarModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) modal.classList.remove('active');
         if (modalId === 'ingredienteModal') {
@@ -101,7 +101,7 @@
     };
     
     // ==================== TOAST (MENSAJES FLOTANTES) ====================
-    window.mostrarToast = function(mensaje, tipo = 'info') {
+    window.mostrarToast = function mostrarToast(mensaje, tipo = 'info') {
         // Eliminar toast existente si hay alguno para evitar acumulación
         const existingToast = document.getElementById('toast');
         if (existingToast) {
@@ -132,7 +132,7 @@
     };
     
     // ==================== VALIDACIÓN DE INPUTS ====================
-    window.mostrarErrorInput = function(inputId, mensaje) {
+    window.mostrarErrorInput = function mostrarErrorInput(inputId, mensaje) {
         const input = document.getElementById(inputId);
         if (!input) return;
         
@@ -158,7 +158,7 @@
         input.focus();
     };
     
-    window.limpiarErroresInput = function() {
+    window.limpiarErroresInput = function limpiarErroresInput() {
         // Remover todas las clases de error
         document.querySelectorAll('.input-error').forEach(el => {
             el.classList.remove('input-error');
@@ -170,7 +170,7 @@
     };
     
     // ==================== CONTROL DE PANTALLAS ====================
-    window.mostrarLogin = function() {
+    window.mostrarLogin = function mostrarLogin() {
         const pwdInput = document.getElementById('adminPassword');
         if (pwdInput) pwdInput.value = '';
         document.getElementById('loginContainer').style.display = 'flex';
@@ -178,12 +178,12 @@
         window.detenerAlarma();
     };
     
-    window.mostrarPanel = function() {
+    window.mostrarPanel = function mostrarPanel() {
         document.getElementById('loginContainer').style.display = 'none';
         document.getElementById('panelContainer').classList.add('active');
     };
     
-    window.detenerAlarma = function() {
+    window.detenerAlarma = function detenerAlarma() {
         if (window.alarmaAudio && window.alarmaActiva) {
             try { window.alarmaAudio.pause(); window.alarmaAudio.currentTime = 0; } catch(e) {}
             window.alarmaActiva = false;
@@ -193,7 +193,7 @@
     window.configGlobal = window.configGlobal || {};
     
     // ==================== DIFERENCIA DE TASA ====================
-    window.calcularDiferenciaTasa = function() {
+    window.calcularDiferenciaTasa = function calcularDiferenciaTasa() {
         // Ganancia extra en Bs = ventas_USD * (tasaEfectiva - tasaBase)
         // Ej: $50 ventas, tasa base 100, efectiva 120 → $50*(120-100) = Bs 1000 extra
         const tasaBase     = window.tasaBaseActual();
@@ -231,7 +231,7 @@
     };
     
     // ==================== GESTIÓN DE ADMINISTRADORES RECIENTES ====================
-    window.obtenerAdminsRecientes = function() {
+    window.obtenerAdminsRecientes = function obtenerAdminsRecientes() {
         const stored = localStorage.getItem('saki_recent_admins');
         if (!stored) return [];
         try {
@@ -240,7 +240,7 @@
         } catch(e) { return []; }
     };
     
-    window.guardarAdminReciente = function(adminUser) {
+    window.guardarAdminReciente = function guardarAdminReciente(adminUser) {
         if (!adminUser || adminUser.rol !== 'admin') return;
         let recent = window.obtenerAdminsRecientes();
         recent = recent.filter(a => a.id !== adminUser.id);
@@ -255,12 +255,12 @@
         localStorage.setItem('saki_recent_admins', JSON.stringify(recent));
     };
     
-    window.limpiarAdminsRecientes = function() {
+    window.limpiarAdminsRecientes = function limpiarAdminsRecientes() {
         localStorage.removeItem('saki_recent_admins');
     };
     
     // Placeholder para imágenes (SVG Data URI)
-    window.getPlaceholderImage = function(text = 'Admin') {
+    window.getPlaceholderImage = function getPlaceholderImage(text = 'Admin') {
         const initial = text.charAt(0).toUpperCase();
         return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' fill='%23D32F2F'/%3E%3Ctext x='24' y='32' font-size='20' text-anchor='middle' fill='white' font-family='Arial'%3E${initial}%3C/text%3E%3C/svg%3E`;
     };
@@ -268,7 +268,7 @@
     // ==================== SINCRONIZACIÓN DE IMÁGENES EN VENTAS_DETALLE ====================
     // Esta función sincroniza las imágenes faltantes en ventas_detalle desde la tabla menu
     // Se ejecuta al iniciar sesión para asegurar que todos los registros tengan imagen
-    window.sincronizarImagenesVentasDetalle = async function() {
+    window.sincronizarImagenesVentasDetalle = async function sincronizarImagenesVentasDetalle() {
         try {
             // Verificar que el cliente de Supabase tenga token JWT antes de ejecutar RPCs
             if (!window.jwtToken) {
@@ -318,7 +318,7 @@
     };
     
     // Método manual de sincronización forzada (fallback)
-    window.sincronizarImagenesVentasDetalleManual = async function() {
+    window.sincronizarImagenesVentasDetalleManual = async function sincronizarImagenesVentasDetalleManual() {
         try {
             console.log('Ejecutando sincronización manual de imágenes...');
             
@@ -362,7 +362,7 @@
     };
     
     // Alerta moderna y premium para confirmar eliminaciones
-    window.mostrarConfirmacionPremium = function(titulo, mensaje, onConfirm) {
+    window.mostrarConfirmacionPremium = function mostrarConfirmacionPremium(titulo, mensaje, onConfirm) {
         // Crear overlay
         const overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(5px)';

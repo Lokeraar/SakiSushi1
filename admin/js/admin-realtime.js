@@ -6,7 +6,7 @@
     // restauración), se acumulaban canales duplicados consultando la base.
     window._canalesAdminRealtime = window._canalesAdminRealtime || [];
 
-    window.cerrarRealtimeAdmin = function () {
+    window.cerrarRealtimeAdmin = function cerrarRealtimeAdmin () {
         var abiertos = window._canalesAdminRealtime || [];
         for (var i = 0; i < abiertos.length; i++) {
             try { window.supabaseClient.removeChannel(abiertos[i]); } catch (e) {}
@@ -14,7 +14,7 @@
         window._canalesAdminRealtime.length = 0;
     };
 
-    window.setupRealtimeSubscriptions = function() {
+    window.setupRealtimeSubscriptions = function setupRealtimeSubscriptions() {
         try {
             // Cerrar los de antes evita escuchar dos veces el mismo cambio.
             window.cerrarRealtimeAdmin();
@@ -133,7 +133,7 @@
         } catch (e) { console.error('Error configurando suscripciones realtime:', e); }
     };
 
-    window._notificarAdminStockCritico = async function(ingredienteNombre) {
+    window._notificarAdminStockCritico = async function _notificarAdminStockCritico(ingredienteNombre) {
         try {
             const { data: subs } = await window.supabaseClient
                 .from('push_subscriptions')
@@ -153,7 +153,7 @@
         } catch (e) { console.error('Error notificando stock crítico:', e); }
     };
 
-    window._registrarPushAdmin = async function() {
+    window._registrarPushAdmin = async function _registrarPushAdmin() {
         if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
         if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
         if (Notification.permission === 'denied') return;

@@ -81,11 +81,11 @@
     window.isTouchingPlatillo = false;
     
     // Función principal para cargar datos del Platillo Estrella (alias: cargarTopVentasCliente)
-    window.cargarPlatilloEstrella = async function() {
+    window.cargarPlatilloEstrella = async function cargarPlatilloEstrella() {
         return window.cargarTopVentasCliente();
     };
     
-    window.cargarTopVentasCliente = async function() {
+    window.cargarTopVentasCliente = async function cargarTopVentasCliente() {
         try {
             // Verificar que haya token JWT antes de hacer la consulta
             if (!window.jwtToken) {
@@ -358,7 +358,7 @@
     }
 
     // Navegación manual - siguiente platillo (dirección por defecto: izquierda)
-    window.siguientePlatillo = function() {
+    window.siguientePlatillo = function siguientePlatillo() {
         if (!window.platillosTop5 || window.platillosTop5.length === 0) return;
         window.platilloCarouselIndex = (window.platilloCarouselIndex + 1) % window.platillosTop5.length;
         actualizarCardPlatilloEstrella('next');
@@ -366,7 +366,7 @@
     };
 
     // Navegación manual - platillo anterior (dirección: derecha)
-    window.anteriorPlatillo = function() {
+    window.anteriorPlatillo = function anteriorPlatillo() {
         if (!window.platillosTop5 || window.platillosTop5.length === 0) return;
         window.platilloCarouselIndex = (window.platilloCarouselIndex - 1 + window.platillosTop5.length) % window.platillosTop5.length;
         actualizarCardPlatilloEstrella('prev');
@@ -374,7 +374,7 @@
     };
     
     // Ir a un índice específico (para clicks en indicadores) - determina dirección automáticamente
-    window.irAPlatilloIndex = function(index) {
+    window.irAPlatilloIndex = function irAPlatilloIndex(index) {
         if (!window.platillosTop5 || index < 0 || index >= window.platillosTop5.length) return;
         const direccion = index > window.platilloCarouselIndex ? 'next' : 'prev';
         window.platilloCarouselIndex = index;
@@ -391,7 +391,7 @@
     }
 
     // Función para redirigir a Reportes
-    window.verAnaliticaPlatilloEstrella = function(event) {
+    window.verAnaliticaPlatilloEstrella = function verAnaliticaPlatilloEstrella(event) {
         if (event) event.stopPropagation();
         // Cambiar a la pestaña de Reportes
         const tabReportes = document.querySelector('.tab[data-tab="reportes"]');
@@ -405,7 +405,7 @@
     };
     
     // Helper para formatear fecha en GMT-4
-    window.formatFechaGMT4 = function(fechaStr) {
+    window.formatFechaGMT4 = function formatFechaGMT4(fechaStr) {
         if (!fechaStr) return '';
         const date = new Date(fechaStr);
         // Ajustar a GMT-4 (Venezuela)
@@ -415,7 +415,7 @@
     };
     
     // Helper para obtener tasa efectiva actual
-    window.obtenerTasaEfectivaActual = function() {
+    window.obtenerTasaEfectivaActual = function obtenerTasaEfectivaActual() {
         const tasaDisplay = document.getElementById('tasaEfectivaDisplay');
         if (tasaDisplay) {
             // El formato es "400.00" o "500,00" - normalizar a número float

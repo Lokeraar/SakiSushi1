@@ -142,12 +142,12 @@ window.stockCache = {
 // ============================================
 // FUNCIONES DE ZONA HORARIA GMT-4
 // ============================================
-window.getFechaGMT4 = function() {
+window.getFechaGMT4 = function getFechaGMT4() {
     const fecha = new Date();
     return new Date(fecha.toLocaleString('en-US', { timeZone: 'America/Caracas' }));
 };
 
-window.formatearFechaGMT4 = function(timestamp) {
+window.formatearFechaGMT4 = function formatearFechaGMT4(timestamp) {
     if (!timestamp) return 'N/A';
     try {
         let ts = timestamp;
@@ -164,7 +164,7 @@ window.formatearFechaGMT4 = function(timestamp) {
     }
 };
 
-window.formatearHora12GMT4 = function(timestamp) {
+window.formatearHora12GMT4 = function formatearHora12GMT4(timestamp) {
     if (!timestamp) return 'N/A';
     try {
         let ts = timestamp;
@@ -181,14 +181,14 @@ window.formatearHora12GMT4 = function(timestamp) {
     }
 };
 
-window.getTimestampISO_GMT4 = function() {
+window.getTimestampISO_GMT4 = function getTimestampISO_GMT4() {
     const fecha = new Date();
     const fechaGMT4 = new Date(fecha.toLocaleString('en-US', { timeZone: 'America/Caracas' }));
     const fechaUTC = new Date(fechaGMT4.getTime() + (4 * 60 * 60 * 1000));
     return fechaUTC.toISOString();
 };
 
-window.utcToGMT4 = function(utcTimestamp) {
+window.utcToGMT4 = function utcToGMT4(utcTimestamp) {
     if (!utcTimestamp) return null;
     try {
         const fecha = new Date(utcTimestamp);
@@ -212,7 +212,7 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-window.esBrave = function() {
+window.esBrave = function esBrave() {
     return navigator.brave && typeof navigator.brave.isBrave === 'function';
 };
 
@@ -225,7 +225,7 @@ window.esBrave = function() {
 // de lectura.
 //
 // Se conserva como utilidad porque `tienePermisoPush()` sí puede servir.
-window.solicitarPermisoPush = async function(sessionId) {
+window.solicitarPermisoPush = async function solicitarPermisoPush(sessionId) {
     if (!('Notification' in window)) return { success: false, error: 'no_support' };
     if (!('serviceWorker' in navigator)) return { success: false, error: 'no_sw' };
     if (!window.supabaseClient) return { success: false, error: 'no_client' };
@@ -268,7 +268,7 @@ window.solicitarPermisoPush = async function(sessionId) {
     }
 };
 
-window.tienePermisoPush = function() {
+window.tienePermisoPush = function tienePermisoPush() {
     return Notification.permission === 'granted';
 };
 
@@ -303,7 +303,7 @@ window.tienePermisoPush = function() {
 //                                que muestran "Tasa BCV" al admin y al cajero,
 //                                porque ahí SÍ importa de qué día es.
 
-window.obtenerTasaBCVDetalle = async function (opciones) {
+window.obtenerTasaBCVDetalle = async function obtenerTasaBCVDetalle (opciones) {
     const forzar = opciones && opciones.forzar;
     const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
 
@@ -349,7 +349,7 @@ window.obtenerTasaBCVDetalle = async function (opciones) {
 };
 
 // Compatibilidad: el número pelado, que es lo que espera el aviso de tasa vieja.
-window.obtenerTasaBCV = async function (opciones) {
+window.obtenerTasaBCV = async function obtenerTasaBCV (opciones) {
     const d = await window.obtenerTasaBCVDetalle(opciones);
     return d ? d.valor : null;
 };
@@ -388,7 +388,7 @@ function _calcularTasaEfectiva(tasaBase, cfg) {
 }
 
 // ============================================
-window.cargarConfiguracion = async function() {
+window.cargarConfiguracion = async function cargarConfiguracion() {
     try {
         // Se lee la vista pública, no la tabla cruda: desde la migración 05
         // `config` solo es legible por cajero y admin, y el cliente anónimo
@@ -449,7 +449,7 @@ window.cargarConfiguracion = async function() {
 // ============================================
 // FUNCIONES DE SUBIDA DE IMÁGENES Y COMPROBANTES
 // ============================================
-window.subirImagenPlatillo = async function(archivoImagen, carpetaAdicional = '') {
+window.subirImagenPlatillo = async function subirImagenPlatillo(archivoImagen, carpetaAdicional = '') {
     try {
         if (!archivoImagen) return { success: false, error: 'No se proporcionó archivo' };
         const tipoValido = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif'];
@@ -473,7 +473,7 @@ window.subirImagenPlatillo = async function(archivoImagen, carpetaAdicional = ''
     }
 };
 
-window.eliminarImagenPlatillo = async function(urlImagen) {
+window.eliminarImagenPlatillo = async function eliminarImagenPlatillo(urlImagen) {
     try {
         if (!urlImagen) return { success: true };
         const bucketName = 'imagenes-platillos';
@@ -490,7 +490,7 @@ window.eliminarImagenPlatillo = async function(urlImagen) {
     }
 };
 
-window.subirComprobante = async function(file, tipo, onProgress) {
+window.subirComprobante = async function subirComprobante(file, tipo, onProgress) {
     try {
         if (!file) throw new Error('No se proporcionó archivo');
         const tipoValido = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif'];
@@ -516,7 +516,7 @@ window.subirComprobante = async function(file, tipo, onProgress) {
 // ============================================
 // FUNCIONES DE FORMATO Y VALIDACIÓN
 // ============================================
-window.formatBs = function(monto) {
+window.formatBs = function formatBs(monto) {
     try {
         const valor = Math.round((monto || 0) * 100) / 100;
         let [entero, decimal] = valor.toFixed(2).split('.');
@@ -527,7 +527,7 @@ window.formatBs = function(monto) {
     }
 };
 
-window.formatUSD = function(monto) {
+window.formatUSD = function formatUSD(monto) {
     try {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(monto);
     } catch (e) {
@@ -535,30 +535,30 @@ window.formatUSD = function(monto) {
     }
 };
 
-window.generarId = function(prefix = '') {
+window.generarId = function generarId(prefix = '') {
     if (window.crypto && window.crypto.randomUUID) {
         return `${prefix}${crypto.randomUUID()}`;
     }
     return `${prefix}${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
 };
 
-window.validarTelefono = function(telefono) {
+window.validarTelefono = function validarTelefono(telefono) {
     const soloNumeros = telefono.replace(/\D/g, '');
     const regex = /^(0412|0414|0424|0416|0426|0418|0422|0212|0234|0241|0243|0246|0251|0254|0255|0257|0261|0264|0265|0268|0271|0273|0274|0275|0276|0281)\d{7}$/;
     return regex.test(soloNumeros);
 };
 
-window.validarReferencia = function(ref) {
+window.validarReferencia = function validarReferencia(ref) {
     const soloNumeros = ref.replace(/\D/g, '');
     return soloNumeros.length === 6;
 };
 
-window.usdToBs = function(usd, tasa) {
+window.usdToBs = function usdToBs(usd, tasa) {
     const tasaActual = tasa || window.configGlobal.tasa_efectiva || 400;
     return usd * tasaActual;
 };
 
-window.bsToUsd = function(bs, tasa) {
+window.bsToUsd = function bsToUsd(bs, tasa) {
     const tasaActual = tasa || window.configGlobal.tasa_efectiva || 400;
     return bs / tasaActual;
 };
@@ -609,7 +609,7 @@ window.categoriasMenuLabels = {
 // ============================================
 // FUNCIONES DE NOTIFICACIONES (SONIDO Y BADGE)
 // ============================================
-window.reproducirSonidoNotificacion = function() {
+window.reproducirSonidoNotificacion = function reproducirSonidoNotificacion() {
     const audio = document.getElementById('notificationSound');
     if (audio) {
         audio.pause();
@@ -621,7 +621,7 @@ window.reproducirSonidoNotificacion = function() {
     }
 };
 
-window.actualizarBadgeNotificaciones = function(conteo) {
+window.actualizarBadgeNotificaciones = function actualizarBadgeNotificaciones(conteo) {
     const badge = document.getElementById('notificationBadge');
     if (badge) {
         if (conteo > 0) {
@@ -641,7 +641,7 @@ window.actualizarBadgeNotificaciones = function(conteo) {
 // ============================================
 // FUNCIÓN AUXILIAR PARA WIFI (cliente)
 // ============================================
-window._mostrarPantallaWifi = function(wifiSsid, wifiPwd) {
+window._mostrarPantallaWifi = function _mostrarPantallaWifi(wifiSsid, wifiPwd) {
     document.body.innerHTML = `
         <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
             background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:2rem;text-align:center;font-family:Roboto,sans-serif">

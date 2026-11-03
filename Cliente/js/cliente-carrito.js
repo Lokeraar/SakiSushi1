@@ -569,7 +569,7 @@
     }
 
     /** Abre o cierra el detalle de un ítem al tocar su nombre. */
-    window._toggleDetalleItem = function (id) {
+    window._toggleDetalleItem = function _toggleDetalleItem (id) {
         var el = document.getElementById(id);
         if (!el) return;
         el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';

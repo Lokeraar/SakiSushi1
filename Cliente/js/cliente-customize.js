@@ -237,7 +237,7 @@
         return true;
     }
 
-    window.cambiarEstadoIngrediente = function (idx, accion) {
+    window.cambiarEstadoIngrediente = function cambiarEstadoIngrediente (idx, accion) {
         var actual = _estadosIng[idx] || 'normal';
         var quitar = _ingredientesActuales[idx];
         if (!quitar) return;

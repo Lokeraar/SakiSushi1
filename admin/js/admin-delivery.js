@@ -7,7 +7,7 @@
     // ════════════════════════════════════════
     // CARGAR / RENDERIZAR DELIVERYS
     // ════════════════════════════════════════
-    window.cargarDeliverys = async function() {
+    window.cargarDeliverys = async function cargarDeliverys() {
         try {
             // Limpiar registros pagados de días anteriores (mantener solo los de hoy)
             await window.limpiarPagadosAnteriores();
@@ -22,7 +22,7 @@
     };
     
     // Limpiar registros pagados de días anteriores (solo mantener los de hoy)
-    window.limpiarPagadosAnteriores = async function() {
+    window.limpiarPagadosAnteriores = async function limpiarPagadosAnteriores() {
         try {
             var hoy = new Date(); hoy.setHours(0,0,0,0);
             // Eliminar registros pagados de días anteriores a hoy
@@ -34,7 +34,7 @@
         } catch(e) { console.warn('Error en limpiarPagadosAnteriores:', e); }
     };
 
-    window.renderizarDeliverys = async function() {
+    window.renderizarDeliverys = async function renderizarDeliverys() {
         if (window._renderizandoDeliverys) return;
         window._renderizandoDeliverys = true;
         var container = document.getElementById('deliverysGrid');
@@ -97,7 +97,7 @@
         window._renderizandoDeliverys = false;
     };
 
-    window.obtenerAcumuladoDelivery = async function(deliveryId) {
+    window.obtenerAcumuladoDelivery = async function obtenerAcumuladoDelivery(deliveryId) {
         try {
             var r = await window.supabaseClient.from('entregas_delivery').select('monto_bs').eq('delivery_id', deliveryId).eq('pagado', false);
             if (r.error) throw r.error;
@@ -108,7 +108,7 @@
     // ════════════════════════════════════════
     // AGREGAR / EDITAR / TOGGLE / ELIMINAR
     // ════════════════════════════════════════
-    window.agregarDelivery = async function() {
+    window.agregarDelivery = async function agregarDelivery() {
         var inp = document.getElementById('nuevoDelivery');
         var nombre = inp ? inp.value.trim() : '';
         if (!nombre) { window.mostrarToast('Ingresa un nombre', 'error'); return; }
@@ -124,7 +124,7 @@
         finally { if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> Agregar';} }
     };
 
-    window.editarDelivery = function(id) {
+    window.editarDelivery = function editarDelivery(id) {
         var d = (window.deliverys||[]).find(function(x){ return x.id===id; });
         if (!d) return;
         window.deliveryEditandoId = id;
@@ -143,14 +143,14 @@
         var modal=document.getElementById('deliveryModal'); if(modal) modal.classList.add('active');
     };
 
-    window.toggleDeliveryActivo = async function(id, activo) {
+    window.toggleDeliveryActivo = async function toggleDeliveryActivo(id, activo) {
         try {
             await window.supabaseClient.from('deliverys').update({ activo: activo }).eq('id', id);
             await window.cargarDeliverys();
         } catch(e) { console.error('Error toggle delivery:', e); }
     };
 
-    window.eliminarDelivery = async function(id) {
+    window.eliminarDelivery = async function eliminarDelivery(id) {
         var d = (window.deliverys||[]).find(function(x){ return x.id===id; });
         if (!d) return;
         window.mostrarConfirmacionPremium(
@@ -170,7 +170,7 @@
     // ════════════════════════════════════════
     // PAGO DELIVERY (completo o parcial)
     // ════════════════════════════════════════
-    window.mostrarPagoDelivery = async function(id) {
+    window.mostrarPagoDelivery = async function mostrarPagoDelivery(id) {
         var d = (window.deliverys||[]).find(function(x){ return x.id===id; });
         if (!d) return;
         window.deliveryParaPago = id;
@@ -194,7 +194,7 @@
         if (modal) modal.classList.add('active');
     };
 
-    window.confirmarPagoDelivery = async function() {
+    window.confirmarPagoDelivery = async function confirmarPagoDelivery() {
         if (!window.deliveryParaPago) return;
         var btn = document.getElementById('confirmPagoDeliveryBtn');
         if (btn && btn.disabled) return;
@@ -286,7 +286,7 @@
     // ════════════════════════════════════════
     // STATS CARDS (5.1)
     // ════════════════════════════════════════
-    window._actualizarDeliverysHoyStats = async function() {
+    window._actualizarDeliverysHoyStats = async function _actualizarDeliverysHoyStats() {
         try {
             var tasa = window.tasaEfectivaActual();
             var hoy  = new Date(); hoy.setHours(0,0,0,0);
@@ -313,7 +313,7 @@
     // ════════════════════════════════════════
     // TABLA ÚLTIMOS 5 VIAJES (5.2)
     // ════════════════════════════════════════
-    window.cargarUltimosViajes = async function() {
+    window.cargarUltimosViajes = async function cargarUltimosViajes() {
         var tbody = document.getElementById('ultimosViajesTbody');
         if (!tbody) return;
         try {
@@ -355,7 +355,7 @@
     // ════════════════════════════════════════
     // HISTORIAL COMPLETO HOY (5.3)
     // ════════════════════════════════════════
-    window.verHistorialEnviosHoy = async function() {
+    window.verHistorialEnviosHoy = async function verHistorialEnviosHoy() {
         try {
             var tasa = window.tasaEfectivaActual();
             var hoy  = new Date(); hoy.setHours(0,0,0,0);

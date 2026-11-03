@@ -43,7 +43,7 @@
      * Agrega los parámetros de tamaño y formato a las imágenes de hosts
      * conocidos. Cualquier otra dirección se devuelve sin tocar.
      */
-    window.optimizarUrlImagen = function (url) {
+    window.optimizarUrlImagen = function optimizarUrlImagen (url) {
         if (!url || typeof url !== 'string') return url;
         var u = url.trim();
         if (!/^https?:\/\//i.test(u)) return url;   // ruta relativa: se respeta
@@ -95,7 +95,7 @@
      * Si el navegador no puede (muy viejo), devuelve el archivo original:
      * subir una foto grande es mejor que no subir nada.
      */
-    window.convertirAWebp = function (file, anchoMaximo) {
+    window.convertirAWebp = function convertirAWebp (file, anchoMaximo) {
         return new Promise(function (resolve) {
             var ancho = anchoMaximo || ANCHO;
 
@@ -171,7 +171,7 @@
      * Reemplaza el camino directo: convierte primero, y recién después sube.
      * Devuelve la misma forma que esperaba el admin: {success, url, error}.
      */
-    window.subirImagenPlatilloOptimizada = async function (file, carpeta) {
+    window.subirImagenPlatilloOptimizada = async function subirImagenPlatilloOptimizada (file, carpeta) {
         var conversion = await window.convertirAWebp(file, ANCHO);
         var aSubir = conversion.success ? conversion.archivo : file;
 

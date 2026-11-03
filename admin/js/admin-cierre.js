@@ -87,7 +87,7 @@
         }
     }
 
-    window._usarSugerencia = function (campo, valor) {
+    window._usarSugerencia = function _usarSugerencia (campo, valor) {
         if (campo === 'motivo') {
             document.getElementById('cierreMotivo').value = valor;
         } else {
@@ -99,7 +99,7 @@
     // Modos
     // ============================================================
 
-    window._cierreModo = function (modo) {
+    window._cierreModo = function _cierreModo (modo) {
         _modoActual = modo;
         var rango = document.getElementById('cierreRangoFechas');
         var campos = document.getElementById('cierreCampos');
@@ -134,7 +134,7 @@
     // Estado actual
     // ============================================================
 
-    window.cargarEstadoCierre = async function () {
+    window.cargarEstadoCierre = async function cargarEstadoCierre () {
         if (!window.supabaseClient) return null;
         try {
             var { data, error } = await window.supabaseClient
@@ -151,7 +151,7 @@
         }
     };
 
-    window.renderizarEstadoCierre = function (cierre) {
+    window.renderizarEstadoCierre = function renderizarEstadoCierre (cierre) {
         var chip = document.getElementById('cierreEstadoChip');
         var box = document.getElementById('cierreVigenteBox');
         var form = document.getElementById('cierreForm');
@@ -234,7 +234,7 @@
         }
     }
 
-    window.abrirModalCierre = function () {
+    window.abrirModalCierre = function abrirModalCierre () {
         var modal = document.getElementById('cierreModal');
         if (!modal) return;
         modal.classList.add('active');
@@ -246,12 +246,12 @@
         if (motivo) motivo.focus();
     };
 
-    window.cerrarModalCierre = function () {
+    window.cerrarModalCierre = function cerrarModalCierre () {
         var modal = document.getElementById('cierreModal');
         if (modal) modal.classList.remove('active');
     };
 
-    window.crearCierre = async function () {
+    window.crearCierre = async function crearCierre () {
         if (!window.supabaseClient) return;
 
         var motivo = (document.getElementById('cierreMotivo').value || '').trim();
@@ -333,7 +333,7 @@
     // La segunda línea depende del modo: solo "Indefinido" (y un rango sin
     // fecha de fin) obligan a volver a entrar a reabrir. Decirle eso a quien
     // eligió "Hoy" era mentira: ese cierre termina solo a las 07:00.
-    window._confirmarCierre = function (cuando, modo) {
+    window._confirmarCierre = function _confirmarCierre (cuando, modo) {
         return new Promise(function (resolve) {
             var ov = document.createElement('div');
             ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;' +
@@ -394,7 +394,7 @@
     // Reabrir
     // ============================================================
 
-    window.desactivarCierre = async function () {
+    window.desactivarCierre = async function desactivarCierre () {
         if (!window.supabaseClient) return;
         try {
             var { data, error } = await window.supabaseClient

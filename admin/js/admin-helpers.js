@@ -1,6 +1,6 @@
 // admin-helpers.js - Funciones auxiliares (no dependientes de otros módulos)
 (function() {
-    window.guardarWifiPersistente = function() {
+    window.guardarWifiPersistente = function guardarWifiPersistente() {
         const ssid = document.getElementById('qrWifiSsid')?.value || '';
         const password = document.getElementById('qrWifiPassword')?.value || '';
 
@@ -19,7 +19,7 @@
     // Escritura en la base, con rebote para no disparar una consulta por
     // cada tecla que se escribe en el campo del wifi.
     var _wifiTimer = null;
-    window._guardarWifiEnBase = function(ssid, password) {
+    window._guardarWifiEnBase = function _guardarWifiEnBase(ssid, password) {
         if (_wifiTimer) clearTimeout(_wifiTimer);
         _wifiTimer = setTimeout(async function() {
             if (!window.supabaseClient) return;
@@ -39,7 +39,7 @@
         }, 900);
     };
 
-    window.restaurarWifiPersistente = function() {
+    window.restaurarWifiPersistente = function restaurarWifiPersistente() {
         const ssidInput = document.getElementById('qrWifiSsid');
         const passwordInput = document.getElementById('qrWifiPassword');
         if (ssidInput && window.wifiSsidPersistente) ssidInput.value = window.wifiSsidPersistente;
@@ -48,7 +48,7 @@
 
     // Lee el wifi desde la base para que los campos muestren lo guardado
     // aunque el admin entre desde otro dispositivo.
-    window.cargarWifiDesdeBase = async function() {
+    window.cargarWifiDesdeBase = async function cargarWifiDesdeBase() {
         if (!window.supabaseClient) return null;
         try {
             const { data, error } = await window.supabaseClient
@@ -65,7 +65,7 @@
         }
     };
 
-    window._convertirUnidad = function(valor, desde, hacia) {
+    window._convertirUnidad = function _convertirUnidad(valor, desde, hacia) {
         if (!desde || !hacia || desde === hacia) return valor;
         let base = valor;
         if (desde === 'kilogramos') base = valor * 1000;
@@ -97,7 +97,7 @@
     //
     // El relevo es `window.arrancarVentanaTasa()`.
 
-    window._verificarAvisoLunes = function() {
+    window._verificarAvisoLunes = function _verificarAvisoLunes() {
         if (!window.configGlobal || !window.configGlobal.aumento_semanal) return;
 
         const hoy = new Date();
@@ -159,7 +159,7 @@
         setTimeout(() => { if (notif.parentNode) notif.remove(); }, 30000);
     };
 
-    window._simularLunes = function() {
+    window._simularLunes = function _simularLunes() {
         console.log('%c📅 Simulando lunes para prueba de aviso semanal...', 'color:#FF9800;font-weight:700');
         const hoy = new Date().toISOString().split('T')[0];
         localStorage.removeItem('saki_aviso_lunes_' + hoy);
@@ -174,7 +174,7 @@
         console.log('%c✅ Aviso de lunes disparado. Mira la pantalla.', 'color:green;font-weight:700');
     };
 
-    window._simularPeriodoSemanal = function(semanas) {
+    window._simularPeriodoSemanal = function _simularPeriodoSemanal(semanas) {
         semanas = semanas || 1;
         const input = document.getElementById('aumentoDiarioInput');
         const pct = parseFloat(input?.value) || 0;

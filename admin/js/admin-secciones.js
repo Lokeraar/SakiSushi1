@@ -26,7 +26,7 @@
     // Carga
     // ============================================================
 
-    window.cargarSeccionesAdmin = async function () {
+    window.cargarSeccionesAdmin = async function cargarSeccionesAdmin () {
         if (!window.supabaseClient) return;
         try {
             const { data, error } = await window.supabaseClient
@@ -52,7 +52,7 @@
     // platillos con una marca al costado.
     // ============================================================
 
-    window.cargarHuerfanos = async function () {
+    window.cargarHuerfanos = async function cargarHuerfanos () {
         if (!window.supabaseClient) return [];
         try {
             const { data, error } = await window.supabaseClient
@@ -71,7 +71,7 @@
     };
 
     /** Pinta el aviso en el tablero. No hace nada si no hay huérfanos. */
-    window.pintarAlertaHuerfanos = function (lista) {
+    window.pintarAlertaHuerfanos = function pintarAlertaHuerfanos (lista) {
         const previo = document.getElementById('alertaHuerfanos');
         if (previo) previo.remove();
 
@@ -116,7 +116,7 @@
     };
 
     /** Marca visualmente cada platillo huérfano en la lista del menú. */
-    window.resaltarHuerfanosEnLista = function () {
+    window.resaltarHuerfanosEnLista = function resaltarHuerfanosEnLista () {
         const ids = (window._huerfanos || []).map(function (h) { return h.id; });
         if (!ids.length) return;
 
@@ -144,7 +144,7 @@
     // Pintar la lista de secciones
     // ============================================================
 
-    window.renderizarSeccionesAdmin = function () {
+    window.renderizarSeccionesAdmin = function renderizarSeccionesAdmin () {
         const cont = document.getElementById('adminSeccionesLista');
         if (!cont) return;
 
@@ -201,7 +201,7 @@
     // Renombrar: avisa primero, confirma después
     // ============================================================
 
-    window.abrirRenombrarSeccion = async function (id) {
+    window.abrirRenombrarSeccion = async function abrirRenombrarSeccion (id) {
         const sec = (window._secciones || []).find(function (s) { return s.id === id; });
         if (!sec) return;
 
@@ -258,7 +258,7 @@
     // Eliminar: avisa qué queda huérfano
     // ============================================================
 
-    window.abrirEliminarSeccion = async function (id) {
+    window.abrirEliminarSeccion = async function abrirEliminarSeccion (id) {
         const sec = (window._secciones || []).find(function (s) { return s.id === id; });
         if (!sec) return;
 
@@ -310,7 +310,7 @@
     // Reordenar
     // ============================================================
 
-    window.moverSeccion = async function (id, direccion) {
+    window.moverSeccion = async function moverSeccion (id, direccion) {
         const todas = window._secciones || [];
         const madres = todas.filter(function (s) { return !s.madre_id; })
                            .sort(function (a, b) { return a.orden - b.orden; });
@@ -342,7 +342,7 @@
     // Crear
     // ============================================================
 
-    window.crearSeccionAdmin = async function () {
+    window.crearSeccionAdmin = async function crearSeccionAdmin () {
         const nombreEl = document.getElementById('nuevaSeccionNombre');
         const madreEl = document.getElementById('nuevaSeccionMadre');
         if (!nombreEl) return;
@@ -373,7 +373,7 @@
     };
 
     /** Llena el desplegable de "madre" con las secciones principales. */
-    window.actualizarOpcionesMadre = function () {
+    window.actualizarOpcionesMadre = function actualizarOpcionesMadre () {
         const sel = document.getElementById('nuevaSeccionMadre');
         if (!sel) return;
 
@@ -391,7 +391,7 @@
     // Resolver huérfanos: asignarle sección a un platillo
     // ============================================================
 
-    window.abrirAsignarSeccion = async function (platilloId, nombrePlatillo) {
+    window.abrirAsignarSeccion = async function abrirAsignarSeccion (platilloId, nombrePlatillo) {
         const madres = (window._secciones || [])
             .filter(function (s) { return !s.madre_id; })
             .sort(function (a, b) { return a.orden - b.orden; });
@@ -491,7 +491,7 @@
     };
 
     /** Lista de huérfanos con un botón para resolver cada uno. */
-    window.renderizarHuerfanosResolubles = function () {
+    window.renderizarHuerfanosResolubles = function renderizarHuerfanosResolubles () {
         const cont = document.getElementById('adminHuerfanosLista');
         if (!cont) return;
 
