@@ -1,15 +1,52 @@
 // admin-reportes.js - Reportes y gráficos (con lazy loading de Chart.js)
 (function() {
+    // Chart.js se trae de un CDN bajo demanda, y eso puede fallar: sin red, con
+    // la red lenta, o con el CDN bloqueado (pasa en redes móviles).
+    //
+    // Antes esa descarga estaba FUERA del try. Si fallaba, la promesa se
+    // rechazaba y no corría nada más: ni estadísticas, ni tabla, ni gráficas.
+    // El usuario veía la pantalla de Reportes en blanco y no había forma de
+    // saber que el problema era una librería de dibujo.
+    //
+    // Ahora cada cosa depende de lo suyo: los números y la tabla se muestran
+    // siempre, porque salen de la base; las gráficas son lo único que necesita
+    // Chart.js. Si no llega, se avisa en el hueco de cada gráfica y el reporte
+    // sigue sirviendo.
+    let _promesaChart = null;
+    function cargarChartJS() {
+        if (typeof Chart !== 'undefined') return Promise.resolve(true);
+        if (_promesaChart) return _promesaChart;
+        _promesaChart = new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            script.onload = () => resolve(true);
+            // No se rechaza: se resuelve false. Un fallo esperado no debe
+            // viajar como excepción y tumbar lo que sí funciona.
+            script.onerror = () => { _promesaChart = null; resolve(false); };
+            document.head.appendChild(script);
+        });
+        return _promesaChart;
+    }
+    window.cargarChartJS = cargarChartJS;
+
+    /** Avisa, dentro de cada hueco de gráfica, que no se pudo dibujar. */
+    function _avisarGraficasSinLibreria() {
+        ['ventasChart', 'categoriasChart', 'pagosChart', 'horaChart'].forEach((id) => {
+            const cv = document.getElementById(id);
+            if (!cv || !cv.parentNode) return;
+            if (cv.parentNode.querySelector('.chart-sin-libreria')) return;
+            const aviso = document.createElement('p');
+            aviso.className = 'chart-sin-libreria';
+            aviso.textContent = 'No se pudo cargar el gráfico. Los números de arriba sí están actualizados.';
+            aviso.style.cssText = 'color:var(--text-muted);font-size:.8rem;text-align:center;padding:.75rem 0;margin:0';
+            cv.parentNode.appendChild(aviso);
+        });
+    }
+
     window.cargarReportes = async function() {
-        if (typeof Chart === 'undefined') {
-            await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
+        // Se pide, pero no se espera para poder seguir: los datos no dependen
+        // de que llegue la librería de dibujo.
+        const chartListo = await cargarChartJS();
         try {
             const desde = document.getElementById('reporteDesde').value;
             const hasta = document.getElementById('reporteHasta').value;
@@ -19,7 +56,11 @@
             const { data, error } = await query.order('fecha', { ascending: false });
             if (error) throw error;
             window.actualizarEstadisticasReportes(data || []);
-            window.actualizarGraficos(data || []);
+            // Las gráficas solo si la librería llegó. `actualizarGraficos` ya
+            // se protege con `typeof Chart === 'undefined'`, pero así el hueco
+            // lo explica en pantalla en vez de quedar en blanco.
+            if (chartListo) window.actualizarGraficos(data || []);
+            else _avisarGraficasSinLibreria();
             window.actualizarTablaVentas(data || []);
         } catch (e) { console.error('Error cargando reportes:', e); window.mostrarToast('Error cargando reportes', 'error'); }
     };

@@ -34,6 +34,46 @@ Solo se incluyen tokens del panel admin; el resto del proyecto (Cliente, Cajero)
 | `--usd-color` | `#0d6efd` claro / `#6ea8fe` oscuro | Desglose en dólares | `admin/css/admin.css` |
 | `--bs-color` | `#198754` claro / `#75b798` oscuro | Desglose en bolívares | `admin/css/admin.css` |
 
+## Color — chrome del panel (header, pestañas, modales, toasts)
+
+Segunda tanda de tokens, presente en `admin/css/admin.css` pero ausente del
+primer barrido. El panel sostiene la regla de contraste duro: estas superficies
+son blanco o negro puro en el tema claro, y su inverso exacto en el oscuro.
+
+| Token | Valor (claro) | Uso | Fuente |
+| --- | --- | --- | --- |
+| `--header-text` | `#000000` | Texto de la barra superior | `admin/css/admin.css` |
+| `--tab-active-bg` | `#ffffff` | Fondo de la pestaña activa | `admin/css/admin.css` |
+| `--modal-header-bg` | `#ffffff` | Cabecera de los modales | `admin/css/admin.css` |
+| `--modal-header-text` | `#000000` | Texto de la cabecera de modales | `admin/css/admin.css` |
+| `--toast-bg` | `#1a1a1a` | Fondo del aviso flotante (toast) | `admin/css/admin.css` |
+| `--toast-text` | `#ffffff` | Texto del aviso flotante | `admin/css/admin.css` |
+| `--card-title-color` | `#000000` | Rótulo de las tarjetas del panel | `admin/css/admin.css` |
+| `--card-value-color` | `#000000` | Cifra grande de las tarjetas | `admin/css/admin.css` |
+| `--section-title-color` | `#000000` | Título de sección (`<h2>`) | `admin/css/admin.css` |
+| `--tag-bg` | `#ffffff` | Fondo de las etiquetas | `admin/css/admin.css` |
+| `--tag-text` | `#000000` | Texto de las etiquetas | `admin/css/admin.css` |
+| `--tag-border` | `#d0d0d0` | Borde de las etiquetas | `admin/css/admin.css` |
+| `--light-bg` | alias de `--body-bg` | Fondo de apoyo | `admin/css/admin.css` |
+
+### Insignias de stock
+
+Tres pares fondo/texto ya resueltos. No se inventan al vuelo en cada pantalla:
+se eligen por el mismo umbral por ingrediente que usa el semáforo.
+
+| Token | Valor (claro) | Uso | Fuente |
+| --- | --- | --- | --- |
+| `--badge-ok-bg` / `--badge-ok-text` | `#e8f5e9` / `#1b5e20` | Stock suficiente | `admin/css/admin.css` |
+| `--badge-bajo-bg` / `--badge-bajo-text` | `#fff3e0` / `#e65100` | Bajo mínimo | `admin/css/admin.css` |
+| `--badge-critico-bg` / `--badge-critico-text` | `#ffebee` / `#b71c1c` | Agotado | `admin/css/admin.css` |
+
+## Forma y movimiento
+
+| Token | Valor | Uso | Fuente |
+| --- | --- | --- | --- |
+| `--radius` | `10px` | Radio por defecto de tarjetas y controles | `admin/css/admin.css` |
+| `--transition` | `all 0.2s ease` | Transición estándar de hover y foco | `admin/css/admin.css` |
+
 ## Color — superficies y texto
 
 El panel es de contraste duro a propósito: blanco puro y negro puro, sin grises intermedios de fondo.

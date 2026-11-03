@@ -1,0 +1,104 @@
+{
+  "title": "Panel de administración · todas las ventanas",
+  "brief": "Cada ventana del panel admin de Saki Sushi, generada desde el código real, para revisar y corregir desde lo que ve el usuario.",
+  "artboards": [
+    {
+      "file": "01-inicio.html",
+      "title": "Inicio",
+      "tradeoff": "Vista completa del pulso del local; no muestra la densidad de datos que sí aparece en escritorio",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "02-menu.html",
+      "title": "Menú",
+      "tradeoff": "Se ve la grilla de platillos como en el teléfono; los filtros por categoría quedan apilados",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "03-inventario.html",
+      "title": "Inventario",
+      "tradeoff": "Muestra el stock real con reservas descontadas; el semáforo se lee de un vistazo",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "04-usuarios.html",
+      "title": "Usuarios",
+      "tradeoff": "Lista compacta de quién puede entrar; no muestra permisos granulares",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "05-deliverys.html",
+      "title": "Deliverys",
+      "tradeoff": "Centra la atención en los motorizados y su estado; el historial de viajes queda aparte",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "06-mesoneros.html",
+      "title": "Mesoneros",
+      "tradeoff": "Prioriza las propinas del día; el alta de mesonero compite por espacio",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "07-qr.html",
+      "title": "Códigos QR",
+      "tradeoff": "Los QR se ven a tamaño de lectura; la generación en lote queda abajo",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "08-reportes.html",
+      "title": "Reportes",
+      "tradeoff": "Expone el hueco real: las cuatro gráficas están vacías porque Chart.js no se carga",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "10-modal-platillo.html",
+      "title": "Modal · Nuevo platillo",
+      "tradeoff": "Muestra el formulario completo con sus campos de precio e imagen; el fondo queda atenuado",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "11-modal-ingrediente.html",
+      "title": "Modal · Nuevo ingrediente",
+      "tradeoff": "Expone unidad, stock inicial y mínimo en una sola columna; el mínimo es el que decide la marquesina",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "12-modal-usuario.html",
+      "title": "Modal · Nuevo usuario",
+      "tradeoff": "Deja ver los roles disponibles y el estado activo; no explica qué puede hacer cada rol",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "13-modal-pago.html",
+      "title": "Modal · Registrar pago",
+      "tradeoff": "El desglose por método de pago cabe en una columna; los montos en Bs y USD compiten por ancho",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "14-modal-cierre.html",
+      "title": "Modal · Local operativo",
+      "tradeoff": "Los cuatro modos del local con su consecuencia visible; el texto explicativo alarga el modal",
+      "width": 390,
+      "height": 1400
+    },
+    {
+      "file": "15-modal-qr-mesa.html",
+      "title": "Modal · Elegir mesa para QR",
+      "tradeoff": "Lista de mesas para generar el QR de una; se pierde la vista previa del código",
+      "width": 390,
+      "height": 1400
+    }
+  ]
+}

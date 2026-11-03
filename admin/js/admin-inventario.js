@@ -741,7 +741,6 @@ validarPrecios();
         banda.classList.toggle('es-agotado', agotados.length > 0);
         banda.style.display = 'flex';
     };
-    window.S.modules.inventario.actualizarMarquesinaStock = window.actualizarMarquesinaStock;
 
     window.verificarStockCritico = async function() {
         const stockCriticoDiv = document.getElementById('stockCritico');
