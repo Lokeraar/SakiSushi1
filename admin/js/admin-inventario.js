@@ -1073,16 +1073,26 @@ validarPrecios();
         }
         
         // Aplicar fix de decimales con toFixed(2) para evitar errores como 14.60000000001
+        //
+        // Solo se envían las columnas que el formulario realmente controla.
+        //
+        // `reservado` NO va: es una columna viva que manejan las RPC de pedidos
+        // (crear_pedido_con_reserva la suma, descontar/liberar la restan).
+        // Escribir un valor fijo acá borraba las reservas de pedidos en curso
+        // cada vez que alguien guardaba el ingrediente.
+        //
+        // `imagen` solo va si de verdad cambió: al abrir el modal se limpia
+        // `uploadedImageUrl`, así que un guardado sin tocar la foto mandaba
+        // `null` y borraba la que ya estaba.
         const ingredienteData = {
             nombre: nombre,
             stock: shouldUpdateStock ? parseFloat(parseFloat(newStockValue).toFixed(2)) : parseFloat(parseFloat(stockOriginalValue).toFixed(2)),
             unidad_base: unidad,
             minimo: parseFloat(parseFloat(minimo).toFixed(2)),
             precio_costo: parseFloat(parseFloat(costo).toFixed(2)),
-            precio_unitario: parseFloat(parseFloat(venta).toFixed(2)),
-            imagen: finalImageUrl,
-            reservado: 0
+            precio_unitario: parseFloat(parseFloat(venta).toFixed(2))
         };
+        if (finalImageUrl) ingredienteData.imagen = finalImageUrl;
         
         try {
             let error;
