@@ -1097,25 +1097,51 @@ validarPrecios();
         try {
             let error;
             if (window.ingredienteEditandoId) {
-                // Actualizar existente
-                const { error: updError } = await window.supabaseClient.from('inventario')
+                // Actualizar existente.
+                //
+                // `select()` pide de vuelta las filas afectadas. Hace falta
+                // porque Supabase NO devuelve error cuando RLS bloquea la
+                // escritura: responde 200 con una lista vacía. Sin esto, un
+                // update que no tocó nada se reportaba como éxito y el
+                // formulario cerraba mostrando "guardado" con el valor viejo.
+                const { data: filas, error: updError } = await window.supabaseClient
+                    .from('inventario')
                     .update(ingredienteData)
-                    .eq('id', window.ingredienteEditandoId);
+                    .eq('id', window.ingredienteEditandoId)
+                    .select('id');
                 error = updError;
+                if (!error && (!filas || filas.length === 0)) {
+                    throw new Error('No se guardó: el servidor no permitió la escritura. ' +
+                        'Vuelve a iniciar sesión como administrador e inténtalo otra vez.');
+                }
             } else {
                 // Crear nuevo
-                const { error: insError } = await window.supabaseClient.from('inventario')
-                    .insert([ingredienteData]);
+                const { data: creadas, error: insError } = await window.supabaseClient
+                    .from('inventario')
+                    .insert([ingredienteData])
+                    .select('id');
                 error = insError;
+                if (!error && (!creadas || creadas.length === 0)) {
+                    throw new Error('No se creó el ingrediente: el servidor no permitió la escritura. ' +
+                        'Vuelve a iniciar sesión como administrador e inténtalo otra vez.');
+                }
             }
             
             if (error) throw error;
             
-            // Éxito - mensaje específico según acción
+            // Éxito.
+            //
+            // El mensaje se decide ANTES de limpiar `ingredienteEditandoId`:
+            // al limpiarlo primero, editar un ingrediente terminaba anunciando
+            // "Ingrediente creado con éxito".
+            const mensajeExito = window.ingredienteEditandoId
+                ? 'Ingrediente editado con éxito'
+                : 'Ingrediente creado con éxito';
+
             // PHASE 7: Reset State on save
-            const stockInput = document.getElementById('stock-actual-input');
-            if (stockInput) {
-                stockInput.readOnly = true;
+            const stockInputReset = document.getElementById('stock-actual-input');
+            if (stockInputReset) {
+                stockInputReset.readOnly = true;
             }
             
             window.cerrarModal('ingredienteModal');
@@ -1123,7 +1149,6 @@ validarPrecios();
             removeIngredienteImage();
             uploadedImageUrl = null;
             await window.cargarInventario();
-            const mensajeExito = window.ingredienteEditandoId ? 'Ingrediente editado con éxito' : 'Ingrediente creado con éxito';
             window.mostrarToast('✅ ' + mensajeExito, 'success');
             
         } catch (e) {
