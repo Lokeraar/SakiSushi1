@@ -44,7 +44,7 @@
                             await window.cargarInventario();
                         }
                         window.cargarInventario();
-                        window.actualizarStockCriticoHeader();
+                        window.actualizarMarquesinaStock();
                     })
                 .subscribe();
 

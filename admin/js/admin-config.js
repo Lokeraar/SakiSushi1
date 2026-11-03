@@ -79,13 +79,6 @@
             chkDescuento.checked = window.configGlobal.descuento_al_quitar !== false;
         }
 
-        // Interruptor de la franja de stock bajo del dashboard.
-        // Ausente o true = encendida: si la config nunca se tocó, el dueño
-        // quiere enterarse de que se está quedando sin algo.
-        var chkStockMin = document.getElementById('alertaStockMinimo');
-        if (chkStockMin) {
-            chkStockMin.checked = window.configGlobal.alerta_stock_minimo !== false;
-        }
         document.getElementById('aumentoAcumuladoDisplay').textContent = (window.configGlobal.aumento_acumulado || 0).toFixed(2) + '%';
         if (window.configGlobal.aumento_desde && document.getElementById('aumentoDesde'))
             document.getElementById('aumentoDesde').value = window.configGlobal.aumento_desde.split('T')[0];
@@ -259,9 +252,6 @@
                 aumento_indefinido: document.getElementById('aumentoIndefinido')?.checked || false,
                 // Decisión de negocio: ¿quitar un ingrediente abarata el plato?
                 descuento_al_quitar: document.getElementById('descuentoAlQuitar')?.checked ?? true,
-                // Interruptor de la franja de stock bajo en Inicio. El umbral
-                // real sigue siendo por ingrediente (`inventario.minimo`).
-                alerta_stock_minimo: document.getElementById('alertaStockMinimo')?.checked ?? true,
                 ultima_actualizacion: new Date().toISOString()
             }).eq('id', 1);
 

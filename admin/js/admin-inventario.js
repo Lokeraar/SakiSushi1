@@ -19,7 +19,7 @@
             if (inventarioGrid) window.renderizarInventario();
             window.actualizarAlertasStock();
             await window.cargarMenu();
-            window.actualizarStockCriticoHeader();
+            window.actualizarMarquesinaStock();
             if (typeof window.verificarStockCritico === 'function') await window.verificarStockCritico();
         } catch (e) { 
             console.error('Error cargando inventario:', e); 
@@ -39,7 +39,7 @@
         if (!items.length) {
             grid.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.75rem">' +
                 (filtro ? 'Sin resultados para "' + filtro + '"' : 'No hay ingredientes registrados.') + '</p>';
-            window.actualizarStockCriticoHeader();
+            window.actualizarMarquesinaStock();
             return;
         }
         items.forEach(item => {
@@ -88,7 +88,7 @@
                 window._invActiveId = null;
             }
         }
-        window.actualizarStockCriticoHeader();
+        window.actualizarMarquesinaStock();
     };
 
     window._invActiveId = null;
@@ -694,15 +694,18 @@ validarPrecios();
     // El interruptor `config.alerta_stock_minimo` decide si la franja aparece.
     // El umbral sigue siendo por ingrediente (`inventario.minimo`), que es lo
     // que el dueño ya configura en cada uno.
+    // ── Aviso de stock bajo del header ────────────────────────────
+    //
+    // Reemplaza a la vieja franja "STOCK CRÍTICO". Muestra cada ingrediente
+    // bajo mínimo como una etiqueta con su nombre y lo que queda disponible,
+    // y cada etiqueta lleva al ingrediente. Es el mismo criterio que usa el
+    // semáforo del inventario: disponible = stock - reservado, y solo cuenta
+    // si el ingrediente tiene un mínimo mayor que cero.
+    //
+    // No se puede apagar: es información de operación, no una preferencia.
     window.actualizarMarquesinaStock = function actualizarMarquesinaStock() {
         var banda = document.getElementById('marquesinaStock');
         if (!banda) return;
-
-        // Interruptor general. Ausente o true = aparece. Solo se apaga con
-        // un `false` explícito, para no ocultarla por una config incompleta.
-        var cfg = window.configGlobal || {};
-        var activa = cfg.alerta_stock_minimo !== false;
-        if (!activa) { banda.style.display = 'none'; return; }
 
         var items = window.inventarioItems || [];
         var criticos = items.filter(function(item) {
@@ -719,23 +722,30 @@ validarPrecios();
         });
 
         var titulo = document.getElementById('marquesinaStockTitulo');
-        var pista  = document.getElementById('marquesinaStockPista');
-
         if (titulo) {
             titulo.textContent = agotados.length > 0
                 ? agotados.length + (agotados.length === 1 ? ' ingrediente agotado' : ' ingredientes agotados')
                 : criticos.length + (criticos.length === 1 ? ' ingrediente bajo mínimo' : ' ingredientes bajo mínimo');
         }
 
-        if (pista) {
-            // Nombres de los tres primeros; el resto se resume en "+N".
-            var nombres = criticos.slice(0, 3).map(function(i) { return i.nombre; });
-            var resto = criticos.length - nombres.length;
-            var texto = nombres.join(', ');
-            if (resto > 0) texto += ' y ' + resto + ' más';
-            pista.textContent = texto;
-            // Título completo al pasar el dedo o el mouse, por si se recorta.
-            pista.title = criticos.map(function(i) { return i.nombre; }).join(', ');
+        var etiquetas = document.getElementById('marquesinaStockEtiquetas');
+        if (etiquetas) {
+            // Redondear a 3 decimales sin arrastrar error de coma flotante.
+            var redondear = function(n) {
+                return Math.round((n + Number.EPSILON) * 1000) / 1000;
+            };
+            etiquetas.innerHTML = criticos.map(function(item) {
+                var disponible = redondear((item.stock || 0) - (item.reservado || 0));
+                var agotado = disponible <= 0;
+                return '<button type="button" class="stock-critico-tag' + (agotado ? ' es-agotado' : '') + '"'
+                    + ' data-ingrediente-id="' + item.id + '"'
+                    + ' onclick="window._irAIngrediente(\'' + item.id + '\')"'
+                    + ' title="' + item.nombre + ': quedan ' + disponible + ' de mínimo ' + (item.minimo || 0) + '">'
+                    + '<i class="fas fa-exclamation-triangle"></i>'
+                    + '<span class="stock-critico-tag-nombre">' + item.nombre + '</span>'
+                    + '<span class="stock-critico-tag-cantidad">' + disponible + '</span>'
+                    + '</button>';
+            }).join('');
         }
 
         banda.classList.toggle('es-agotado', agotados.length > 0);
@@ -777,34 +787,6 @@ validarPrecios();
         if (window.actualizarMarquesinaStock) window.actualizarMarquesinaStock();
     };
 
-    window.actualizarStockCriticoHeader = function actualizarStockCriticoHeader() {
-        const container = document.getElementById('stockCriticoTags');
-        if (!container) return;
-        const criticos = (window.inventarioItems || []).filter(item => {
-            const disponible = (item.stock || 0) - (item.reservado || 0);
-            const minimo = item.minimo || 0;
-            return disponible <= minimo && minimo > 0;
-        });
-        if (criticos.length === 0) {
-            container.innerHTML = '<span style="color:var(--text-muted)">NINGÚN INGREDIENTE EN STOCK CRÍTICO</span>';
-            return;
-        }
-        container.innerHTML = criticos.map(item => {
-            const disponible = (item.stock || 0) - (item.reservado || 0);
-            return `
-                <span class="stock-critico-tag" 
-                      data-ingrediente-id="${item.id}"
-                      onclick="window._irAIngrediente('${item.id}')"
-                      style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:rgba(239,68,68,.25); border-radius:20px; color:var(--danger); font-weight:800; font-size:.75rem; cursor:pointer; animation:pulse 0.8s infinite; text-transform:uppercase; letter-spacing:.5px"
-                      onmouseover="this.style.transform='scale(1.05)'; this.style.background='rgba(239,68,68,.4)'"
-                      onmouseout="this.style.transform='scale(1)'; this.style.background='rgba(239,68,68,.25)'">
-                    <i class="fas fa-exclamation-triangle" style="font-size:.7rem"></i>
-                    ${item.nombre}
-                    <span style="background:var(--danger); color:#fff; padding:0 5px; border-radius:12px; font-size:.65rem; margin-left:2px">${Math.round((disponible + Number.EPSILON) * 1000) / 1000}</span>
-                </span>
-            `;
-        }).join('');
-    };
 
     window._irAIngrediente = function _irAIngrediente(ingredienteId) {
         const tabs = document.querySelectorAll('.tab');

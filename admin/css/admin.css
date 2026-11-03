@@ -350,17 +350,9 @@ html.dark-theme .logout-button:hover { background: rgba(255,255,255,.1); color: 
         align-items: flex-start;
         gap: 0.35rem;
     }
-    #stockCriticoHeader {
-        order: 3;
-        margin-top: 0 !important;
-    }
 }
 
 /* STOCK CRÍTICO - Borde/sombra para dark mode */
-html.dark-theme #stockCriticoHeader {
-    border: 1px solid #333;
-    box-shadow: 0 0 8px rgba(255,255,255,0.1);
-}
 
 /* Estilos legacy para clases desktop-only/mobile-only (ya no se usan en el header nuevo) */
 @media (min-width: 769px) {
@@ -4516,12 +4508,21 @@ html.dark-theme .status-inactivo {
    críticos que ya calcula el contador "Alertas Stock": una sola
    fuente, sin consultas nuevas.
    ══════════════════════════════════════════════════════════════ */
+/* ── Fila del aviso de stock bajo ────────────────────────────────
+   Vive dentro de <header>, en su propia fila. No usa `.header-desktop`
+   porque esa clase se oculta en el teléfono y este aviso tiene que verse
+   justo ahí. Tampoco usa `.header-mobile`: así se ve igual en ambos.
+   Como la marquesina se oculta con `display:none`, la fila colapsa sola. */
+.header-aviso-stock {
+    padding: 0;
+}
+
 .marquesina-stock {
     display: flex;
     align-items: center;
     gap: .75rem;
     padding: .7rem .9rem;
-    margin-bottom: 1rem;
+    /* Sin margen inferior: la fila la separa del resto del header. */
     border-radius: 12px;
     border: 1px solid rgba(245, 124, 0, .45);
     background: rgba(245, 124, 0, .10);
@@ -4589,6 +4590,45 @@ html.dark-theme .status-inactivo {
 .marquesina-stock.es-agotado .marquesina-stock-icono {
     background: rgba(239, 68, 68, .18);
     color: var(--danger);
+}
+
+
+/* Etiquetas de ingredientes dentro de la marquesina: mismo estilo que
+   las de la vieja franja STOCK CRÍTICO, pero como botones que navegan. */
+.marquesina-stock .stock-critico-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 0.75rem;
+    cursor: pointer;
+    animation: pulse 0.8s infinite;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(239, 68, 68, 0.25);
+    border: none;
+    color: var(--danger);
+}
+.marquesina-stock .stock-critico-tag.es-agotado {
+    background: rgba(239, 68, 68, 0.4);
+}
+.marquesina-stock .stock-critico-tag i {
+    font-size: 0.7rem;
+}
+.marquesina-stock .stock-critico-tag .stock-critico-tag-nombre {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.marquesina-stock .stock-critico-tag .stock-critico-tag-cantidad {
+    background: var(--danger);
+    color: #fff;
+    padding: 0 5px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    margin-left: 2px;
 }
 
 @media (max-width: 480px) {

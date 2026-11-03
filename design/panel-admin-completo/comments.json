@@ -22,6 +22,28 @@
       "status": "resolved",
       "sentAt": "2026-11-03T01:55:02.834Z",
       "resolvedAt": "2026-11-03T02:39:48.440Z"
+    },
+    {
+      "id": "fe2nyyvl",
+      "file": "01-inicio.html",
+      "selector": "#prueba-final",
+      "excerpt": "prueba",
+      "comment": "PRUEBA DE ENTREGA. Responde solo: recibido.",
+      "createdAt": "2026-11-03T09:33:00.000Z",
+      "status": "resolved",
+      "sentAt": "2026-11-03T09:33:00.000Z",
+      "resolvedAt": "2026-11-03T09:42:00.000Z"
+    },
+    {
+      "id": "xwzprm5p",
+      "file": "01-inicio.html",
+      "selector": "#tasaBar > div:nth-of-type(2) > div:nth-of-type(6) > div",
+      "excerpt": "Avisar stock bajo en Inicio ?",
+      "comment": "Esto no debe ser opcional, debe estar activo y estar ubicado en la ubicación de la barra stock crítico.",
+      "createdAt": "2026-11-03T16:14:56.763Z",
+      "status": "resolved",
+      "sentAt": "2026-11-03T16:31:01.729Z",
+      "resolvedAt": "2026-11-03T14:20:00.000Z"
     }
   ]
 }

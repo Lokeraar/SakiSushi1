@@ -368,17 +368,9 @@ html.dark-theme .logout-button:hover { background: rgba(255,255,255,.1); color: 
         align-items: flex-start;
         gap: 0.35rem;
     }
-    #stockCriticoHeader {
-        order: 3;
-        margin-top: 0 !important;
-    }
 }
 
 /* STOCK CRÍTICO - Borde/sombra para dark mode */
-html.dark-theme #stockCriticoHeader {
-    border: 1px solid #333;
-    box-shadow: 0 0 8px rgba(255,255,255,0.1);
-}
 
 /* Estilos legacy para clases desktop-only/mobile-only (ya no se usan en el header nuevo) */
 @media (min-width: 769px) {
@@ -4534,12 +4526,21 @@ html.dark-theme .status-inactivo {
    críticos que ya calcula el contador "Alertas Stock": una sola
    fuente, sin consultas nuevas.
    ══════════════════════════════════════════════════════════════ */
+/* ── Fila del aviso de stock bajo ────────────────────────────────
+   Vive dentro de <header>, en su propia fila. No usa `.header-desktop`
+   porque esa clase se oculta en el teléfono y este aviso tiene que verse
+   justo ahí. Tampoco usa `.header-mobile`: así se ve igual en ambos.
+   Como la marquesina se oculta con `display:none`, la fila colapsa sola. */
+.header-aviso-stock {
+    padding: 0;
+}
+
 .marquesina-stock {
     display: flex;
     align-items: center;
     gap: .75rem;
     padding: .7rem .9rem;
-    margin-bottom: 1rem;
+    /* Sin margen inferior: la fila la separa del resto del header. */
     border-radius: 12px;
     border: 1px solid rgba(245, 124, 0, .45);
     background: rgba(245, 124, 0, .10);
@@ -4607,6 +4608,45 @@ html.dark-theme .status-inactivo {
 .marquesina-stock.es-agotado .marquesina-stock-icono {
     background: rgba(239, 68, 68, .18);
     color: var(--danger);
+}
+
+
+/* Etiquetas de ingredientes dentro de la marquesina: mismo estilo que
+   las de la vieja franja STOCK CRÍTICO, pero como botones que navegan. */
+.marquesina-stock .stock-critico-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 0.75rem;
+    cursor: pointer;
+    animation: pulse 0.8s infinite;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(239, 68, 68, 0.25);
+    border: none;
+    color: var(--danger);
+}
+.marquesina-stock .stock-critico-tag.es-agotado {
+    background: rgba(239, 68, 68, 0.4);
+}
+.marquesina-stock .stock-critico-tag i {
+    font-size: 0.7rem;
+}
+.marquesina-stock .stock-critico-tag .stock-critico-tag-nombre {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.marquesina-stock .stock-critico-tag .stock-critico-tag-cantidad {
+    background: var(--danger);
+    color: #fff;
+    padding: 0 5px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    margin-left: 2px;
 }
 
 @media (max-width: 480px) {
@@ -4699,12 +4739,29 @@ html.dark-theme .status-inactivo {
                     </select>
                 </div>
             </div>
-            
-            <!-- Stock crítico (solo desktop, debajo del header de 2 filas) -->
-            <div class="header-level header-desktop level-3">
-                <div id="stockCriticoHeader" style="width:100%; padding:.4rem .8rem; background:rgba(0,0,0,.2); border-radius:8px; display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; font-size:.75rem">
-                    <span style="font-weight:700; color:var(--danger); white-space:nowrap"><i class="fas fa-exclamation-triangle"></i> STOCK CRÍTICO:</span>
-                    <div id="stockCriticoTags" style="display:flex; flex-wrap:wrap; gap:.4rem; flex:1; min-width:0"></div>
+
+            <!-- ── Aviso de stock bajo ───────────────────────────────────
+                 Reemplaza a la vieja franja "STOCK CRÍTICO". Muestra los
+                 ingredientes bajos de mínimo como etiquetas con nombre y
+                 cantidad disponible, igual que antes, pero en un solo aviso
+                 que no se puede apagar: es información de operación, no una
+                 preferencia. Se oculta sola cuando no hay nada bajo mínimo.
+
+                 El umbral NO es global: cada ingrediente trae el suyo en
+                 `inventario.minimo`, que es lo que ya usa el semáforo del
+                 módulo de inventario. Este aviso reusa ese mismo criterio.
+
+                 Va en su propia fila y no dentro de `.header-desktop`: esa
+                 clase se oculta en el teléfono con `display:none !important`,
+                 y el aviso tiene que verse justo ahí.
+                 ──────────────────────────────────────────────────────── -->
+            <div class="header-level level-3 header-aviso-stock">
+                <div id="marquesinaStock" class="marquesina-stock" style="display:none" role="status" aria-live="polite">
+                    <div class="marquesina-stock-icono"><i class="fas fa-triangle-exclamation"></i></div>
+                    <div class="marquesina-stock-cuerpo">
+                        <div class="marquesina-stock-titulo" id="marquesinaStockTitulo">Stock bajo</div>
+                        <div class="marquesina-stock-etiquetas" id="marquesinaStockEtiquetas"></div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -4743,25 +4800,6 @@ html.dark-theme .status-inactivo {
                         <i class="fas fa-store-slash"></i> Local operativo:
                         <span id="cierreEstadoChip" style="font-size:.72rem;font-weight:700;padding:.15rem .5rem;border-radius:6px;background:rgba(74,222,128,.15);color:#2e7d32">Abierto</span>
                     </button>
-                </div>
-                <!-- ── Marquesina de stock bajo ──────────────────────────
-                     Avisa qué ingredientes están por debajo de su mínimo, sin
-                     que haya que entrar al módulo de inventario. Se oculta sola
-                     cuando no hay alertas o cuando el dueño la apaga desde
-                     Configuración (`config.alerta_stock_minimo`).
-
-                     El umbral NO es global: cada ingrediente trae el suyo en
-                     `inventario.minimo`, que es lo que ya usa el semáforo del
-                     módulo de inventario. El interruptor de config solo decide
-                     si la franja aparece o no.
-                     ──────────────────────────────────────────────────────── -->
-                <div id="marquesinaStock" class="marquesina-stock" style="display:none" role="status" aria-live="polite">
-                    <div class="marquesina-stock-icono"><i class="fas fa-triangle-exclamation"></i></div>
-                    <div class="marquesina-stock-cuerpo">
-                        <div class="marquesina-stock-titulo" id="marquesinaStockTitulo">Stock bajo</div>
-                        <div class="marquesina-stock-pista" id="marquesinaStockPista"></div>
-                    </div>
-                    <button type="button" class="marquesina-stock-accion" onclick="window.irAStockCritico&&window.irAStockCritico()">Ver</button>
                 </div>
                 <div class="tasa-cards-bar" id="tasaBar">
                     <div class="tcb-cards">
@@ -4927,34 +4965,6 @@ html.dark-theme .status-inactivo {
                                 </span>
                                 <label class="toggle-switch" style="flex-shrink:0">
                                     <input type="checkbox" id="descuentoAlQuitar">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                        <!-- ============================================================
-                             Aviso de stock bajo en el dashboard
-                             ============================================================
-                             Enciende o apaga la franja que aparece en Inicio cuando un
-                             ingrediente baja de su mínimo.
-
-                             El umbral NO se configura acá: cada ingrediente trae el
-                             suyo (`inventario.minimo`). Este interruptor solo decide
-                             si la franja aparece.
-
-                             Apagado por defecto si el dueño no la quiere; encendido
-                             si la config no dice nada, para no perder el aviso sin
-                             darse cuenta. -->
-                        <div style="border-top:1px solid rgba(255,255,255,.12);margin-top:.9rem;padding-top:.9rem">
-                            <div class="tcb-toggle-top">
-                                <span class="tcb-toggle-label" style="font-size:.92rem;color:var(--text-dark)">
-                                    Avisar stock bajo en Inicio
-                                    <span class="tooltip-wrap" style="cursor:help;margin-left:.3rem" onmouseenter="this.querySelector('.tooltip-text').style.display='block'" onmouseleave="this.querySelector('.tooltip-text').style.display='none'">
-                                        <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--text-muted);color:#fff;border-radius:50%;font-size:.6rem;font-weight:700">?</span>
-                                        <span class="tooltip-text" style="width:260px">Muestra una franja en Inicio con los ingredientes que están por debajo de su mínimo, sin tener que entrar al inventario. El mínimo de cada ingrediente se configura en el módulo de Inventario, no acá.</span>
-                                    </span>
-                                </span>
-                                <label class="toggle-switch" style="flex-shrink:0">
-                                    <input type="checkbox" id="alertaStockMinimo">
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
