@@ -44,6 +44,17 @@
       "status": "resolved",
       "sentAt": "2026-11-03T16:31:01.729Z",
       "resolvedAt": "2026-11-03T14:20:00.000Z"
+    },
+    {
+      "id": "cdc4fcb0",
+      "file": "11-modal-ingrediente.html",
+      "selector": "#ingredienteForm > div:nth-of-type(3)",
+      "excerpt": "Stock actual",
+      "comment": "Este campo debe estar bloqueado de modificación accidental, para ello se debe introducir la contraseña de admin (la que usa para iniciar sesión que db está hasheada), para poder desbloquear y modificar manualmente... y al quedar cambios ese valor debe quedar como el vigente",
+      "createdAt": "2026-11-03T20:50:38.187Z",
+      "status": "resolved",
+      "sentAt": "2026-11-03T20:50:38.252Z",
+      "resolvedAt": "2026-11-03T16:50:00.000Z"
     }
   ]
 }
