@@ -84,3 +84,60 @@ window.miFuncion = function miFuncion() { ... };
 ```
 
 Cuesta una palabra y mantiene el índice útil.
+
+## Segunda mitad del problema: las llamadas
+
+Nombrar las definiciones arregla la mitad. La otra mitad son las llamadas.
+
+Probado con dos archivos y una función:
+
+| Forma de llamar | ¿Crea relación en el grafo? |
+|---|---|
+| `window.objetivo()` — mismo archivo | **no** |
+| `objetivo()` — mismo archivo | sí |
+| `objetivo()` — desde otro archivo | sí |
+
+Es decir: el prefijo `window.` también ciega las llamadas. Hay **1339** en este
+proyecto, y cada una es una relación que el grafo no ve. Sin ellas, preguntar
+"¿quién llama a esto?" devuelve vacío aunque haya veinte llamadores.
+
+### Por qué NO se aplicó
+
+Quitar el prefijo no es cosmético como nombrar la expresión. Cambia a qué apunta
+el nombre, y en este proyecto hay seis archivos donde eso rompe algo:
+
+**1. Recursión infinita.** `Cliente/js/cliente-customize.js` tiene stubs que
+existen justamente para romper una dependencia circular:
+
+```js
+function guardarCarrito() {
+    if (window.guardarCarrito) window.guardarCarrito();   // delega a la global
+}
+```
+
+Quitando el prefijo queda `guardarCarrito()` llamándose a sí misma, para siempre.
+Son tres: `guardarCarrito`, `actualizarCarritoBadge`, `actualizarCarritoUI`.
+
+**2. Error de zona muerta temporal.** En `admin/js/admin-mesoneros.js:78`:
+
+```js
+const tasaBaseActual = window.tasaBaseActual();   // una variable local se llama igual
+```
+
+Sin el prefijo, la declaración se lee a sí misma antes de existir: `ReferenceError`
+y la pantalla de mesoneros deja de cargar.
+
+**3. Los otros tres casos** (`cerrarMenuCategorias`, `marcarNotificacionLeida`,
+`repetirPedido`, `vaciarCarrito`) sí son inofensivos, porque el nombre local es la
+misma función que se expone. Pero no compensa tocar 1339 llamadas para arreglar
+cuatro cuando seis rompen el programa.
+
+### Qué queda entonces
+
+El grafo sirve para **encontrar definiciones** (`query`, `context` las halla bien
+desde este cambio), no para recorrer llamadores. Para eso, `grep`.
+
+Si algún día se quiere el grafo de llamadas completo, el camino no es un
+reemplazo masivo: es sacar el código a módulos ES (`import`/`export`), donde no
+hay `window` de por medio y el analizador ve todo. Es una reescritura, no un
+parche.
