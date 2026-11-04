@@ -151,7 +151,7 @@
             $('cuentaClaveInput').setAttribute('autocomplete', 'new-password');
             $('btnCambiarModoCuenta').textContent = 'Ya tengo cuenta, quiero entrar';
         } else {
-            $('cuentaTitulo').textContent = 'Mi cuenta';
+            $('cuentaTitulo').textContent = 'Entrar';
             $('btnEntrarTexto').textContent = 'Iniciar sesión';
             $('cuentaClaveInput').setAttribute('autocomplete', 'current-password');
             $('btnCambiarModoCuenta').textContent = 'No tengo cuenta, quiero crear una';
@@ -199,14 +199,18 @@
         accion.then(function (r) {
             bloquear(false);
 
-            // Registro que necesita confirmar el correo: todavía no hay sesión.
+            // Registro que pide confirmar el correo: todavía no hay sesión, así
+            // que NO se cierra el modal (cerrarlo dejaría a la persona sin saber
+            // qué pasó). Se queda abierto en modo "entrar" con el aviso arriba,
+            // lista para que vuelva cuando haya confirmado.
             if (r && r.requiereConfirmacion) {
-                mostrarVistaSesion(null);
+                modoRegistro = false;
+                if ($('cuentaTitulo')) $('cuentaTitulo').textContent = 'Revisa tu correo';
+                if ($('btnEntrarTexto')) $('btnEntrarTexto').textContent = 'Iniciar sesión';
+                if ($('btnCambiarModoCuenta')) {
+                    $('btnCambiarModoCuenta').textContent = 'No tengo cuenta, quiero crear una';
+                }
                 mostrarError(r.mensaje);
-                $('cuentaVistaForm').style.display = 'none';
-                $('cuentaVistaSesion').style.display = 'block';
-                $('cuentaCorreo').textContent = r.correo;
-                $('btnVerMisPedidos').style.display = 'none';
                 return;
             }
 
@@ -220,6 +224,12 @@
 
             refrescarEncabezado();
             cerrar();
+
+            // El formulario queda limpio para la próxima vez. El correo se
+            // conserva: es lo que la persona vuelve a escribir al entrar.
+            var clave = $('cuentaClaveInput');
+            if (clave) clave.value = '';
+            ocultarError();
 
             // El botón de "pedidos anteriores" se recalcula: con sesión, el
             // historial que se muestra es el de la cuenta.
@@ -237,14 +247,64 @@
 
     function salir() {
         if (!window.SakiCliente) return;
+
+        var boton = $('btnCerrarSesionCliente');
+        if (boton) { boton.disabled = true; boton.textContent = 'Cerrando...'; }
+
+        // `cerrarSesion()` ya no espera a la red: suelta el token guardado y
+        // vuelve al cliente anónimo. Antes llamaba a `signOut()` de GoTrue y la
+        // promesa se quedaba colgada, así que este `.then()` nunca corría y el
+        // modal se quedaba abierto como si el botón no hiciera nada.
         window.SakiCliente.cerrarSesion().then(function () {
             mostrarToast('Sesión cerrada. Sigues navegando como invitado.', 'info');
             refrescarEncabezado();
             cerrar();
+
+            // Dejar el formulario listo para volver a entrar. Sin esto, al
+            // abrir el modal otra vez quedaban el correo y la contraseña de la
+            // sesión anterior, y `modoRegistro` podía seguir en `true`.
+            reiniciarFormulario();
+
             if (typeof window.actualizarBotonHistorial === 'function') {
                 try { window.actualizarBotonHistorial(); } catch (e) { /* no crítico */ }
             }
+        }).catch(function () {
+            // Aunque algo falle, la sesión local ya se soltó: se cierra igual.
+            mostrarToast('Sesión cerrada. Sigues navegando como invitado.', 'info');
+            refrescarEncabezado();
+            cerrar();
+            reiniciarFormulario();
         });
+    }
+
+    /**
+     * Deja el formulario como recién abierto.
+     *
+     * Se llama al cerrar sesión y al abrir el modal sin sesión. Es un solo
+     * lugar para que no se desincronicen el título, el texto del botón, el
+     * modo y los campos.
+     */
+    function reiniciarFormulario() {
+        modoRegistro = false;
+        ocultarError();
+        if ($('cuentaTitulo')) $('cuentaTitulo').textContent = 'Entrar';
+        if ($('btnEntrarTexto')) $('btnEntrarTexto').textContent = 'Iniciar sesión';
+        if ($('btnCambiarModoCuenta')) {
+            $('btnCambiarModoCuenta').textContent = 'No tengo cuenta, quiero crear una';
+        }
+        if ($('cuentaClaveInput')) {
+            $('cuentaClaveInput').value = '';
+            $('cuentaClaveInput').setAttribute('autocomplete', 'current-password');
+        }
+        bloquear(false);
+
+        // Se recuerda el correo con el que se entró antes, para que al volver
+        // solo haga falta la contraseña. La contraseña NUNCA se guarda.
+        var correoInput = $('cuentaCorreoInput');
+        if (correoInput && !correoInput.value && window.SakiCliente &&
+            typeof window.SakiCliente.ultimoCorreo === 'function') {
+            try { correoInput.value = window.SakiCliente.ultimoCorreo() || ''; } catch (e) {}
+        }
     }
 
     function abrirMisPedidos() {
@@ -258,10 +318,18 @@
         var conSesion = !!(usuario && usuario.id);
         var vistaForm = $('cuentaVistaForm');
         var vistaSesion = $('cuentaVistaSesion');
+        var titulo = $('cuentaTitulo');
         if (!vistaForm || !vistaSesion) return;
 
         vistaForm.style.display = conSesion ? 'none' : 'block';
         vistaSesion.style.display = conSesion ? 'block' : 'none';
+
+        // El título manda la vista. Antes se quedaba en "Crear cuenta" porque
+        // lo había puesto `alternarModo()` y nadie lo devolvía: con sesión
+        // iniciada el modal decía "Crear cuenta" arriba y "Sesión iniciada"
+        // abajo, que es justo lo contrario de lo que está pasando.
+        if (titulo) titulo.textContent = conSesion ? 'Mi cuenta' : 'Entrar';
+
         if (conSesion) {
             $('cuentaCorreo').textContent = usuario.correo || 'Cuenta';
             $('btnVerMisPedidos').style.display = 'block';
@@ -274,17 +342,33 @@
 
     function abrir() {
         construirModal();
-        ocultarError();
+
         var usuario = window.SakiCliente ? window.SakiCliente.usuario() : null;
-        mostrarVistaSesion(usuario);
-        if (!usuario) {
-            modoRegistro = false;
-            $('cuentaTitulo').textContent = 'Mi cuenta';
-            $('btnEntrarTexto').textContent = 'Iniciar sesión';
-            $('btnCambiarModoCuenta').textContent = 'No tengo cuenta, quiero crear una';
-            $('cuentaClaveInput').value = '';
+
+        if (usuario) {
+            ocultarError();
+            mostrarVistaSesion(usuario);
+            // El botón de salir vuelve a estar activo: pudo quedar en
+            // "Cerrando..." si se cerró el modal a mitad de la operación.
+            var botonSalir = $('btnCerrarSesionCliente');
+            if (botonSalir) { botonSalir.disabled = false; botonSalir.textContent = 'Cerrar sesión'; }
+        } else {
+            // Sin sesión, el formulario arranca siempre limpio y en modo
+            // "entrar". Si venía de crear cuenta o de cerrar sesión, no arrastra
+            // ese estado.
+            if ($('cuentaVistaForm')) $('cuentaVistaForm').style.display = 'block';
+            if ($('cuentaVistaSesion')) $('cuentaVistaSesion').style.display = 'none';
+            reiniciarFormulario();
         }
+
         $('cuentaModal').classList.add('active');
+
+        // El cursor arranca donde toca: en la contraseña si el correo ya está
+        // puesto, en el correo si está vacío.
+        var correoInput = $('cuentaCorreoInput');
+        var claveInput = $('cuentaClaveInput');
+        var enfocar = correoInput && correoInput.value ? claveInput : correoInput;
+        if (enfocar) setTimeout(function () { try { enfocar.focus(); } catch (e) {} }, 120);
     }
 
     function cerrar() {

@@ -157,14 +157,130 @@
     //  CUENTA: registrarse, entrar, salir
     // ══════════════════════════════════════════════════════════════
     //
-    // El cliente NO usa la sesión de GoTrue del cliente Supabase: ese cliente
-    // se crea con `persistSession: false` y `autoRefreshToken: false`, y
-    // toda la app manda el token por cabecera. Acá se sigue el mismo camino
-    // que el panel de administración: el token se guarda y se reconstruye el
-    // cliente Supabase con él, para que Realtime y RLS lo vean.
+    // POR QUÉ NO SE USA `supabaseClient.auth`
+    //
+    // El primer intento llamaba a `supabaseClient.auth.signInWithPassword()`
+    // y `signOut()` directamente. Colgaba: el botón se quedaba en "Entrando..."
+    // para siempre, y "Cerrar sesión" no hacía nada.
+    //
+    // El motivo es que `inicializarSupabaseCliente()` crea un cliente nuevo en
+    // cada entrada y en cada salida (con `persistSession: false`), y GoTrue se
+    // protege con un candado interno ligado al `storageKey`. Con dos instancias
+    // vivas sobre el mismo `storageKey`, `signOut()` se queda esperando un
+    // candado que la otra instancia nunca libera. La promesa no resuelve ni
+    // falla: solo espera. De ahí el botón congelado.
+    //
+    // La salida es la misma que usa el panel de administración desde siempre:
+    // hablar con la API de Auth por `fetch`, con el token en una cabecera. Sin
+    // candados, sin estado escondido, y verificable desde una terminal.
 
     var CLAVE_TOKEN = 'saki_token_cliente';
     var CLAVE_USUARIO = 'saki_usuario_cliente';
+
+    // El último correo con el que se entró, para no obligar a escribirlo otra
+    // vez. No es un dato sensible: es lo que la persona tecleó, y sirve para
+    // que al volver a entrar solo ponga la contraseña.
+    var CLAVE_ULTIMO_CORREO = 'saki_ultimo_correo';
+
+    // Tope de espera para toda llamada de cuenta. Sin esto, cualquier cuelgue
+    // futuro vuelve a dejar el botón en "Entrando..." sin explicación. Con
+    // esto, a los 20 segundos hay un mensaje y la persona puede reintentar.
+    var SEGUNDOS_MAXIMOS = 20;
+    var SIN_RESPUESTA = 'La conexión tardó demasiado. Revisa tu internet e inténtalo otra vez.';
+
+    var SIN_CONEXION = 'No hay conexión. Revisa tu internet e inténtalo otra vez.';
+
+    /**
+     * Corta una promesa que se quedó esperando.
+     *
+     * Las carreras de promesas no cancelan el trabajo de fondo: si la llamada
+     * original responde después, su resultado se descarta. Para lo que importa
+     * acá —que la persona no quede mirando un botón trabado— alcanza y sobra.
+     */
+    function conTiempoLimite(promesa) {
+        return new Promise(function (resolver, rechazar) {
+            var cerrado = false;
+            var reloj = setTimeout(function () {
+                if (cerrado) return;
+                cerrado = true;
+                rechazar(new Error(SIN_RESPUESTA));
+            }, SEGUNDOS_MAXIMOS * 1000);
+
+            promesa.then(function (valor) {
+                if (cerrado) return;
+                cerrado = true;
+                clearTimeout(reloj);
+                resolver(valor);
+            }, function (error) {
+                if (cerrado) return;
+                cerrado = true;
+                clearTimeout(reloj);
+                rechazar(error);
+            });
+        });
+    }
+
+    /**
+     * Una llamada a la API de Auth de Supabase.
+     *
+     * Devuelve el cuerpo ya convertido. Si el servidor responde con error,
+     * lanza un `Error` que lleva `datos` con el cuerpo original, para que
+     * `traducirErrorDeCuenta()` pueda leer el código exacto.
+     */
+    function peticionAuth(ruta, cuerpo) {
+        if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+            return Promise.reject(new Error('La aplicación no terminó de cargar. Cierra y vuelve a abrir.'));
+        }
+
+        var envio = fetch(window.SUPABASE_URL + '/auth/v1' + ruta, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': window.SUPABASE_ANON_KEY,
+                'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify(cuerpo || {})
+        }).then(function (respuesta) {
+            return respuesta.text().then(function (bruto) {
+                var datos = null;
+                try { datos = JSON.parse(bruto); } catch (e) { datos = null; }
+
+                if (!respuesta.ok) {
+                    var error = new Error('auth_error');
+                    error.status = respuesta.status;
+                    error.datos = datos || {};
+                    throw error;
+                }
+                return datos || {};
+            });
+        }).catch(function (error) {
+            // `fetch` rechaza con TypeError cuando no hay red. Se traduce ANTES
+            // del tiempo límite, para que ese mensaje no lo pise el de
+            // "tardó demasiado": si no hay conexión, lo útil es decirlo, no
+            // esperar 20 segundos para avisar de una espera.
+            if (error && error.name === 'TypeError') throw new Error(SIN_CONEXION);
+            throw error;
+        });
+
+        return conTiempoLimite(envio);
+    }
+
+    /**
+     * Saca la sesión del cuerpo de Auth.
+     *
+     * `/signup` y `/token` devuelven el token arriba, pero por si el servidor
+     * cambia de forma se mira también `session`.
+     */
+    function sesionDesde(datos) {
+        if (!datos) return null;
+        var crudo = datos.session || datos;
+        if (!crudo || !crudo.access_token) return null;
+        return {
+            access_token: crudo.access_token,
+            refresh_token: crudo.refresh_token || null,
+            user: crudo.user || datos.user || null
+        };
+    }
 
     /**
      * Mensajes de error de Supabase Auth, traducidos a algo que se entienda.
@@ -175,31 +291,47 @@
      */
     function traducirErrorDeCuenta(error) {
         if (!error) return 'No se pudo completar la operación.';
-        var codigo = error.code || error.error_code || '';
-        var texto = (error.message || '').toLowerCase();
+        var datos = error.datos || {};
+        var codigo = error.code || error.error_code || datos.error_code || datos.code || '';
+        var texto = String(
+            error.message || datos.msg || datos.message || datos.error_description || ''
+        ).toLowerCase();
 
-        if (codigo === 'invalid_credentials' || texto.indexOf('invalid login') >= 0) {
+        if (codigo === 'invalid_credentials' || texto.indexOf('invalid login') >= 0 ||
+            texto.indexOf('invalid credentials') >= 0) {
             return 'El correo o la contraseña no son correctos.';
         }
-        if (codigo === 'email_exists' || texto.indexOf('already registered') >= 0) {
+        if (codigo === 'user_already_exists' || codigo === 'email_exists' ||
+            texto.indexOf('already registered') >= 0 || texto.indexOf('already exists') >= 0) {
             return 'Ya existe una cuenta con este correo. Inicia sesión.';
         }
         if (codigo === 'weak_password' || texto.indexOf('password should be') >= 0) {
             return 'La contraseña es muy corta. Usa al menos 6 caracteres.';
         }
-        if (codigo === 'email_address_invalid' || texto.indexOf('invalid email') >= 0) {
+        if (codigo === 'email_address_invalid' || texto.indexOf('invalid email') >= 0 ||
+            texto.indexOf('unable to validate email') >= 0) {
             return 'Escribe un correo válido, por ejemplo nombre@correo.com.';
         }
         if (codigo === 'email_not_confirmed' || texto.indexOf('not confirmed') >= 0) {
             return 'Falta confirmar tu correo. Revisa tu bandeja de entrada.';
         }
-        if (codigo === 'over_email_send_rate_limit' || texto.indexOf('rate limit') >= 0) {
+        if (codigo === 'over_email_send_rate_limit' || codigo === 'over_request_rate_limit' ||
+            texto.indexOf('rate limit') >= 0 || texto.indexOf('too many') >= 0) {
             return 'Demasiados intentos seguidos. Espera un minuto y vuelve a probar.';
         }
-        if (texto.indexOf('failed to fetch') >= 0 || texto.indexOf('network') >= 0) {
-            return 'No hay conexión. Revisa tu internet e inténtalo otra vez.';
+        if (codigo === 'signup_disabled') {
+            return 'El registro está desactivado en este momento.';
         }
-        return error.message || 'No se pudo completar la operación.';
+        if (error.status === 429) {
+            return 'Demasiados intentos seguidos. Espera un minuto y vuelve a probar.';
+        }
+        if (error.status >= 500) {
+            return 'El servidor no respondió bien. Inténtalo otra vez en un momento.';
+        }
+        // Cuando el mensaje ya viene en español (nuestras propias
+        // validaciones), se deja tal cual.
+        if (error.message && error.message !== 'auth_error') return error.message;
+        return 'No se pudo completar la operación.';
     }
 
     function guardarSesion(sesion) {
@@ -233,9 +365,6 @@
      * como anónimo en este mismo teléfono (migración 49).
      */
     function registrar(correo, contrasena) {
-        if (!window.supabaseClient) {
-            return Promise.reject(new Error('sin_cliente_supabase'));
-        }
         var email = String(correo || '').trim();
         var pass = String(contrasena || '');
 
@@ -248,15 +377,13 @@
 
         var fichaAntes = fichaMemoria || leerGuardada();
 
-        return window.supabaseClient.auth
-            .signUp({ email: email, password: pass })
-            .then(function (resp) {
-                if (resp.error) throw resp.error;
-                var sesion = resp.data && resp.data.session;
+        return peticionAuth('/signup', { email: email, password: pass })
+            .then(function (datos) {
+                var sesion = sesionDesde(datos);
 
                 // Sin sesión: el proyecto exige confirmar el correo. No es un
                 // error, pero tampoco hay cuenta usable todavía.
-                if (!sesion) {
+                if (!sesion || !sesion.user) {
                     return {
                         success: true,
                         requiereConfirmacion: true,
@@ -283,9 +410,6 @@
 
     /** Entra con correo y contraseña, y reclama los pedidos anónimos. */
     function iniciarSesion(correo, contrasena) {
-        if (!window.supabaseClient) {
-            return Promise.reject(new Error('sin_cliente_supabase'));
-        }
         var email = String(correo || '').trim();
         var pass = String(contrasena || '');
 
@@ -295,12 +419,12 @@
 
         var fichaAntes = fichaMemoria || leerGuardada();
 
-        return window.supabaseClient.auth
-            .signInWithPassword({ email: email, password: pass })
-            .then(function (resp) {
-                if (resp.error) throw resp.error;
-                var sesion = resp.data && resp.data.session;
-                if (!sesion) throw new Error('No se pudo iniciar sesión.');
+        return peticionAuth('/token?grant_type=password', { email: email, password: pass })
+            .then(function (datos) {
+                var sesion = sesionDesde(datos);
+                if (!sesion || !sesion.user) {
+                    throw new Error('El correo o la contraseña no son correctos.');
+                }
 
                 guardarSesion(sesion);
                 return reclamarPedidos(fichaAntes).then(function (rec) {
@@ -336,30 +460,58 @@
             });
     }
 
+    /** El último correo con el que se entró, o cadena vacía. */
+    function ultimoCorreo() {
+        try { return localStorage.getItem(CLAVE_ULTIMO_CORREO) || ''; }
+        catch (e) { return ''; }
+    }
+
     /**
      * Cierra la sesión y vuelve a navegar como anónimo.
      *
      * La ficha se CONSERVA: si el cliente vuelve a pedir sin entrar, sus
      * pedidos nuevos quedan en este teléfono y podrá reclamarlos la próxima
      * vez, igual que antes de registrarse.
+     *
+     * Esto NO espera a la red. Antes se llamaba a `signOut()` de GoTrue y la
+     * promesa se quedaba colgada, así que el modal nunca se cerraba. Cerrar
+     * sesión acá es soltar el token guardado y volver al cliente anónimo: eso
+     * es instantáneo y no depende de que el servidor conteste. El aviso al
+     * servidor se manda igual, pero sin bloquear nada.
      */
     function cerrarSesion() {
+        var tokenViejo = usuarioActual ? usuarioActual.token : null;
+        var correoViejo = usuarioActual ? usuarioActual.correo : '';
+
         usuarioActual = null;
         try {
             localStorage.removeItem(CLAVE_TOKEN);
             localStorage.removeItem(CLAVE_USUARIO);
+            // El correo SÍ se conserva: es lo que la persona vuelve a escribir
+            // si quiere entrar otra vez, y ya está probado que existe.
+            if (correoViejo) localStorage.setItem(CLAVE_ULTIMO_CORREO, correoViejo);
         } catch (e) { /* modo privado */ }
 
-        var salida = window.supabaseClient && window.supabaseClient.auth
-            ? window.supabaseClient.auth.signOut().catch(function () { return null; })
-            : Promise.resolve(null);
+        if (typeof window.inicializarSupabaseCliente === 'function') {
+            window.supabaseClient = window.inicializarSupabaseCliente();
+        }
 
-        return salida.then(function () {
-            if (typeof window.inicializarSupabaseCliente === 'function') {
-                window.supabaseClient = window.inicializarSupabaseCliente();
-            }
-            return true;
-        });
+        // Se le avisa al servidor para que invalide la sesión, pero el
+        // resultado no le importa a nadie acá: si falla, el token ya no está
+        // guardado en este teléfono, que es lo que hacía falta.
+        if (tokenViejo) {
+            try {
+                fetch(window.SUPABASE_URL + '/auth/v1/logout', {
+                    method: 'POST',
+                    headers: {
+                        'apikey': window.SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + tokenViejo
+                    }
+                }).catch(function () { /* el token local ya se borró */ });
+            } catch (e) { /* el token local ya se borró */ }
+        }
+
+        return Promise.resolve(true);
     }
 
     /**
@@ -402,6 +554,7 @@
         asegurarIdentidad: asegurarIdentidad,
         estaRegistrado: estaRegistrado,
         usuario: usuario,
+        ultimoCorreo: ultimoCorreo,
         registrar: registrar,
         iniciarSesion: iniciarSesion,
         cerrarSesion: cerrarSesion,
