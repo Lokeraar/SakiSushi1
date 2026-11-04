@@ -205,12 +205,14 @@
 
         ocultarError();
         bloquear(true, modoRegistro ? 'Creando cuenta...' : 'Entrando...');
+        operacionesEnCurso++;
 
         var accion = modoRegistro
             ? window.SakiCliente.registrar(correo, clave)
             : window.SakiCliente.iniciarSesion(correo, clave);
 
         accion.then(function (r) {
+            operacionesEnCurso = Math.max(0, operacionesEnCurso - 1);
             bloquear(false);
 
             // Registro que pide confirmar el correo: todavía no hay sesión, así
@@ -252,6 +254,7 @@
             }
 
         }).catch(function (e) {
+            operacionesEnCurso = Math.max(0, operacionesEnCurso - 1);
             bloquear(false);
             // El mensaje acordado: el cliente NO se queda sin poder pedir.
             var propio = e && e.message ? e.message : 'No se pudo iniciar sesión.';
@@ -269,11 +272,14 @@
         if (boton) { boton.disabled = true; }
         ocultarError();
 
-        // Si el redirect funciona, la página se va a Google y esta promesa
-        // nunca importa. Si falla —proveedor sin activar, URL no autorizada,
-        // sin red— hay que decirlo en pantalla en vez de dejar el botón mudo.
-        // Se cierra el modal porque este objeto se destruye al navegar.
+        // Se cuenta como operación en curso. Si la persona se va a Google, esta
+        // promesa no resuelve nunca y el contador queda en 1… pero da igual:
+        // esa página muere al navegar. Y si vuelve por la caché de retroceso,
+        // `soltarBotonesTrabados(true)` lo pone en cero.
+        operacionesEnCurso++;
+
         window.SakiCliente.iniciarConGoogle().catch(function (e) {
+            operacionesEnCurso = Math.max(0, operacionesEnCurso - 1);
             if (boton) { boton.disabled = false; }
             var motivo = e && e.message ? e.message : 'No se pudo abrir Google.';
             mostrarError(motivo + ' Aún puedes entrar con tu correo y tu contraseña, ' +
@@ -281,17 +287,77 @@
         });
     }
 
+    /**
+     * Suelta todos los botones que se hayan quedado bloqueados.
+     *
+     * POR QUÉ EXISTE ESTO
+     *
+     * Al tocar un botón que va a navegar a otra página se deshabilita, para
+     * que nadie lo toque dos veces y pida dos veces. Pero si la persona se
+     * arrepiente y retrocede, el navegador NO recarga la carta: la saca de su
+     * caché de retroceso (bfcache), tal como estaba en el instante de irse.
+     * O sea, con el botón TODAVÍA deshabilitado. Y como no hubo una carga de
+     * página, el código de arranque nunca corre para volver a habilitarlo.
+     *
+     * Síntoma: "toqué crear cuenta con Google, retrocedí, y ahora no hace
+     * nada". El botón está muerto y se ve normal.
+     *
+     * La salida es escuchar `pageshow`: se dispara también cuando la página
+     * vuelve de la caché de retroceso, y ahí dice `event.persisted === true`.
+     * En ese momento se suelta todo lo que se haya quedado tomado.
+     */
+    // Cuántas operaciones de cuenta están en curso ahora mismo.
+    //
+    // Sirve para que la liberación automática no reabra un botón MIENTRAS algo
+    // está pasando de verdad. Sin este contador, cambiar de pestaña a mitad de
+    // un inicio de sesión habilitaría el botón y permitiría mandar el
+    // formulario dos veces.
+    var operacionesEnCurso = 0;
+
+    /**
+     * Suelta los botones.
+     *
+     * `forzar` es la diferencia importante:
+     *
+     *   forzar = false  → solo si no hay nada corriendo. Es el caso de volver
+     *                     a la pestaña: la página siguió viva y lo que estaba
+     *                     en curso sigue en curso.
+     *
+     *   forzar = true   → siempre. Es el caso de la caché de retroceso: esa
+     *                     página es una FOTO congelada del pasado, y cualquier
+     *                     promesa que estuviera pendiente murió con ella. Si no
+     *                     se fuerza, un contador que quedó en 1 bloquea todo
+     *                     para siempre.
+     */
+    function soltarBotonesTrabados(forzar) {
+        if (!forzar && operacionesEnCurso > 0) return;
+        if (forzar) operacionesEnCurso = 0;
+
+        var google = $('btnGoogleCuenta');
+        if (google) google.disabled = false;
+
+        var salir = $('btnCerrarSesionCliente');
+        if (salir) {
+            salir.disabled = false;
+            salir.textContent = 'Cerrar sesión';
+        }
+
+        bloquear(false);
+    }
+
     function salir() {
         if (!window.SakiCliente) return;
 
         var boton = $('btnCerrarSesionCliente');
         if (boton) { boton.disabled = true; boton.textContent = 'Cerrando...'; }
+        operacionesEnCurso++;
 
         // `cerrarSesion()` ya no espera a la red: suelta el token guardado y
         // vuelve al cliente anónimo. Antes llamaba a `signOut()` de GoTrue y la
         // promesa se quedaba colgada, así que este `.then()` nunca corría y el
         // modal se quedaba abierto como si el botón no hiciera nada.
         window.SakiCliente.cerrarSesion().then(function () {
+            operacionesEnCurso = Math.max(0, operacionesEnCurso - 1);
             mostrarToast('Sesión cerrada. Sigues navegando como invitado.', 'info');
             refrescarEncabezado();
             cerrar();
@@ -305,6 +371,7 @@
                 try { window.actualizarBotonHistorial(); } catch (e) { /* no crítico */ }
             }
         }).catch(function () {
+            operacionesEnCurso = Math.max(0, operacionesEnCurso - 1);
             // Aunque algo falle, la sesión local ya se soltó: se cierra igual.
             mostrarToast('Sesión cerrada. Sigues navegando como invitado.', 'info');
             refrescarEncabezado();
@@ -442,6 +509,26 @@
         refrescarEncabezado();
         var btn = document.getElementById('btnCuentaCliente');
         if (btn) btn.addEventListener('click', abrir);
+
+        // Vuelta desde la caché de retroceso del navegador (bfcache).
+        //
+        // Cuando alguien toca "entrar con Google" y se arrepiente, el botón
+        // quedó deshabilitado, y al retroceder el navegador muestra la página
+        // tal como la guardó: con el botón muerto y sin recargar. Ese es el bug
+        // que se reportó: al segundo intento ya no pasaba nada.
+        //
+        // `pageshow` es el único aviso que llega en ese caso, y ahí
+        // `event.persisted` es `true`. Se fuerza la liberación porque esa
+        // página es una foto congelada: lo que estuviera pendiente ya no existe.
+        window.addEventListener('pageshow', function (evento) {
+            soltarBotonesTrabados(!!(evento && evento.persisted));
+        });
+
+        // Al volver a la pestaña. Acá la página sí siguió viva, así que se
+        // respeta el contador: si hay algo en curso, no se toca.
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) soltarBotonesTrabados(false);
+        });
     }
 
     if (document.readyState === 'loading') {
