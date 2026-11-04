@@ -33,6 +33,19 @@
             }
         }
 
+        // 1c. Detectar sesión de OAuth (vuelta de Google).
+        //
+        // Si la persona acaba de autenticar con Google, Supabase redirige de
+        // vuelta a la carta con el código en la URL. `getSession()` lo lee y
+        // deja la sesión activa. Si no hay nada, devuelve null y seguimos
+        // como anónimo.
+        if (window.SakiCliente && window.SakiCliente.recuperarSesionOAuth) {
+            try { await window.SakiCliente.recuperarSesionOAuth(); } catch (e) { /* anónimo */ }
+            if (window.SakiCuenta && window.SakiCuenta.refrescarEncabezado) {
+                window.SakiCuenta.refrescarEncabezado();
+            }
+        }
+
         // 2. Carrito desde localStorage
         var hayCarrito = false;
         if (window.restaurarCarrito) hayCarrito = window.restaurarCarrito();

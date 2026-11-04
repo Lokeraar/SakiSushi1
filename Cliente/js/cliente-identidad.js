@@ -515,6 +515,52 @@
     }
 
     /**
+     * Entra con Google OAuth.
+     *
+     * Redirige al navegador a Google. Cuando la persona acepta, Google vuelve
+     * a la carta y Supabase procesa el callback. En ese momento,
+     * `recuperarSesionOAuth()` (llamada al arrancar la carta) detecta la
+     * sesión y la deja activa.
+     *
+     * El `redirectTo` es la propia carta, para que vuelva aquí después de
+     * autenticar con Google.
+     */
+    function iniciarConGoogle() {
+        if (!window.supabaseClient) {
+            return Promise.reject(new Error('sin_cliente_supabase'));
+        }
+        return window.supabaseClient.auth.signInWithOAuthProvider({
+            provider: 'google',
+            options: {
+                redirectTo: 'https://lokeraar.github.io/SakiSushi1/Cliente/index.html'
+            }
+        });
+    }
+
+    /**
+     * Detecta una sesión de OAuth tras volver de Google.
+     *
+     * Se llama al arrancar la carta. Si hay sesión (Google acaba de redirigir
+     * acá), la guarda y la deja activa. Devuelve el usuario o null.
+     */
+    function recuperarSesionOAuth() {
+        if (!window.supabaseClient) return Promise.resolve(null);
+
+        return window.supabaseClient.auth.getSession()
+            .then(function (resp) {
+                var sesion = resp && resp.data && resp.data.session;
+                if (sesion && sesion.access_token) {
+                    guardarSesion(sesion);
+                    return usuarioActual;
+                }
+                return null;
+            })
+            .catch(function () {
+                return null;
+            });
+    }
+
+    /**
      * Devuelve la sesión guardada, si la hay, y rearma el cliente con ella.
      *
      * Se llama al arrancar la carta. No valida el token contra el servidor:
@@ -559,6 +605,8 @@
         iniciarSesion: iniciarSesion,
         cerrarSesion: cerrarSesion,
         restaurarSesion: restaurarSesion,
+        recuperarSesionOAuth: recuperarSesionOAuth,
+        iniciarConGoogle: iniciarConGoogle,
         traducirErrorDeCuenta: traducirErrorDeCuenta,
         idActual: idActual,
         olvidar: olvidar

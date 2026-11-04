@@ -103,6 +103,17 @@
                     '<i class="fas fa-sign-in-alt"></i> <span id="btnEntrarTexto">Iniciar sesión</span>' +
                   '</button>' +
 
+                  '<div style="margin:.5rem 0;border-top:1px solid rgba(255,255,255,.12);padding-top:.5rem;font-size:.85rem;opacity:.8;text-align:center">' +
+                    'O sigue con' +
+                  '</div>' +
+
+                  '<button class="btn-secondary" id="btnGoogleCuenta" type="button" ' +
+                          'style="width:100%;margin-bottom:.5rem;border:1px solid rgba(255,255,255,.25);' +
+                          'background:rgba(255,255,255,.08);color:inherit;border-radius:var(--radius-sm);' +
+                          'padding:.7rem;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem">' +
+                    '<i class="fab fa-google"></i> Entrar con Google' +
+                  '</button>' +
+
                   '<button type="button" id="btnCambiarModoCuenta" ' +
                           'style="width:100%;background:none;border:none;color:var(--accent);' +
                           'padding:.6rem;font-size:.9rem;cursor:pointer;text-decoration:underline">' +
@@ -124,6 +135,7 @@
 
         $('btnCambiarModoCuenta').addEventListener('click', alternarModo);
         $('btnEntrarCuenta').addEventListener('click', enviarFormulario);
+        $('btnGoogleCuenta').addEventListener('click', iniciarConGoogle);
         $('btnVerMisPedidos').addEventListener('click', abrirMisPedidos);
         $('btnCerrarSesionCliente').addEventListener('click', salir);
 
@@ -243,6 +255,15 @@
             var propio = e && e.message ? e.message : 'No se pudo iniciar sesión.';
             mostrarError(propio + ' Aún puedes hacer y recibir tu pedido sin cuenta.');
         });
+    }
+
+    function iniciarConGoogle() {
+        cerrar();
+        if (window.SakiCliente && typeof window.SakiCliente.iniciarConGoogle === 'function') {
+            window.SakiCliente.iniciarConGoogle();
+        } else {
+            mostrarError('La aplicación no terminó de cargar. Cierra y vuelve a abrir.');
+        }
     }
 
     function salir() {
