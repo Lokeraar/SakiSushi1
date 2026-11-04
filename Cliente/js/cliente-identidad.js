@@ -556,19 +556,110 @@
      * Se llama al arrancar la carta. Si hay sesión (Google acaba de redirigir
      * acá), la guarda y la deja activa. Devuelve el usuario o null.
      */
-    function recuperarSesionOAuth() {
-        if (!window.supabaseClient) return Promise.resolve(null);
+    /**
+     * Lee los parámetros que Supabase devuelve en el hash al volver de Google.
+     *
+     * POR QUÉ HACE FALTA ESTO A MANO
+     *
+     * Supabase redirige de vuelta con los tokens en el hash:
+     *   index.html#access_token=...&refresh_token=...&type=bearer
+     *
+     * El SDK los lería solo si `detectSessionInUrl` estuviera en `true`, pero
+     * nuestro cliente lo tiene en `false` (se creó así para no mezclar la
+     * sesión de GoTrue con el token que la app manda por cabecera).
+     *
+     * Consecuencia si nadie los lee: la persona vuelve de Google, la carta
+     * carga normal, y SIGUE ANÓNIMA. Sin error, sin aviso. Por eso se leen acá.
+     */
+    function leerHashOAuth() {
+        var hash = window.location.hash || '';
+        if (hash.charAt(0) === '#') hash = hash.slice(1);
+        if (!hash) return null;
 
-        return window.supabaseClient.auth.getSession()
-            .then(function (resp) {
-                var sesion = resp && resp.data && resp.data.session;
-                if (sesion && sesion.access_token) {
-                    guardarSesion(sesion);
-                    return usuarioActual;
-                }
-                return null;
+        var datos = {};
+        hash.split('&').forEach(function (par) {
+            var i = par.indexOf('=');
+            if (i < 0) return;
+            var clave = decodeURIComponent(par.slice(0, i));
+            var valor = decodeURIComponent(par.slice(i + 1).replace(/\+/g, ' '));
+            datos[clave] = valor;
+        });
+        return datos;
+    }
+
+    /** Quita el hash de la barra de direcciones, sin recargar ni saltar. */
+    function limpiarHashOAuth() {
+        try {
+            var limpia = window.location.pathname + window.location.search;
+            window.history.replaceState({}, document.title, limpia);
+        } catch (e) { /* si el navegador no deja, el hash se queda; no es grave */ }
+    }
+
+    /**
+     * Detecta una sesión de OAuth tras volver de Google.
+     *
+     * Se llama al arrancar la carta. Hace dos cosas que el SDK no hace por
+     * nosotros (ver `leerHashOAuth`):
+     *
+     *   1. Lee el `access_token` del hash de la URL.
+     *   2. Pregunta al servidor quién es el dueño de ese token.
+     *
+     * El paso 2 es obligatorio: el hash trae el token pero NO el id ni el
+     * correo del usuario, y sin el id no se puede guardar la sesión ni
+     * reclamar los pedidos anónimos.
+     *
+     * Devuelve el usuario, o null si no venía de Google.
+     */
+    function recuperarSesionOAuth() {
+        if (!window.supabaseClient && !window.SUPABASE_URL) return Promise.resolve(null);
+
+        var datos = leerHashOAuth();
+        if (!datos) return Promise.resolve(null);
+
+        // Google puede volver con un rechazo explícito (la persona canceló,
+        // o el proveedor está mal configurado). Se limpia el hash igual para
+        // que no quede pegado en la URL, y se sigue como anónimo.
+        if (datos.error) {
+            console.warn('Google devolvió un error:', datos.error, datos.error_description || '');
+            limpiarHashOAuth();
+            return Promise.resolve(null);
+        }
+
+        var token = datos.access_token;
+        if (!token) return Promise.resolve(null);
+
+        var refresh = datos.refresh_token || null;
+        limpiarHashOAuth();
+
+        // El hash ya no sirve para nada más; se pide el usuario al servidor.
+        return fetch(window.SUPABASE_URL + '/auth/v1/user', {
+            headers: {
+                'apikey': window.SUPABASE_ANON_KEY,
+                'Authorization': 'Bearer ' + token
+            }
+        })
+            .then(function (respuesta) {
+                if (!respuesta.ok) throw new Error('token_no_valido');
+                return respuesta.json();
             })
-            .catch(function () {
+            .then(function (usuarioGoogle) {
+                if (!usuarioGoogle || !usuarioGoogle.id) throw new Error('sin_usuario');
+
+                guardarSesion({
+                    access_token: token,
+                    refresh_token: refresh,
+                    user: usuarioGoogle
+                });
+
+                // Los pedidos hechos como invitado en este teléfono pasan a la
+                // cuenta, igual que al entrar con contraseña.
+                var fichaAntes = fichaMemoria || leerGuardada();
+                return reclamarPedidos(fichaAntes).then(function () {
+                    return usuarioActual;
+                });
+            })
+            .catch(function (e) {
+                console.warn('No se pudo completar la sesión de Google:', e.message);
                 return null;
             });
     }
