@@ -21,6 +21,18 @@
         // 1. Tema
         if (window.cargarTemaGuardado) window.cargarTemaGuardado();
 
+        // 1b. Restaurar la cuenta del cliente si ya había entrado antes.
+        //
+        // Con sesión, `asegurarIdentidad()` empieza a devolver el usuario de
+        // la cuenta en vez de la ficha anónima, así que los pedidos nuevos
+        // quedan en su cuenta sin que él haga nada distinto.
+        if (window.SakiCliente && window.SakiCliente.restaurarSesion) {
+            try { await window.SakiCliente.restaurarSesion(); } catch (e) { /* anónimo */ }
+            if (window.SakiCuenta && window.SakiCuenta.refrescarEncabezado) {
+                window.SakiCuenta.refrescarEncabezado();
+            }
+        }
+
         // 2. Carrito desde localStorage
         var hayCarrito = false;
         if (window.restaurarCarrito) hayCarrito = window.restaurarCarrito();

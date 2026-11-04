@@ -2553,6 +2553,19 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                            transition:opacity .2s,transform .2s"
                     onmouseover="this.style.opacity=1;this.style.transform='scale(1.1)'"
                     onmouseout="this.style.opacity=.9;this.style.transform='scale(1)'">🤵🏻‍♂️</button>
+            <!-- Cuenta del cliente: entrar o crear cuenta.
+                 Es OPCIONAL. La carta funciona completa sin tocarlo: quien no
+                 tiene cuenta pide igual como invitado, con su ficha del
+                 teléfono. El botón nunca se esconde, para que quien ya está
+                 registrado tenga por dónde cerrar sesión. -->
+            <button id="btnCuentaCliente"
+                    data-tooltip="Entrar o crear cuenta"
+                    aria-label="Entrar o crear cuenta"
+                    style="background:none;border:none;font-size:1.4rem;line-height:1;cursor:pointer;
+                           padding:.25rem;margin-left:.35rem;vertical-align:middle;opacity:.9;
+                           transition:opacity .2s,transform .2s"
+                    onmouseover="this.style.opacity=1;this.style.transform='scale(1.1)'"
+                    onmouseout="this.style.opacity=.9;this.style.transform='scale(1)'"><i class="fas fa-user-circle"></i></button>
             <div class="header-icons" id="headerIcons">
                 <div style="position:relative">
                     <button class="icon-button" id="notificationBell" data-tooltip="Notificaciones"><i class="fas fa-bell"></i></button>
@@ -2949,7 +2962,8 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-menu.js?v=1793665995"></script>
     <script src="js/cliente-scroll.js"></script>
     <script src="js/cliente-ui.js?v=1793589027"></script>
-    <script src="js/cliente-identidad.js?v=1793582360"></script>
+    <script src="js/cliente-identidad.js?v=1793676000"></script>
+    <script src="js/cliente-cuenta.js?v=1793676000"></script>
     <script src="js/cliente-notificaciones.js?v=1793582360"></script>
     <script src="js/cliente-carrito.js?v=1792803284"></script>
     <script src="js/cliente-carrito-timer.js"></script>
@@ -2960,7 +2974,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793628641"></script>
     <script src="js/cliente-reservas.js"></script>
-    <script src="js/cliente-init.js?v=1792890551"></script>
+    <script src="js/cliente-init.js?v=1793676000"></script>
     
     <!-- Saki Sushi - Cliente JS modulado -->
 </body>
