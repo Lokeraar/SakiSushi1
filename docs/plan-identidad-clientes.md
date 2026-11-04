@@ -194,8 +194,22 @@ en versión MVP, sección 5 conectada al código, sección 6 aceptada, sección 
 
 ### Falta
 
-- Registro con correo y contraseña.
 - Registro con Google (credenciales en Google Cloud Console y panel de Supabase).
-- Reclamar los pedidos anónimos al registrarse.
 - Prueba en dos teléfonos reales.
 - Señal visible de "notificaciones activas" en la carta.
+
+### Fase 2 — paso 5 hecho (commit `e555c15`)
+
+- `SakiCliente.registrar`, `iniciarSesion`, `cerrarSesion`, `restaurarSesion`.
+- `cliente-cuenta.js`: modal de cuenta y botón en el encabezado.
+- Migración 49 (`48bd274`): `reclamar_pedidos_anonimos` mueve pedidos,
+  notificaciones y suscripciones push de la ficha a la cuenta.
+- Bug corregido: `estaRegistrado()` devolvía `true` siempre.
+
+Verificado con la API real: registro, pedido anónimo, reclamación (1 pedido y
+1 notificación movidos), el registrado ve lo suyo, la ficha ya no lo ve, otro
+cliente no ve nada ajeno, y sin sesión no se puede reclamar.
+
+**El registro exige "Confirm email" apagado en el panel de Supabase.** Con el
+SMTP sin configurar, `/auth/v1/signup` devuelve 500 "Error sending confirmation
+email" y la cuenta ni siquiera se crea. Ya quedó apagado.
