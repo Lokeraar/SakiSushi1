@@ -529,12 +529,25 @@
         if (!window.supabaseClient) {
             return Promise.reject(new Error('sin_cliente_supabase'));
         }
-        return window.supabaseClient.auth.signInWithOAuthProvider({
-            provider: 'google',
-            options: {
-                redirectTo: 'https://lokeraar.github.io/SakiSushi1/Cliente/index.html'
-            }
-        });
+
+        // El método es `signInWithOAuth`, NO `signInWithOAuthProvider`.
+        // Con el nombre equivocado no pasa nada al tocar el botón: la llamada
+        // revienta con un TypeError que nadie ve la Promise, así que la pantalla
+        // se queda quieta y parece que el botón no funciona.
+        //
+        // Por defecto este método redirige la página entera a Google. Eso es
+        // justo lo que queremos: el selector de cuentas de Google aparece ahí.
+        return window.supabaseClient.auth
+            .signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: 'https://lokeraar.github.io/SakiSushi1/Cliente/index.html'
+                }
+            })
+            .then(function (resp) {
+                if (resp && resp.error) throw resp.error;
+                return resp;
+            });
     }
 
     /**

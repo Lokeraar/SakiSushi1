@@ -111,7 +111,7 @@
                           'style="width:100%;margin-bottom:.5rem;border:1px solid rgba(255,255,255,.25);' +
                           'background:rgba(255,255,255,.08);color:inherit;border-radius:var(--radius-sm);' +
                           'padding:.7rem;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem">' +
-                    '<i class="fab fa-google"></i> Entrar con Google' +
+                    '<i class="fab fa-google"></i> <span id="btnGoogleTexto">Entrar con Google</span>' +
                   '</button>' +
 
                   '<button type="button" id="btnCambiarModoCuenta" ' +
@@ -160,11 +160,13 @@
         if (modoRegistro) {
             $('cuentaTitulo').textContent = 'Crear cuenta';
             $('btnEntrarTexto').textContent = 'Crear cuenta';
+            $('btnGoogleTexto').textContent = 'Crear cuenta con Google';
             $('cuentaClaveInput').setAttribute('autocomplete', 'new-password');
             $('btnCambiarModoCuenta').textContent = 'Ya tengo cuenta, quiero entrar';
         } else {
             $('cuentaTitulo').textContent = 'Entrar';
             $('btnEntrarTexto').textContent = 'Iniciar sesión';
+            $('btnGoogleTexto').textContent = 'Entrar con Google';
             $('cuentaClaveInput').setAttribute('autocomplete', 'current-password');
             $('btnCambiarModoCuenta').textContent = 'No tengo cuenta, quiero crear una';
         }
@@ -258,12 +260,25 @@
     }
 
     function iniciarConGoogle() {
-        cerrar();
-        if (window.SakiCliente && typeof window.SakiCliente.iniciarConGoogle === 'function') {
-            window.SakiCliente.iniciarConGoogle();
-        } else {
+        if (!window.SakiCliente || typeof window.SakiCliente.iniciarConGoogle !== 'function') {
             mostrarError('La aplicación no terminó de cargar. Cierra y vuelve a abrir.');
+            return;
         }
+
+        var boton = $('btnGoogleCuenta');
+        if (boton) { boton.disabled = true; }
+        ocultarError();
+
+        // Si el redirect funciona, la página se va a Google y esta promesa
+        // nunca importa. Si falla —proveedor sin activar, URL no autorizada,
+        // sin red— hay que decirlo en pantalla en vez de dejar el botón mudo.
+        // Se cierra el modal porque este objeto se destruye al navegar.
+        window.SakiCliente.iniciarConGoogle().catch(function (e) {
+            if (boton) { boton.disabled = false; }
+            var motivo = e && e.message ? e.message : 'No se pudo abrir Google.';
+            mostrarError(motivo + ' Aún puedes entrar con tu correo y tu contraseña, ' +
+                'o seguir pidiendo sin cuenta.');
+        });
     }
 
     function salir() {
@@ -310,6 +325,7 @@
         ocultarError();
         if ($('cuentaTitulo')) $('cuentaTitulo').textContent = 'Entrar';
         if ($('btnEntrarTexto')) $('btnEntrarTexto').textContent = 'Iniciar sesión';
+        if ($('btnGoogleTexto')) $('btnGoogleTexto').textContent = 'Entrar con Google';
         if ($('btnCambiarModoCuenta')) {
             $('btnCambiarModoCuenta').textContent = 'No tengo cuenta, quiero crear una';
         }
