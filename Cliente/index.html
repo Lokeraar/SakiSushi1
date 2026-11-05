@@ -2534,7 +2534,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                 <button class="menu-hamburguesa" id="menuToggle" aria-label="Ver categorías">
                     <i class="fas fa-bars"></i>
                 </button>
-                <button class="theme-toggle" id="themeToggle" onclick="toggleTema()" data-tooltip="Cambiar tema">
+                <button class="theme-toggle" id="themeToggle" data-tooltip="Cambiar tema">
                     <i class="fas fa-moon"></i>
                 </button>
             </div>
@@ -2597,6 +2597,21 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                     <ul class="category-list" id="categoryList">
                         <li class="loading-container"><div class="loading-spinner"></div><p>Cargando categorías...</p></li>
                     </ul>
+
+                    <!-- Cuenta del cliente, al final del panel.
+                         Es texto, no un icono: en el menú desplegable hay
+                         espacio de sobra y se lee mejor. Abre el MISMO modal
+                         que el botón del encabezado.
+                         Con `margin-top:auto` queda pegado abajo, como última
+                         línea, en vez de subir cuando hay pocas categorías. -->
+                    <button type="button" id="btnCuentaMenu" class="cuenta-menu-btn"
+                            style="margin-top:auto;width:100%;background:none;border:none;
+                                   border-top:1px solid rgba(255,255,255,.12);color:var(--accent);
+                                   padding:1rem 1.5rem;font-size:.95rem;font-weight:600;
+                                   text-align:left;cursor:pointer;display:flex;align-items:center;gap:.6rem">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="btnCuentaMenuTexto">Iniciar sesión</span>
+                    </button>
                 </div>
                 
                 <div class="cart-sidebar" id="cartSidebar">
@@ -2946,7 +2961,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="../assets/errores-legibles.js?v=1793000130" defer></script>
 <script src="../supabase-config.js?v=1793549751"></script>
     <script src="js/cliente-utils.js?v=1793665995"></script>
-    <script src="js/cliente-theme.js"></script>
+    <script src="js/cliente-theme.js?v=1793895214"></script>
     <script src="js/cliente-favoritos.js"></script>
     <script src="js/cliente-voz.js"></script>
     <script src="js/cliente-stock.js"></script>
@@ -2956,14 +2971,14 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-cierre.js?v=1792890542"></script>
     <script src="js/cliente-offline.js?v=1792857000"></script>
     <script src="js/cliente-accion-unica.js?v=1792802980"></script>
-    <script src="js/cliente-mesonero.js?v=1792781521"></script>
+    <script src="js/cliente-mesonero.js?v=1793895214"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
     <script src="js/cliente-menu.js?v=1793665995"></script>
     <script src="js/cliente-scroll.js"></script>
     <script src="js/cliente-ui.js?v=1793589027"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
-    <script src="js/cliente-cuenta.js?v=1793893579"></script>
+    <script src="js/cliente-cuenta.js?v=1793895214"></script>
     <script src="js/cliente-notificaciones.js?v=1793582360"></script>
     <script src="js/cliente-carrito.js?v=1793890514"></script>
     <script src="js/cliente-carrito-timer.js"></script>

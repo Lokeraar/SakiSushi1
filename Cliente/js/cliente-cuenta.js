@@ -490,20 +490,30 @@
      * registrado y el botón se escondiera, no tendría por dónde cerrar sesión.
      */
     function refrescarEncabezado() {
-        var btn = document.getElementById('btnCuentaCliente');
-        if (!btn) return;
         var usuario = window.SakiCliente ? window.SakiCliente.usuario() : null;
 
-        if (usuario) {
-            btn.innerHTML = '<i class="fas fa-user-check"></i>';
-            btn.setAttribute('data-tooltip', 'Mi cuenta');
-            btn.setAttribute('aria-label', 'Mi cuenta');
-            btn.style.color = 'var(--accent)';
-        } else {
-            btn.innerHTML = '<i class="fas fa-user-circle"></i>';
-            btn.setAttribute('data-tooltip', 'Entrar o crear cuenta');
-            btn.setAttribute('aria-label', 'Entrar o crear cuenta');
-            btn.style.color = '';
+        // ---- Botón del encabezado (icono) ----
+        var btn = document.getElementById('btnCuentaCliente');
+        if (btn) {
+            if (usuario) {
+                btn.innerHTML = '<i class="fas fa-user-check"></i>';
+                btn.setAttribute('data-tooltip', 'Mi cuenta');
+                btn.setAttribute('aria-label', 'Mi cuenta');
+                btn.style.color = 'var(--accent)';
+            } else {
+                btn.innerHTML = '<i class="fas fa-user-circle"></i>';
+                btn.setAttribute('data-tooltip', 'Entrar o crear cuenta');
+                btn.setAttribute('aria-label', 'Entrar o crear cuenta');
+                btn.style.color = '';
+            }
+        }
+
+        // ---- Línea al final del menú de categorías (texto) ----
+        // Con sesión muestra el correo, para que se vea de un vistazo que ya
+        // entró y con cuál. Sin sesión invita a entrar.
+        var texto = document.getElementById('btnCuentaMenuTexto');
+        if (texto) {
+            texto.textContent = (usuario && usuario.correo) ? usuario.correo : 'Iniciar sesión';
         }
     }
 
@@ -512,6 +522,10 @@
         refrescarEncabezado();
         var btn = document.getElementById('btnCuentaCliente');
         if (btn) btn.addEventListener('click', abrir);
+
+        // El botón del final del menú de categorías abre el MISMO modal.
+        var btnMenu = document.getElementById('btnCuentaMenu');
+        if (btnMenu) btnMenu.addEventListener('click', abrir);
 
         // Vuelta desde la caché de retroceso del navegador (bfcache).
         //

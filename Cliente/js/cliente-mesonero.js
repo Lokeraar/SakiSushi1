@@ -57,6 +57,29 @@
         var m = window.obtenerMesoneroActual();
         var chip = document.getElementById('mesoneroChip');
 
+        // El acceso queda solo en la interfaz de MESA.
+        //
+        // "Interfaz de mesa" quiere decir que se entró por el QR de una mesa,
+        // o sea que la dirección trae `?mesa=`. En la carta normal el cliente
+        // pide delivery o reserva desde su casa; ahí el mesonero no atiende, y
+        // ofrecerle el acceso solo confunde. Decisión del dueño.
+        //
+        // Se lee la dirección directamente y no solo `S.state.mesaId`, porque
+        // este archivo corre en `DOMContentLoaded` y puede adelantarse a
+        // `cliente-init.js`, que es quien llena ese valor. Mirar solo el estado
+        // dejaría el emoji visible a quien exige lo contrario.
+        var esMesa = false;
+        try {
+            if (window.Saki && window.Saki.state && window.Saki.state.mesaId) {
+                esMesa = true;
+            } else if (window.location && window.location.search) {
+                esMesa = new URLSearchParams(window.location.search).has('mesa');
+            }
+        } catch (e) { esMesa = false; }
+
+        var btnAcceso = document.getElementById('btnMesonero');
+        if (btnAcceso) btnAcceso.style.display = esMesa ? '' : 'none';
+
         if (m) {
             if (!chip) {
                 chip = document.createElement('div');
@@ -77,8 +100,7 @@
 
             // El emoji del Hero deja de ofrecer login: ya hay sesión.
             var btn = document.getElementById('btnMesonero');
-            if (btn) btn.title = 'Atendido por: ' + m.nombre;
-        } else if (chip) {
+            if (btn) btn.title = 'Atendido por: ' + m.nombre;        } else if (chip) {
             chip.style.display = 'none';
             var btn2 = document.getElementById('btnMesonero');
             if (btn2) btn2.title = 'Soy mesonero';
