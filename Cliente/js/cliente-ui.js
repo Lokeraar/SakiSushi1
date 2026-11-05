@@ -276,6 +276,27 @@
         var closeCustomizeBtn = document.getElementById('closeCustomizeModal');
         if (closeCustomizeBtn) closeCustomizeBtn.addEventListener('click', function() { document.getElementById('customizeModal').classList.remove('active'); });
 
+        // Tocar FUERA del cuadro cierra el modal.
+        //
+        // Mismo patrón que ya usa el modal de cuenta (cliente-cuenta.js):
+        // se escucha el clic en el velo y solo se cierra si el blanco es
+        // el velo mismo. Si se comprobara `closest('.modal-container')`
+        // habría que recorrer el árbol en cada toque, y además un toque
+        // en el borde del cuadro cerraría sin querer.
+        //
+        // En un teléfono esto no es un lujo: la X está arriba a la
+        // derecha, lejos del pulgar, y el botón Cancelar queda abajo.
+        // Tocar el fondo es el gesto que la gente ya intenta primero.
+        var customizeModalEl = document.getElementById('customizeModal');
+        if (customizeModalEl) {
+            customizeModalEl.addEventListener('click', function (e) {
+                if (e.target === customizeModalEl) {
+                    customizeModalEl.classList.remove('active');
+                    window._previewPlatilloId = null;
+                }
+            });
+        }
+
         var cancelMesa = document.getElementById('cancelMesaOrder');
         if (cancelMesa) cancelMesa.addEventListener('click', function() { document.getElementById('confirmMesaModal').classList.remove('active'); });
 

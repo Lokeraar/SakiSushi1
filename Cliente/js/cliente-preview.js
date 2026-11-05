@@ -190,6 +190,11 @@
 
         cerrar.addEventListener('click', cerrarImagen);
         img.addEventListener('click', cerrarImagen);
+        // Tocar el fondo oscuro también cierra. Se compara el blanco con el
+        // contenedor: un toque en la foto o en el pie NO cierra por accidente.
+        d.addEventListener('click', function (e) {
+            if (e.target === d) cerrarImagen();
+        });
         return d;
     }
 
