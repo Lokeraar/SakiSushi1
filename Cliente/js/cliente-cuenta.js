@@ -160,7 +160,10 @@
         if (modoRegistro) {
             $('cuentaTitulo').textContent = 'Crear cuenta';
             $('btnEntrarTexto').textContent = 'Crear cuenta';
-            $('btnGoogleTexto').textContent = 'Crear cuenta con Google';
+            // El botón de Google NO cambia de texto entre modos: entrar y
+            // crear cuenta son la misma acción en OAuth. Decir "Crear cuenta
+            // con Google" prometía una diferencia que el botón no hace.
+            $('btnGoogleTexto').textContent = 'Entrar con Google';
             $('cuentaClaveInput').setAttribute('autocomplete', 'new-password');
             $('btnCambiarModoCuenta').textContent = 'Ya tengo cuenta, quiero entrar';
         } else {
