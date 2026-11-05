@@ -394,6 +394,7 @@
                 }
 
                 guardarSesion(sesion);
+                _carritoAlEntrar(sesion);
                 return reclamarPedidos(fichaAntes).then(function (rec) {
                     return {
                         success: true,
@@ -427,6 +428,7 @@
                 }
 
                 guardarSesion(sesion);
+                _carritoAlEntrar(sesion);
                 return reclamarPedidos(fichaAntes).then(function (rec) {
                     return { success: true, usuario: usuarioActual, reclamados: rec };
                 });
@@ -467,6 +469,26 @@
     }
 
     /**
+     * Avisa al carrito que se abrió una cuenta.
+     *
+     * Si la persona venía armando un pedido como invitado, ese pedido manda:
+     * es la misma persona, ahora con nombre, y no debe perder lo que llevaba.
+     * El carrito decide el resto (ver `alEntrarACuenta` en cliente-carrito.js).
+     *
+     * Nunca rechaza: si el carrito todavía no cargó, la sesión igual vale.
+     */
+    function _carritoAlEntrar(sesion) {
+        try {
+            var id = sesion && sesion.user ? sesion.user.id : null;
+            if (id && typeof window.alEntrarACuenta === 'function') {
+                window.alEntrarACuenta(id);
+            }
+        } catch (e) {
+            console.warn('No se pudo ajustar el carrito al entrar:', e && e.message);
+        }
+    }
+
+    /**
      * Cierra la sesión y vuelve a navegar como anónimo.
      *
      * La ficha se CONSERVA: si el cliente vuelve a pedir sin entrar, sus
@@ -482,6 +504,7 @@
     function cerrarSesion() {
         var tokenViejo = usuarioActual ? usuarioActual.token : null;
         var correoViejo = usuarioActual ? usuarioActual.correo : '';
+        var idViejo = usuarioActual ? usuarioActual.id : null;
 
         usuarioActual = null;
         try {
@@ -494,6 +517,18 @@
 
         if (typeof window.inicializarSupabaseCliente === 'function') {
             window.supabaseClient = window.inicializarSupabaseCliente();
+        }
+
+        // El carrito pertenecía a la cuenta que se va. Se guarda bajo su id y
+        // la pantalla vuelve a quedar como un invitado recién llegado. Si no
+        // se hiciera, quien entre después con OTRA cuenta vería el pedido de
+        // la anterior: mismo teléfono, misma pestaña, mismo `localStorage`.
+        try {
+            if (typeof window.alSalirDeCuenta === 'function') {
+                window.alSalirDeCuenta(idViejo);
+            }
+        } catch (e) {
+            console.warn('No se pudo limpiar el carrito al salir:', e && e.message);
         }
 
         // Se le avisa al servidor para que invalide la sesión, pero el
@@ -650,6 +685,7 @@
                     refresh_token: refresh,
                     user: usuarioGoogle
                 });
+                _carritoAlEntrar({ user: usuarioGoogle });
 
                 // Los pedidos hechos como invitado en este teléfono pasan a la
                 // cuenta, igual que al entrar con contraseña.

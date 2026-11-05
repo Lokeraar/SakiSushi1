@@ -149,6 +149,16 @@
             console.warn('[carrito] no se pudo guardar:', window._carritoNoGuardado);
         }
 
+        // ---- Copia de la cuenta ----
+        // Mientras hay sesión abierta, el carrito se guarda TAMBIÉN bajo la
+        // cuenta. Sin esto, la copia se quedaría congelada en el momento del
+        // último inicio de sesión y, al recargar, se restauraría una versión
+        // vieja encima de la buena.
+        if (guardado.ok) {
+            var idCuenta = _idCuentaActual();
+            if (idCuenta) _guardarCrudoEnClave(claveDeCuenta(idCuenta), json);
+        }
+
         // Fase 1: cada cambio del carrito REINICIA el plazo de 20 minutos.
         // Si el carrito queda vacío, se deja de vigilar.
         if (window.reiniciarContadorCarrito) {
@@ -223,6 +233,228 @@
     }
     window.restaurarCarrito = restaurarCarrito;
     S.modules.carrito.restaurarCarrito = restaurarCarrito;
+
+    // ==================== CARRITO POR CUENTA ====================
+    //
+    // POR QUÉ EXISTE ESTO
+    //
+    // El carrito vive en `localStorage`, que es del teléfono, no de la
+    // persona. Sin separación por cuenta, quien entraba veía el pedido que
+    // había armado la cuenta anterior: mismo aparato, misma pestaña, y para el
+    // navegador no hay ninguna diferencia.
+    //
+    // CÓMO QUEDA
+    //
+    //   · Invitado arma un pedido y ENTRA: el pedido sigue. Es la misma
+    //     persona física, ahora con nombre. No se pierde nada.
+    //   · Hay cuenta abierta y CIERRA SESIÓN: el carrito se vacía y queda como
+    //     un invitado recién llegado. Antes de vaciarlo, su contenido se guarda
+    //     bajo la cuenta.
+    //   · Esa misma cuenta vuelve a entrar: su carrito reaparece tal como estaba.
+    //
+    // La copia de la cuenta vive en `saki_carrito_cuenta_<id>`. NUNCA se mezcla
+    // con la del invitado (`saki_carrito`).
+
+    function claveDeCuenta(usuarioId) {
+        return 'saki_carrito_cuenta_' + String(usuarioId || '');
+    }
+
+    /** Id de la cuenta a la que pertenece lo guardado ahora mismo, o null. */
+    var _cuentaActiva = null;
+
+    /** El id de la cuenta abierta ahora mismo, o null si es invitado. */
+    function _idCuentaActual() {
+        // Manda el último aviso explícito de identidad (`alEntrarACuenta`).
+        // Si se preguntara solo a `SakiCliente`, una carrera de orden de carga
+        // haría que el carrito no se guardara bajo la cuenta.
+        if (_cuentaActiva) return _cuentaActiva;
+        try {
+            if (window.SakiCliente && window.SakiCliente.usuario) {
+                var u = window.SakiCliente.usuario();
+                return (u && u.id) ? u.id : null;
+            }
+        } catch (e) { /* sin sesión */ }
+        return null;
+    }
+
+    function _guardarCrudoEnClave(clave, json) {
+        try {
+            localStorage.setItem(clave, json);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /** Devuelve los artículos guardados bajo una clave, o [] si no hay nada. */
+    function _itemsDeClave(clave) {
+        try {
+            var crudo = localStorage.getItem(clave);
+            if (!crudo) return [];
+            var d = JSON.parse(crudo);
+            if (d && Array.isArray(d.items)) return d.items;
+            if (Array.isArray(d)) return d;   // formato viejo: array pelado
+            return [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    /**
+     * Se llama al ENTRAR a una cuenta (contraseña, registro o Google).
+     *
+     * Si la persona ya traía un pedido armado como invitado, ese pedido manda:
+     * es continuidad, y es lo que el dueño definió. Solo si el invitado NO
+     * tenía nada se recupera el carrito que esa cuenta dejó guardado.
+     *
+     * OJO CON EL ORDEN AL VOLVER DE GOOGLE. Cuando se vuelve de Google la
+     * página se recarga: la sesión se detecta ANTES de que el carrito se lea
+     * de disco, así que la memoria (`S.state.carrito`) todavía está vacía. Por
+     * eso se miran los dos lados, memoria y disco. Mirar solo la memoria haría
+     * creer que el invitado no tenía nada y se perdería su pedido.
+     */
+    function alEntrarACuenta(usuarioId) {
+        if (!usuarioId) return;
+
+        // A partir de aquí, lo que se guarde pertenece a esta cuenta.
+        _cuentaActiva = usuarioId;
+
+        var enMemoria = (S.state.carrito && S.state.carrito.length > 0);
+        var enDisco = _itemsDeClave('saki_carrito');
+        var invitadoTraeAlgo = enMemoria || enDisco.length > 0;
+
+        // ---- Carrito ----
+        if (invitadoTraeAlgo) {
+            // Continuidad: lo que armó como invitado pasa a ser de la cuenta.
+            // Si estaba solo en disco (vuelta de Google), se sube a memoria
+            // antes de guardar para no dejarlo escrito a medias.
+            if (!enMemoria && enDisco.length > 0) {
+                S.state.carrito = enDisco;
+                if (window.actualizarCarritoUI) window.actualizarCarritoUI();
+                if (window.actualizarCarritoBadge) window.actualizarCarritoBadge();
+            }
+            guardarCarrito();
+        } else {
+            var recuperado = _itemsDeClave(claveDeCuenta(usuarioId));
+            if (recuperado.length > 0) {
+                S.state.carrito = recuperado;
+                guardarCarrito();
+                if (window.actualizarCarritoUI) window.actualizarCarritoUI();
+                if (window.actualizarCarritoBadge) window.actualizarCarritoBadge();
+                if (window.reiniciarContadorCarrito) window.reiniciarContadorCarrito();
+            }
+        }
+
+        // ---- Historial y favoritos ----
+        // Solo si el invitado no traía los suyos. Si traía, son suyos y se
+        // quedan: es la misma persona física, igual que con el carrito.
+        _restaurarListaDeCuenta(usuarioId, '_historial', 'saki_historial',
+            'historialPedidos', window.actualizarBotonHistorial);
+
+        _restaurarListaDeCuenta(usuarioId, '_favoritos', 'saki_favoritos',
+            'favoritos', function () {
+                if (window.renderizarMenuPaginado) {
+                    try { window.renderizarMenuPaginado(); } catch (e) { /* no crítico */ }
+                }
+            });
+
+        if (window.precalcularStockMenu) window.precalcularStockMenu();
+    }
+
+    /**
+     * Devuelve una lista guardada bajo la cuenta, si el invitado no tiene nada.
+     *
+     * Se usa para el historial y los favoritos, que siguen la misma regla que
+     * el carrito: lo que el invitado ya traía manda; si no traía nada, se
+     * recupera lo de la cuenta.
+     */
+    function _restaurarListaDeCuenta(usuarioId, sufijo, claveInvitado, campoEstado, alTerminar) {
+        var yaTiene = false;
+        try {
+            var actual = S.state[campoEstado];
+            yaTiene = Array.isArray(actual) && actual.length > 0;
+        } catch (e) { /* sin estado */ }
+
+        if (!yaTiene) {
+            var enDisco = _itemsDeClave(claveInvitado);
+            yaTiene = enDisco.length > 0;
+        }
+        if (yaTiene) return;
+
+        var guardada;
+        try {
+            var crudo = localStorage.getItem(claveDeCuenta(usuarioId) + sufijo);
+            guardada = crudo ? JSON.parse(crudo) : null;
+        } catch (e) { guardada = null; }
+
+        if (!Array.isArray(guardada) || guardada.length === 0) return;
+
+        S.state[campoEstado] = guardada;
+        try {
+            localStorage.setItem(claveInvitado, JSON.stringify(guardada));
+        } catch (e) { /* modo privado */ }
+
+        if (typeof alTerminar === 'function') {
+            try { alTerminar(); } catch (e) { /* no crítico */ }
+        }
+    }
+    window.alEntrarACuenta = alEntrarACuenta;
+    S.modules.carrito.alEntrarACuenta = alEntrarACuenta;
+
+    /**
+     * Se llama al CERRAR sesión.
+     *
+     * Guarda lo que había bajo la cuenta, y deja la pantalla como un invitado
+     * recién llegado: carrito vacío, contador detenido, insignia en cero.
+     *
+     * También se lleva el historial de pedidos y los favoritos, que viven en el
+     * mismo sitio y tienen el mismo problema: son del TELÉFONO, no de la
+     * persona. El historial es el más delicado de los tres, porque muestra qué
+     * pidió y cuánto gastó. Se guardan bajo la cuenta antes de borrarlos, igual
+     * que el carrito, para devolverlos cuando esa cuenta vuelva.
+     */
+    function alSalirDeCuenta(usuarioId) {
+        // Sin id de cuenta no hay a quién devolverle nada: es un invitado y su
+        // carrito no se toca. Sin esta salida temprana, un cierre de sesión sin
+        // sesión real borraría el pedido del invitado.
+        if (!usuarioId) return;
+
+        _cuentaActiva = null;
+
+        _guardarCrudoEnClave(
+            claveDeCuenta(usuarioId),
+            JSON.stringify({ items: S.state.carrito || [], timestamp: Date.now() })
+        );
+        _guardarCrudoEnClave(claveDeCuenta(usuarioId) + '_historial',
+            JSON.stringify(S.state.historialPedidos || []));
+        _guardarCrudoEnClave(claveDeCuenta(usuarioId) + '_favoritos',
+            JSON.stringify(S.state.favoritos || []));
+
+        S.state.carrito = [];
+        try {
+            localStorage.removeItem('saki_carrito');
+            localStorage.removeItem('saki_carrito_inicio');
+            localStorage.removeItem('saki_historial');
+            localStorage.removeItem('saki_favoritos');
+        } catch (e) { /* modo privado */ }
+
+        // Las copias en memoria también se vacían. Si solo se borrara el
+        // almacenamiento, la pantalla seguiría mostrando los pedidos de la
+        // cuenta que acaba de salir hasta recargar la página.
+        S.state.historialPedidos = [];
+        S.state.favoritos = [];
+
+        if (window.detenerVigilanciaCarrito) window.detenerVigilanciaCarrito();
+        if (window.actualizarCarritoUI) window.actualizarCarritoUI();
+        if (window.actualizarCarritoBadge) window.actualizarCarritoBadge();
+        if (window.actualizarBotonHistorial) window.actualizarBotonHistorial();
+        if (window.renderizarMenuPaginado) {
+            try { window.renderizarMenuPaginado(); } catch (e) { /* no crítico */ }
+        }
+        if (window.precalcularStockMenu) window.precalcularStockMenu();
+    }
+    window.alSalirDeCuenta = alSalirDeCuenta;
+    S.modules.carrito.alSalirDeCuenta = alSalirDeCuenta;
 
     function eliminarInstancia(instanciaId) {
         S.state.carrito = S.state.carrito.filter(function(i) { return i.id !== instanciaId; });

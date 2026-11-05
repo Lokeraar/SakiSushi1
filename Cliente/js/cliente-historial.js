@@ -143,4 +143,23 @@
     } catch(e) {
         S.state.historialPedidos = [];
     }
+
+    /**
+     * Vuelve a leer el historial desde el teléfono.
+     *
+     * Hace falta porque el historial se lee UNA vez al cargar la página, y
+     * los cambios de cuenta ocurren después. Sin esto, al cambiar de cuenta
+     * la lista en memoria seguiría mostrando los pedidos de la anterior
+     * aunque el almacenamiento ya esté limpio.
+     */
+    window.recargarHistorial = function recargarHistorial () {
+        try {
+            var crudo = localStorage.getItem('saki_historial');
+            S.state.historialPedidos = crudo ? JSON.parse(crudo) : [];
+        } catch (e) {
+            S.state.historialPedidos = [];
+        }
+        if (!Array.isArray(S.state.historialPedidos)) S.state.historialPedidos = [];
+        if (window.actualizarBotonHistorial) window.actualizarBotonHistorial();
+    };
 })();
