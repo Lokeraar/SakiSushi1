@@ -104,7 +104,7 @@
                   '</button>' +
 
                   '<div style="margin:.5rem 0;border-top:1px solid rgba(255,255,255,.12);padding-top:.5rem;font-size:.85rem;opacity:.8;text-align:center">' +
-                    'O sigue con' +
+                    'O entra con Google sin necesidad de registrarte' +
                   '</div>' +
 
                   '<button class="btn-secondary" id="btnGoogleCuenta" type="button" ' +
