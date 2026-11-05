@@ -31,6 +31,11 @@
         var item = (S.state.menuItems || []).find(function(i) { return i.id == platilloId; });
         if (!item) return;
 
+        // Este modal lo comparte la vista del plato. Al entrar a
+        // personalizar, el modo «agregar tal cual» se apaga: si quedaba
+        // encendido, el botón Añadir se saltaba los cambios del usuario.
+        window._previewPlatilloId = null;
+
         currentCustomizeItem = item;
         var modal = document.getElementById('customizeModal');
         var body = document.getElementById('customizeModalBody');

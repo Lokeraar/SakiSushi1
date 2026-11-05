@@ -1923,6 +1923,18 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             transition:all .2s;
         }
         .modal-close:hover{background:rgba(255,255,255,.05);color:var(--danger)}
+        /* En tema claro, la X toma la tinta del tema y la zona de toque
+           se ve como lo que es: un botón. Antes heredaba --gray-400
+           (#ced4da) y sobre la cabecera de papel daba 1.32:1 — la X
+           estaba ahí pero nadie la encontraba. Es un carácter de 1.5rem,
+           así que cuenta como texto: necesita 4.5:1. */
+        body.tema-claro .modal-close {
+            color:var(--text-primary);
+        }
+        body.tema-claro .modal-close:hover {
+            background:rgba(65,45,30,.10);
+            color:var(--primary-text);
+        }
         .modal-body {
             padding:1.2rem;
             color:var(--text-primary);
@@ -3057,19 +3069,12 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             </div>
         </div>
         
-        <div class="modal-overlay" id="previewModal">
-            <div class="modal-container preview-modal">
-                <div class="modal-header">
-                    <h3 id="previewTitle"><i class="fas fa-eye"></i> Vista previa</h3>
-                    <button class="modal-close" id="closePreviewModal">&times;</button>
-                </div>
-                <div class="modal-body" id="previewModalBody"></div>
-                <div class="modal-footer">
-                    <button class="btn-secondary" onclick="cerrarPreview()">Cerrar</button>
-                    <button class="btn-primary" id="previewAddToCart"><i class="fas fa-cart-plus"></i> Agregar</button>
-                </div>
-            </div>
-        </div>
+        <!-- El antiguo #previewModal vivía aquí y NADIE lo abría: el JS
+             siempre reutilizó #customizeModal. Tenía su propio
+             #previewAddToCart, un segundo botón «Agregar» que competía
+             con el del footer real. Se retiró para que exista un solo
+             camino: abrir el plato → #customizeModal → footer con
+             «Cancelar» y «Añadir». -->
         
         <div class="modal-overlay" id="historialModal">
             <div class="modal-container historial-modal">
@@ -3151,15 +3156,15 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
     <script src="js/cliente-menu.js?v=1793665995"></script>
     <script src="js/cliente-scroll.js"></script>
-    <script src="js/cliente-ui.js?v=1793589027"></script>
+    <script src="js/cliente-ui.js?v=1793920895"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
     <script src="js/cliente-cuenta.js?v=1793895214"></script>
     <script src="js/cliente-notificaciones.js?v=1793582360"></script>
     <script src="js/cliente-carrito.js?v=1793890514"></script>
     <script src="js/cliente-carrito-timer.js"></script>
     <script src="js/cliente-carrito-dialogo.js"></script>
-    <script src="js/cliente-customize.js?v=1792870395"></script>
-    <script src="js/cliente-preview.js?v=1792843562"></script>
+    <script src="js/cliente-customize.js?v=1793920895"></script>
+    <script src="js/cliente-preview.js?v=1793920895"></script>
     <script src="js/cliente-historial.js?v=1793890514"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793628641"></script>

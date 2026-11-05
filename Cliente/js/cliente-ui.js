@@ -250,10 +250,21 @@
         var addToCartModal = document.getElementById('addToCartFromModal');
         if (addToCartModal) addToCartModal.addEventListener('click', function() {
             window.conAccionUnica(addToCartModal, function () {
-                if (window.agregarPersonalizadoAlCarrito) window.agregarPersonalizadoAlCarrito();
-                // El modal se cierra en la misma función, así que no hace
-                // falta esperar nada: se devuelve resuelto para que el freno
-                // libere el botón enseguida.
+                // Dos caminos comparten este botón: la vista del plato
+                // (agregar tal cual) y la pantalla de personalizar (agregar
+                // con los cambios). `_previewPlatilloId` dice en cuál estamos.
+                //
+                // Esto es lo que faltaba: la vista del plato no tenía su
+                // propio path y dependía de un segundo botón inyectado en
+                // el cuerpo, que era el que aparecía duplicado.
+                var idPreview = window._previewPlatilloId;
+                if (idPreview) {
+                    window._previewPlatilloId = null;
+                    document.getElementById('customizeModal').classList.remove('active');
+                    if (window.agregarAlCarrito) window.agregarAlCarrito(idPreview);
+                } else if (window.agregarPersonalizadoAlCarrito) {
+                    window.agregarPersonalizadoAlCarrito();
+                }
                 return Promise.resolve();
             }, {
                 texto: '<i class="fas fa-cart-plus"></i> Añadir',
