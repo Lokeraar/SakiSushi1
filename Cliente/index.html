@@ -65,137 +65,271 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             --card-bg:rgba(255,255,255,.05);
             --text-primary:#fff;
             --text-secondary:var(--gray-400);
+            /* Tinta que se apoya sobre un relleno de marca. Vive en
+               :root porque las reglas base la usan en los dos temas;
+               el tema claro la redefine con su propio tono. */
+            --tinta-sobre-marca:#212121;
+            /* Platillo agotado: velo y texto atenuado. En oscuro el velo
+               aclara la tarjeta y la tinta se mantiene legible. */
+            --velo-agotado:rgba(255,255,255,.14);
+            --tinta-agotado:rgba(255,255,255,.78);
+            /* Separador de una línea de texto: en oscuro es blanco tenue,
+               en claro es la línea cálida del tema. */
+            --linea-fina:rgba(255,255,255,.08);
         }
         
 
         /* ═══════════════════════════════════════════════════════
-           TEMA CLARO — overrides de variables y componentes
+           TEMA CLARO — "papel de arroz"
+
+           Paleta tomada del logo, no inventada: se extrajeron los
+           colores dominantes píxel a píxel de logo_saki.png.
+             · marrón profundo  #211409   (fondo del emblema)
+             · carmesí          #A01828   (trazo del dragón)
+             · dorado           #DD951F   (palillos y letras)
+
+           De ahí sale una escala cálida. Cada par texto/fondo está
+           medido con la fórmula de contraste WCAG: el texto de
+           cuerpo queda en AA o mejor (mínimo 4.5:1).
+
+           Antes el tema claro era oscuro: --bg-overlay seguía siendo
+           casi negro, así que las letras oscuras caían sobre un fondo
+           oscuro. Ese era el origen de la saturación.
            ═══════════════════════════════════════════════════════ */
 
         body.tema-claro {
-            --bg-overlay:rgba(26,26,46,0.85);
-            --card-bg:rgba(255,255,255,0.82);
-            --text-primary:#1a1a2e;
-            --text-secondary:#2d2d44;
-            --nivel3-bg:#ffffff;
-            --nivel3-border:#d1d1e0;
-            --accent:#FF9800;
-            --accent-text:#7A3E00;
+            /* Superficies: papel cálido, nunca blanco puro */
+            --papel:#FBF7F2;
+            --superficie:#FFFFFF;
+            --superficie-2:#F6F0E9;
+            --bg-overlay:rgba(251,247,242,0.94);   /* ← aclara la foto, no la tapa */
+            --card-bg:rgba(255,255,255,0.92);
+
+            /* Tinta: el marrón del logo, legible */
+            --text-primary:#2A1C14;                /* 15.5:1 sobre papel */
+            --text-secondary:#5F4E44;              /*  7.4:1 sobre papel */
+            --text-muted:#7A6A60;                  /*  4.9:1 sobre papel */
+
+            /* Marca */
+            --accent:#DD951F;                      /* dorado del logo, RELLENO */
+            --accent-text:#8A5A00;                 /* dorado oscurecido, 5.56:1 sobre papel */
+            --accent-sobre-marca:#FFD180;          /* dorado claro para el header carmesí, 5.53:1 */
+            --primary:#A01828;                     /* carmesí del logo */
+            --primary-text:#96121F;                /* carmesí para texto, 8.2:1 */
+            /* Texto que se apoya en un relleno de marca (dorado o
+               carmesí). No es tinta de lectura: es la que elige el
+               color de contraste correcto en cada caso. */
+            --tinta-sobre-marca:#2A1C14;
+
+            /* Líneas y bordes */
+            --linea:#E8DDD3;                       /* separadores suaves */
+            --borde-control:#947F6D;               /* 3.6:1 — WCAG 1.4.11 para inputs */
+
+            /* Estados, atenuados para no gritar sobre papel */
+            --success:#2F6B3A;
+            --info:#1D5B8C;
+            --warning:#8A5A00;
+            --danger:#A81E1E;
+
+            /* Series de menú */
+            --nivel3-bg:#FFFFFF;
+            --nivel3-border:#E8DDD3;
+            --nivel2-text:#8A5A00;
+
+            /* Platillo agotado: velo cálido tenue + tinta atenuada.
+               Medido: tinta 6.42:1 sobre el velo. Se nota apagado
+               sin dejar de leerse. */
+            --velo-agotado:rgba(65,45,30,.08);
+            --tinta-agotado:#5F4E44;
+
+            /* Separadores de una línea de texto sobre superficie clara */
+            --linea-fina:var(--linea);
+
+            /* Sombras: cálidas y cortas, no negro puro */
+            --shadow-sm:0 1px 3px rgba(65,45,30,.07);
+            --shadow-md:0 3px 10px rgba(65,45,30,.09);
+            --shadow-lg:0 8px 24px rgba(65,45,30,.12);
         }
+
+        /* La foto de fondo se aclara y se desenfoca: aporta textura,
+           no compite con el texto. */
+        body.tema-claro::before {
+            background:var(--bg-overlay);
+            backdrop-filter:blur(14px) saturate(.55);
+            -webkit-backdrop-filter:blur(14px) saturate(.55);
+        }
+
+        /* ── Tarjetas de platillo ── */
         body.tema-claro .menu-card {
-            border:1px solid rgba(0,0,0,0.1);
-            background: rgba(255,255,255,0.82);
-            backdrop-filter: blur(8px);
+            border:1px solid var(--linea);
+            background:var(--card-bg);
+            backdrop-filter:blur(10px);
+            -webkit-backdrop-filter:blur(10px);
+            box-shadow:var(--shadow-sm);
+            transition:box-shadow .22s ease, transform .22s ease, border-color .22s ease;
         }
-        /* Textos con acento usan tono más oscuro en tema claro */
-        body.tema-claro .menu-card-price,
-        body.tema-claro .cascade-arrow,
-        body.tema-claro .footer-section h4,
-        body.tema-claro .favorite-btn.active,
-        body.tema-claro .pagination-num.active { color: var(--accent-text); }
-        /* Rojo de marca para montos y totales en tema claro */
-        body.tema-claro .cart-total span:last-child,
-        body.tema-claro #cartTotal,
-        body.tema-claro .item-precio { color: var(--primary); }
-        body.tema-claro .cart-header h3 { color: var(--text-primary); }
-        /* nivel1: blanco como el nombre; nivel2: mismo naranja del "Completo" */
-        body.tema-claro .nivel2-header .header-details { color: var(--nivel2-text); }
-        body.tema-claro .nivel1-header .header-details { color: rgba(255,255,255,.9); }
+        body.tema-claro .menu-card:hover {
+            box-shadow:var(--shadow-md);
+            border-color:#DFD0C2;
+        }
         body.tema-claro .menu-card-title {
-            color: #1a1a2e;
-            font-weight: 700;
-            text-shadow: none;
+            color:var(--text-primary);
+            font-weight:700;
+            text-shadow:none;
+            letter-spacing:-.01em;
         }
         body.tema-claro .menu-card-description {
-            color: #2d2d44;
-            font-weight: 500;
+            color:var(--text-secondary);
+            font-weight:400;
         }
+        /* El precio es la marca: carmesí, no naranja saturado */
         body.tema-claro .menu-card-price {
-            color: var(--primary);
-            font-weight: 700;
+            color:var(--primary-text);
+            font-weight:700;
         }
+
+        /* ── Acentos: textos que necesitan el dorado legible ──
+           El dorado del logo (#DD951F) sirve para RELLENAR, no para
+           escribir: sobre papel da 2.35:1. Sobre superficie clara se
+           usa el dorado oscurecido (5.56:1).
+
+           La lista de abajo NO estaba completa. Trece selectores base
+           pintan texto con var(--accent) y varios caen sobre tarjeta
+           o sidebar claros: quedaban a 2.21:1, prácticamente
+           invisibles. Se cubren uno por uno, no por aproximación. */
+        body.tema-claro .cascade-arrow,
+        body.tema-claro .favorite-btn.active,
+        body.tema-claro .voice-search-btn,
+        body.tema-claro .category-item[data-categoria=favoritos],
+        body.tema-claro .category-item[data-categoria=favoritos] i:first-child,
+        body.tema-claro .historial-modal .pedido-total,
+        body.tema-claro .footer-brand-slogan,
+        body.tema-claro .footer-section a:hover,
+        body.tema-claro .parroquia-precio,
+        body.tema-claro .text-accent,
+        body.tema-claro .aviso-secundarios {
+            color:var(--accent-text);
+        }
+
+        /* El header se queda con el carmesí de marca y letras blancas:
+           aquí el dorado oscurecido NO sirve (2.9:1 sobre #A01828).
+           Para escribir sobre el carmesí hace falta el dorado claro. */
+        body.tema-claro .header-slogan {
+            color:var(--accent-sobre-marca);
+        }
+        /* El número de página activo va relleno de carmesí con letra
+           blanca (7.91:1). El borde también, porque si quedaba dorado
+           el control se leía como dos piezas distintas. */
+        body.tema-claro .pagination-num.active {
+            background:var(--primary);
+            border-color:var(--primary);
+            color:#FFFFFF;
+        }
+
+        /* ── Títulos y jerarquía ── */
         body.tema-claro .category-title h2,
         body.tema-claro .section-title,
         body.tema-claro .cart-header h3,
         body.tema-claro .cart-total span {
-            color: #1a1a2e;
-            font-weight: 700;
+            color:var(--text-primary);
+            font-weight:700;
+            letter-spacing:-.01em;
         }
-        body.tema-claro .stock-info {
-            color: #2d2d44;
-            font-weight: 500;
-        }
+        body.tema-claro .stock-info,
         body.tema-claro .cart-items {
-            color: #1a1a2e;
+            color:var(--text-secondary);
         }
         body.tema-claro .item-info .item-name {
-            color: #1a1a2e;
-            font-weight: 600;
+            color:var(--text-primary);
+            font-weight:600;
         }
         body.tema-claro .item-info .personalizacion {
-            color: #4a4a5e;
+            color:var(--text-muted);
         }
+        /* Montos: carmesí de marca */
+        body.tema-claro .cart-total span:last-child,
+        body.tema-claro #cartTotal,
         body.tema-claro .item-precio {
-            color: var(--primary);
-            font-weight: 700;
+            color:var(--primary-text);
+            font-weight:700;
         }
+
+        /* Niveles de personalización: el degradado carmesí del logo se
+           mantiene (blanco encima lee bien); el nivel 2 usa dorado sobre
+           papel crema, no naranja sobre blanco. */
+        body.tema-claro .nivel1-header .header-details {
+            color:rgba(255,255,255,.94);
+        }
+        body.tema-claro .nivel2-header .header-details {
+            color:var(--nivel2-text);
+        }
+
+        /* ── Barra superior: buscador y etiquetas ── */
+        body.tema-claro .tagline-item {
+            background:rgba(255,255,255,.75);
+            border:1px solid var(--linea);
+            color:var(--text-primary);
+            backdrop-filter:blur(8px);
+            transition:background .2s ease, border-color .2s ease;
+        }
+        body.tema-claro .tagline-item:hover {
+            background:rgba(255,255,255,.95);
+            border-color:#DFD0C2;
+        }
+        body.tema-claro .search-bar input {
+            background:rgba(255,255,255,.9);
+            color:var(--text-primary);
+            border:1.5px solid var(--borde-control);
+        }
+        body.tema-claro .search-bar input::placeholder {
+            color:var(--text-muted);
+        }
+        body.tema-claro .search-bar i {
+            color:var(--text-muted);
+        }
+        body.tema-claro .category-title {
+            background:rgba(255,255,255,.75);
+            border:1px solid var(--linea);
+            backdrop-filter:blur(8px);
+        }
+
+        /* ── Pie de página ── */
         body.tema-claro .footer {
-            background: var(--gray-200);
-            color: #1a1a2e;
+            background:var(--superficie-2);
+            color:var(--text-primary);
+            border-top:1px solid var(--linea);
         }
         body.tema-claro .footer-section h4 {
-            color: var(--primary);
+            color:var(--primary-text);
         }
         body.tema-claro .footer-section p,
         body.tema-claro .footer-section a {
-            color: #2d2d44;
-        }
-        body.tema-claro .notification-title {
-            color: #1a1a2e;
-        }
-        body.tema-claro .notification-message {
-            color: #2d2d44;
-        }
-        body.tema-claro .toast {
-            background: #1a1a2e;
-            color: white;
+            color:var(--text-secondary);
         }
 
-        /* ── Tema claro: tagline, buscador y título de sección ── */
-        body.tema-claro .tagline-item {
-            background: rgba(255,255,255,0.6);
-            border: 1px solid rgba(0,0,0,0.12);
-            color: #1a1a2e;
-            backdrop-filter: blur(6px);
+        /* ── Avisos ── */
+        body.tema-claro .notification-title {
+            color:var(--text-primary);
         }
-        body.tema-claro .tagline-item:hover {
-            background: rgba(255,255,255,0.75);
+        body.tema-claro .notification-message {
+            color:var(--text-secondary);
         }
-        body.tema-claro .search-bar input {
-            background: rgba(255,255,255,0.75);
-            color: #1a1a2e;
-            border: 2px solid rgba(0,0,0,0.15);
+        body.tema-claro .toast {
+            background:var(--text-primary);
+            color:#FBF7F2;
         }
-        body.tema-claro .search-bar input::placeholder {
-            color: #6c757d;
-        }
-        body.tema-claro .search-bar i {
-            color: #6c757d;
-        }
-        body.tema-claro .voice-search-btn {
-            color: var(--primary);
-        }
-        body.tema-claro .category-title {
-            background: rgba(255,255,255,0.6);
-            border: 1px solid rgba(0,0,0,0.1);
-            backdrop-filter: blur(6px);
-        }
+
         body.tema-claro .content-wrapper,
         body.tema-claro .main-layout,
         body.tema-claro .main-content {
-            background: transparent;
+            background:transparent;
         }
-        
+
+        /* Respeta a quien pide menos movimiento en el teléfono */
+        @media (prefers-reduced-motion: reduce) {
+            body.tema-claro .menu-card,
+            body.tema-claro .tagline-item { transition:none; }
+        }
 
         /* ═══════════════════════════════════════════════════════
            ESTILOS BASE — body, tipografía global
@@ -554,8 +688,8 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             pointer-events:auto;
             height:100%;
         }
-        body.tema-claro .category-sidebar{background:linear-gradient(135deg,#f0f0f5 0%,#e0e0e8 100%);border-right:1px solid rgba(0,0,0,.1)}
-        body.tema-claro .category-sidebar .category-item{color:#1a1a2e}
+        body.tema-claro .category-sidebar{background:var(--superficie-2);border-right:1px solid var(--linea)}
+        body.tema-claro .category-sidebar .category-item{color:var(--text-primary)}
         @media (max-width:992px){.category-sidebar{transform:translateX(-100%)}.category-sidebar.open{transform:translateX(0);box-shadow:var(--shadow-lg)}}
         @media (min-width:993px){.category-sidebar{transform:translateX(0)!important}}
         .category-header {
@@ -669,9 +803,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             pointer-events:auto;
             height:100%;
         }
-        body.tema-claro .cart-sidebar{background:linear-gradient(135deg,#f0f0f5 0%,#e0e0e8 100%);border-left:1px solid rgba(0,0,0,.1)}
-        body.tema-claro .cart-sidebar .cart-header h3{color:#1a1a2e}
-        body.tema-claro .cart-sidebar .cart-total span{color:#1a1a2e}
+        body.tema-claro .cart-sidebar{background:var(--superficie-2);border-left:1px solid var(--linea)}
+        body.tema-claro .cart-sidebar .cart-header h3{color:var(--text-primary)}
+        body.tema-claro .cart-sidebar .cart-total span{color:var(--text-primary)}
         @media (max-width:992px){.cart-sidebar{transform:translateX(100%)}.cart-sidebar.open{transform:translateX(0);box-shadow:var(--shadow-lg)}}
         @media (min-width:993px){.cart-sidebar{transform:translateX(0)!important}}
         .cart-header {
@@ -1015,7 +1149,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             cursor:not-allowed;
             background:var(--gray-400);
         }
-        .btn-secondary{background:var(--accent);color:white}
+        .btn-secondary{background:var(--accent);color:var(--tinta-sobre-marca)}
         .btn-secondary:hover:not(:disabled){background:#e68900;transform:translateY(-2px)}
         .btn-secondary:disabled{opacity:.5;cursor:not-allowed}
 
@@ -1261,11 +1395,14 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             box-shadow:0 4px 12px rgba(245,124,0,.4);
         }
         body.tema-claro .pagination-btn,body.tema-claro .pagination-num {
-            color:#1a1a2e;
-            border-color:rgba(0,0,0,.2);
-            background:rgba(0,0,0,.06);
+            color:var(--text-primary);
+            border-color:var(--borde-control);
+            background:rgba(65,45,30,.045);
         }
-        body.tema-claro .pagination-num.active{background:var(--accent);color:#fff}
+        /* El número activo se pinta ENTERO de carmesí. Aquí había una
+           segunda regla con fondo dorado y letra blanca que ganaba por
+           orden de cascada: blanco sobre #DD951F da 2.50:1 y no se lee.
+           Una sola definición, arriba, en el bloque del tema. */
 
         /* ═══════════════════════════════════════════════════════
            TARJETAS DE PLATILLOS
@@ -1331,22 +1468,33 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         /* Tarjeta bloqueada: además de la foto en gris, hay que APAGAR los
            botones. Sin esto quedaban naranjas y con cursor de mano, así que
            el cliente tocaba y no pasaba nada: parecía un fallo de la app. */
+        /* Platillo agotado: el botón se apaga, pero la palabra
+           «Agotado» es texto y tiene que leerse. Antes era gris
+           translúcido con letra blanca al 45% encima: 1.22:1, la
+           palabra desaparecía en los dos temas. Ahora el fondo es
+           un velo del propio tema y la letra usa la tinta atenuada,
+           que sobre ese velo queda por encima de 4.5:1. */
         .menu-card.agotado .btn-add,
         .menu-card.agotado .btn-add[disabled],
         .menu-card.agotado .btn-customize,
         .menu-card.agotado .btn-customize[disabled]{
-            background:rgba(120,120,120,.35)!important;
-            color:rgba(255,255,255,.45)!important;
+            background:var(--velo-agotado)!important;
+            color:var(--tinta-agotado)!important;
             cursor:not-allowed!important;
             pointer-events:none;
             box-shadow:none!important;
         }
+        /* El título y el precio se atenúan, pero no tanto: al 55%
+           el precio caía a 3.16:1. Al 72% conserva la lectura
+           (4.83:1) y todavía se nota que el platillo no está.
+           El texto del aviso «Agotado» del overlay no se toca: va
+           sobre la foto oscurecida, no sobre la tarjeta. */
         .menu-card.agotado .menu-card-title,
-        .menu-card.agotado .menu-card-price{opacity:.55}
+        .menu-card.agotado .menu-card-price{opacity:.72}
         /* Aviso de ingrediente secundario faltante: el platillo sigue
            disponible, solo se advierte que viene incompleto. */
-        .aviso-secundarios{font-size:.72rem;color:#FF9800;padding:.35rem .5rem;
-            border-top:1px solid rgba(255,255,255,.08);
+        .aviso-secundarios{font-size:.78rem;color:var(--accent);padding:.35rem .5rem;
+            border-top:1px solid var(--linea-fina);
             display:flex;gap:.3rem;align-items:center}
         .menu-card-sold-overlay {
             position:absolute;
@@ -1436,9 +1584,14 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             margin-top:auto;
             gap:.5rem;
         }
+        /* Botón de añadir: relleno de marca con TINTA OSCURA encima.
+           Tenía letra blanca sobre dorado, que da 2.16:1 en oscuro y
+           2.50:1 en claro: el «+» se perdía en los dos temas.
+           La tinta oscura sobre dorado sí pasa: 6.6:1 en claro, 7.6:1
+           en oscuro. Sirve para ambos sin duplicar la regla. */
         .btn-add {
             background:var(--accent);
-            color:white;
+            color:var(--tinta-sobre-marca);
             border:none;
             width:36px;
             height:36px;
@@ -1505,23 +1658,23 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             backdrop-filter:blur(10px);
         }
         body.tema-claro .notifications-panel {
-            background:linear-gradient(135deg,#f0f0f5 0%,#e0e0e8 100%);
-            color:#1a1a2e;
-            border:1px solid rgba(0,0,0,.1);
+            background:var(--superficie-2);
+            color:var(--text-primary);
+            border:1px solid var(--linea);
         }
-        body.tema-claro .notifications-header{background:rgba(0,0,0,.06);border-bottom:1px solid rgba(0,0,0,.1)}
-        body.tema-claro .notifications-header h4{color:#1a1a2e}
+        body.tema-claro .notifications-header{background:rgba(65,45,30,.045);border-bottom:1px solid var(--linea)}
+        body.tema-claro .notifications-header h4{color:var(--text-primary)}
         body.tema-claro .notification-item{color:var(--text-primary);border-bottom:1px solid rgba(128,128,128,.15)}
-        body.tema-claro .notification-item:hover{background:rgba(0,0,0,.05)}
+        body.tema-claro .notification-item:hover{background:rgba(65,45,30,.04)}
         body.tema-claro .notification-item.unread{background:rgba(211,47,47,.1);border-left:3px solid var(--primary)}
         body.tema-claro .notification-item.approved{background:rgba(56,142,60,.08);border-left:4px solid var(--success)}
         body.tema-claro .notification-item.rejected{background:rgba(239,68,68,.08);border-left:4px solid var(--danger)}
         body.tema-claro .notification-item.pending{background:rgba(245,124,0,.08);border-left:4px solid var(--warning)}
         body.tema-claro .notification-title{color:var(--text-primary)}
-        body.tema-claro .notification-message{color:#3a3a4e}
-        body.tema-claro .notification-time{color:#6c757d}
-        body.tema-claro .notification-item{color:#1a1a2e !important}
-        body.tema-claro .notifications-header span{color:#1a1a2e}
+        body.tema-claro .notification-message{color:var(--text-secondary)}
+        body.tema-claro .notification-time{color:var(--text-muted)}
+        body.tema-claro .notification-item{color:var(--text-primary) !important}
+        body.tema-claro .notifications-header span{color:var(--text-primary)}
         body.tema-claro .notifications-count{background:var(--primary);color:#fff}
         @media (max-width:480px){.notifications-panel{width:280px;right:10px}}
         .notifications-panel.active{display:block}
@@ -1617,17 +1770,17 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             border:1px solid rgba(255,255,255,.1);
             will-change:transform,opacity;
         }
-        body.tema-claro .modal-container{background:linear-gradient(135deg,#f0f0f5 0%,#e0e0e8 100%);color:#1a1a2e}
-        body.tema-claro .modal-header{background:rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.1)}
-        body.tema-claro .modal-header h3{color:#1a1a2e}
+        body.tema-claro .modal-container{background:var(--superficie-2);color:var(--text-primary)}
+        body.tema-claro .modal-header{background:rgba(65,45,30,.05);border-bottom:1px solid var(--linea)}
+        body.tema-claro .modal-header h3{color:var(--text-primary)}
         body.tema-claro .modal-body{color:var(--text-primary);font-family:'Roboto',sans-serif}
-        body.tema-claro .modal-body label{color:#1a1a2e}
+        body.tema-claro .modal-body label{color:var(--text-primary)}
         body.tema-claro .modal-body span{color:var(--text-primary)}
         body.tema-claro #deliveryTotal,
         body.tema-claro #cobro-total-display,
         body.tema-claro .modal-body .total-pagar-label,
         body.tema-claro .total-pagar-label { color: var(--primary) !important; }
-        body.tema-claro .modal-footer{border-top:1px solid rgba(0,0,0,.1)}
+        body.tema-claro .modal-footer{border-top:1px solid var(--linea)}
         /* ── Clases de formulario para modales delivery/reserva ── */
         .modal-form-label {
             display:block;
@@ -1667,67 +1820,67 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             font-family:monospace;
             flex-shrink:0;
         }
-        body.tema-claro .modal-form-label{color:#1a1a2e}
+        body.tema-claro .modal-form-label{color:var(--text-primary)}
         body.tema-claro .modal-form-input:not(.ref-digit) {
-            background:rgba(255,255,255,.7);
-            color:#1a1a2e;
-            border-color:rgba(0,0,0,.2);
+            background:rgba(255,255,255,.92);
+            color:var(--text-primary);
+            border-color:var(--borde-control);
         }
-        body.tema-claro .modal-form-input:not(.ref-digit)::placeholder{color:#8a8a9e}
+        body.tema-claro .modal-form-input:not(.ref-digit)::placeholder{color:var(--text-muted)}
         body.tema-claro .modal-form-ref-digit {
-            background:rgba(255,255,255,.8);
-            color:#1a1a2e;
-            border-color:rgba(0,0,0,.25);
+            background:rgba(255,255,255,.94);
+            color:var(--text-primary);
+            border-color:var(--borde-control);
         }
         body.tema-claro .parroquia-trigger {
-            background:rgba(255,255,255,.7) !important;
-            color:#1a1a2e !important;
-            border-color:rgba(0,0,0,.2) !important;
+            background:rgba(255,255,255,.92) !important;
+            color:var(--text-primary) !important;
+            border-color:var(--borde-control) !important;
         }
-        body.tema-claro .payment-info{background:rgba(0,0,0,.05);border-color:var(--primary)}
-        body.tema-claro .payment-info h4{color:var(--text-primary);border-bottom-color:rgba(0,0,0,.1)}
-        body.tema-claro .payment-details{background:rgba(0,0,0,.04)}
-        body.tema-claro .payment-details p{color:var(--text-primary);border-bottom-color:rgba(0,0,0,.08)}
+        body.tema-claro .payment-info{background:rgba(65,45,30,.04);border-color:var(--primary)}
+        body.tema-claro .payment-info h4{color:var(--text-primary);border-bottom-color:var(--linea)}
+        body.tema-claro .payment-details{background:rgba(65,45,30,.035)}
+        body.tema-claro .payment-details p{color:var(--text-primary);border-bottom-color:rgba(65,45,30,.05)}
         body.tema-claro .payment-details strong{color:var(--text-primary);font-family:inherit}
         body.tema-claro .payment-note{color:var(--text-secondary)}
         body.tema-claro .payment-note p{color:var(--text-secondary)}
-        body.tema-claro .file-input-label{background:rgba(0,0,0,.05);color:#1a1a2e}
-        body.tema-claro .file-input-label span{color:#4a4a5e}
+        body.tema-claro .file-input-label{background:rgba(65,45,30,.04);color:var(--text-primary)}
+        body.tema-claro .file-input-label span{color:var(--text-muted)}
         body.tema-claro .file-input-label i{color:var(--primary)}
         body.tema-claro .modal-body input[type="text"],
         body.tema-claro .modal-body input[type="tel"],
         body.tema-claro .modal-body input[type="date"],
         body.tema-claro .modal-body textarea,
         body.tema-claro .modal-body select {
-            background:rgba(0,0,0,.06);
-            color:#1a1a2e;
-            border-color:rgba(0,0,0,.2);
+            background:rgba(65,45,30,.045);
+            color:var(--text-primary);
+            border-color:var(--borde-control);
         }
         body.tema-claro .modal-body input::placeholder,
-        body.tema-claro .modal-body textarea::placeholder{color:#7a7a8e}
+        body.tema-claro .modal-body textarea::placeholder{color:var(--text-muted)}
         body.tema-claro .ref-digit {
-            background:rgba(0,0,0,.07) !important;
-            color:#1a1a2e !important;
-            border-color:rgba(0,0,0,.2) !important;
+            background:rgba(65,45,30,.05) !important;
+            color:var(--text-primary) !important;
+            border-color:var(--borde-control) !important;
         }
         body.tema-claro .timer-display,
-        body.tema-claro .timer-container{color:#1a1a2e}
+        body.tema-claro .timer-container{color:var(--text-primary)}
         body.tema-claro .delivery-price-display{background:rgba(56,142,60,.08)}
-        body.tema-claro .upload-progress{background:rgba(0,0,0,.1)}
-        body.tema-claro .btn-copy{background:rgba(0,0,0,.08);color:var(--success)}
-        body.tema-claro .char-count{color:#6a6a7e !important}
+        body.tema-claro .upload-progress{background:var(--linea)}
+        body.tema-claro .btn-copy{background:rgba(65,45,30,.05);color:var(--success)}
+        body.tema-claro .char-count{color:var(--text-muted) !important}
         body.tema-claro .info-box.delivery-pending{background:rgba(245,124,0,.08)}
         body.tema-claro .category-header {
-            background:rgba(0,0,0,.06);
-            color:#1a1a2e;
-            border-bottom:1px solid rgba(0,0,0,.1);
+            background:rgba(65,45,30,.045);
+            color:var(--text-primary);
+            border-bottom:1px solid var(--linea);
         }
-        body.tema-claro .category-header i{color:#4a4a5e}
-        body.tema-claro .subcategory-item{color:#3a3a4e}
-        body.tema-claro .subcategory-item:hover{background-color:rgba(0,0,0,.05);color:var(--primary)}
-        body.tema-claro .category-item[data-categoria=todos]{border-bottom:1px solid rgba(0,0,0,.1)}
-        body.tema-claro .cart-empty{color:#4a4a5e}
-        body.tema-claro .cart-empty i{color:#6c757d;opacity:.7}
+        body.tema-claro .category-header i{color:var(--text-muted)}
+        body.tema-claro .subcategory-item{color:var(--text-secondary)}
+        body.tema-claro .subcategory-item:hover{background-color:rgba(65,45,30,.04);color:var(--primary)}
+        body.tema-claro .category-item[data-categoria=todos]{border-bottom:1px solid var(--linea)}
+        body.tema-claro .cart-empty{color:var(--text-muted)}
+        body.tema-claro .cart-empty i{color:var(--text-muted);opacity:.7}
         @media (max-width:480px) {
             .modal-container{width:100%;
             max-height:100vh;
@@ -2333,6 +2486,28 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             transition:all .2s;
         }
         .confirm-dialog .btn-cancel:hover{background:rgba(255,255,255,.2)}
+
+        /* ── Diálogo de confirmación en tema claro ──
+           Era la única tarjeta que se quedaba negra: sus cuatro hermanas
+           (sidebars, panel de avisos, modal) ya tenían override. El
+           contraste no era el problema, la coherencia sí: un cuadro
+           negro flotando sobre papel. */
+        body.tema-claro .confirm-dialog {
+            background:var(--superficie-2);
+            border-color:var(--linea);
+            box-shadow:var(--shadow-lg);
+        }
+        body.tema-claro .confirm-dialog i { color:var(--accent-text); }
+        body.tema-claro .confirm-dialog h3 { color:var(--text-primary); }
+        body.tema-claro .confirm-dialog p { color:var(--text-secondary); }
+        body.tema-claro .confirm-dialog .btn-cancel {
+            background:rgba(65,45,30,.06);
+            color:var(--text-primary);
+            border-color:var(--borde-control);
+        }
+        body.tema-claro .confirm-dialog .btn-cancel:hover {
+            background:rgba(65,45,30,.12);
+        }
         .preview-modal .preview-image {
             width:100%;
             height:250px;
@@ -2398,8 +2573,8 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             --customize-border: rgba(255,255,255,0.1);
         }
         body.tema-claro {
-            --customize-text: #1a1a2e;
-            --customize-subtext: #4a4a5e;
+            --customize-text: var(--text-primary);
+            --customize-subtext: var(--text-muted);
             --customize-row-bg: rgba(0,0,0,0.07);
             --customize-border: rgba(0,0,0,0.15);
         }
