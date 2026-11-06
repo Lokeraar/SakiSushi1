@@ -146,6 +146,50 @@
             if (window.toggleNotifications) window.toggleNotifications();
         });
 
+        // TOCAR FUERA CIERRA LAS NOTIFICACIONES.
+        //
+        // El panel solo se cerraba volviendo a pulsar la campana. Si el
+        // cliente tocaba una tarjeta del menú, el carrito o cualquier otra
+        // cosa, las notificaciones seguían flotando encima de lo que estaba
+        // mirando.
+        //
+        // POR QUÉ SE ESCUCHA EN EL DOCUMENTO Y NO EN UN VELO: la campana y
+        // el panel viven en ramas distintas del árbol (línea 3202 y 3537),
+        // no son padre e hijo. Un velo que los envolviera obligaría a
+        // reescribir el HTML del header.
+        //
+        // El toque en la campana NO debe contar como «fuera», o el panel se
+        // abriría y cerraría en el mismo toque. Se comprueba con `closest`
+        // sobre el botón, y además el listener del botón corre antes que el
+        // del documento: cuando este último se ejecuta, el panel ya está
+        // abierto y `active` es true, así que sin la comprobación se
+        // cerraría de inmediato.
+        // SE ESCUCHA EN FASE DE CAPTURA (el `true` final).
+        //
+        // Varios handlers de las tarjetas llaman a `e.stopPropagation()`
+        // (los botones de favorito, añadir y personalizar). Un listener
+        // normal en el documento NUNCA se ejecutaría después de uno de
+        // esos toques, y el panel quedaría abierto justo al tocar un
+        // platillo, que es el caso más común.
+        //
+        // En fase de captura el evento baja desde el documento hacia el
+        // blanco, así que corre ANTES de cualquier stopPropagation.
+        document.addEventListener('click', function (e) {
+            var panel = document.getElementById('notificationsPanel');
+            if (!panel || !panel.classList.contains('active')) return;
+
+            // ¿El toque fue dentro del panel? Entonces no se cierra: el
+            // usuario está leyendo o tocando una notificación.
+            if (panel.contains(e.target)) return;
+
+            // ¿El toque fue en la campana? Tampoco: ese toque ya lo maneja
+            // su propio listener, y aquí solo duplicaría el trabajo.
+            var campana = document.getElementById('notificationBell');
+            if (campana && campana.contains(e.target)) return;
+
+            cerrarNotificaciones();
+        }, true);
+
         // Overlay click
         var overlay = document.getElementById('overlay');
         if (overlay) overlay.addEventListener('click', cerrarTodosLosPaneles);
