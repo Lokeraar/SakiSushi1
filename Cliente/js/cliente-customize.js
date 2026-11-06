@@ -115,14 +115,17 @@
 
         // La foto y su X. La X vive SOBRE la foto, no en una cabecera:
         // es donde el pulgar la encuentra sin estirarse.
+        // La foto va en su envoltura; la X va FUERA, como hija directa del
+        // contenedor. Así el CSS decide a qué se ancla: en el teléfono a la
+        // foto, en tablet y PC a la esquina de la tarjeta.
         html += '<div class="cust-foto-wrap">' +
             (foto
                 ? '<img id="customizeFoto" class="cust-foto" src="' + foto + '" ' +
                   'alt="' + item.nombre + '" title="Toca para ampliar">'
                 : '<div class="cust-foto" aria-hidden="true"></div>') +
-            '<button type="button" class="cust-cerrar" id="custCerrar" ' +
-              'aria-label="Cerrar la ventana del plato">&times;</button>' +
-          '</div>';
+          '</div>' +
+          '<button type="button" class="cust-cerrar" id="custCerrar" ' +
+            'aria-label="Cerrar la ventana del plato">&times;</button>';
 
         html += '<div class="cust-cuerpo">' +
 
