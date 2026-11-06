@@ -69,7 +69,15 @@
         return Math.floor((t0 + minutos() * 60000 - Date.now()) / 1000);
     };
 
-    window.vencerCarrito = function vencerCarrito () {
+    /**
+     * Vacía el carrito y limpia su plazo.
+     *
+     * `opciones.silencioso` evita el aviso de "pasaron N minutos": se usa
+     * cuando el cliente pidió empezar de cero a propósito. Avisarle de un
+     * vencimiento que no ocurrió sería mentirle.
+     */
+    window.vencerCarrito = function vencerCarrito (opciones) {
+        var silencioso = !!(opciones && opciones.silencioso);
         var tenia = window.Saki && window.Saki.state && window.Saki.state.carrito &&
                     window.Saki.state.carrito.length > 0;
 
@@ -85,9 +93,13 @@
 
         // OJO: NO se tocan los campos del formulario. Regla del dueño: se
         // limpian solo al pagar.
-        if (tenia) {
+        if (tenia && !silencioso) {
+            // Antes decía "para liberar los ingredientes", y era falso: en
+            // ninguna de las dos fases hay reserva en la base. La RPC que
+            // aparta stock corre al CONFIRMAR el pedido. Prometer una
+            // liberación que no ocurre confunde al cliente y al personal.
             avisar('⏰ Pasaron ' + minutos() + ' minutos sin confirmar tu pedido. ' +
-                   'El carrito se vació para liberar los ingredientes.');
+                   'El carrito se vació.');
         }
         detenerVigilancia();
         return true;
@@ -159,8 +171,12 @@
         if (window.actualizarCarritoBadge) window.actualizarCarritoBadge();
 
         if (tenia) {
+            // Mismo criterio que en vencerCarrito: en fase 2 tampoco hay
+            // reserva de ingredientes (la RPC aparta stock al confirmar, no
+            // al abrir el modal). Prometer una liberación que no ocurre
+            // confunde al cliente.
             avisar('⏰ Pasaron ' + minutos() + ' minutos sin completar el pago. ' +
-                   'El carrito se vació para liberar los ingredientes.');
+                   'El carrito se vació.');
         }
         return true;
     };
@@ -236,7 +252,9 @@
             var p = leerPlazoModal();
             if (p && window.iniciarTimerFrontend && !window._timerCorriendo) {
                 try {
-                    window.iniciarTimerFrontend(p.tipo, Math.max(1, Math.ceil(sm / 60)));
+                    // SEGUNDOS, no minutos: `Math.ceil(sm/60)` regalaba hasta
+                    // 59 segundos por recarga. Ver iniciarTimerFrontend.
+                    window.iniciarTimerFrontend(p.tipo, sm);
                 } catch (e) {}
             }
             window.iniciarVigilanciaCarrito();

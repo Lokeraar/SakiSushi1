@@ -77,35 +77,81 @@
         if (window.iniciarPlazoModal) {
             var arrancado = window.iniciarPlazoModal(tipo);
             if (!arrancado) {
-                // Ya estaba corriendo: reanudar con lo que le queda, no con 20.
+                // Ya estaba corriendo: reanudar con los SEGUNDOS que le quedan.
+                //
+                // Antes se pasaba `Math.ceil(restantes / 60)`, que redondea
+                // hacia arriba y regalaba hasta 59 segundos por cada apertura
+                // del modal. Ver la explicación en iniciarTimerFrontend.
                 var restantes = window.segundosModalRestantes();
                 if (restantes !== null && restantes > 0) {
-                    iniciarTimerFrontend(tipo, Math.max(1, Math.ceil(restantes / 60)));
+                    iniciarTimerFrontend(tipo, restantes);
                     return;
                 }
             }
         }
-        iniciarTimerFrontend(tipo, minutos);
+        iniciarTimerFrontend(tipo, minutos * 60);
     }
     window.iniciarTimerSiNoCorre = iniciarTimerSiNoCorre;
 
-    function iniciarTimerFrontend(tipo, minutos) {
-        detenerTimer(tipo);
-        var totalSegundos = minutos * 60;
-        timersActivos[tipo] = totalSegundos;
+    // Pinta M:SS. Separado porque se usa en dos sitios y el formato tiene
+    // que ser idéntico en los dos.
+    function dosDigitos(n) {
+        return (n < 10 ? '0' : '') + n;
+    }
+
+    function pintarTimer(tipo, segundos) {
         var display = document.getElementById(tipo + 'TimerDisplay');
-        if (display) {
-            var m = Math.floor(totalSegundos / 60).toString().padStart(2, '0');
-            var s = (totalSegundos % 60).toString().padStart(2, '0');
-            display.textContent = m + ':' + s;
-        }
+        if (!display) return;
+        var s = Math.max(0, Math.floor(segundos));
+        display.textContent = dosDigitos(Math.floor(s / 60)) + ':' + dosDigitos(s % 60);
+    }
+    window.pintarTimer = pintarTimer;
+
+    /**
+     * Arranca el reloj de la pantalla. RECIBE SEGUNDOS, no minutos.
+     *
+     * POR QUÉ SEGUNDOS: el dueño reportó que el contador se restituía al
+     * cerrar y reabrir el modal. Cerrado a las 3:28 con 18:53 restantes,
+     * reabierto un minuto antes de que venciera y apareció 18:59.
+     *
+     * La causa era el redondeo. Se pasaba `Math.ceil(restantes / 60)` y se
+     * pintaba un múltiplo de minuto exacto:
+     *
+     *     1133 s reales -> ceil(1133/60)=19 -> se pintaba 19:00  (+7 s)
+     *     1117 s reales -> ceil(1117/60)=19 -> se pintaba 19:00  (+23 s)
+     *
+     * Es decir: cerrar y reabrir REGALABA hasta 59 segundos de reloj. El
+     * plazo de verdad en localStorage siempre estuvo bien; lo que mentía era
+     * la pantalla.
+     *
+     * Y EL RELOJ AHORA SE REPINTA DESDE EL PLAZO ABSOLUTO, no restando de un
+     * contador propio. Un `setInterval` que resta se desfasa cuando el
+     * navegador suspende el intervalo: pestaña en segundo plano, pantalla
+     * apagada, o el propio doze del teléfono. Con la resta, el reloj se
+     * quedaba atrás y el cliente veía tiempo que ya no tenía.
+     */
+    function iniciarTimerFrontend(tipo, segundos) {
+        detenerTimer(tipo);
+
+        var total = (typeof segundos === 'number' && segundos > 0) ? Math.floor(segundos) : 0;
+        timersActivos[tipo] = total;
+        pintarTimer(tipo, total);
+
         intervalosTimer[tipo] = setInterval(function() {
-            timersActivos[tipo]--;
-            var remaining = timersActivos[tipo];
-            var m = Math.floor(remaining / 60).toString().padStart(2, '0');
-            var s = (remaining % 60).toString().padStart(2, '0');
-            if (display) display.textContent = m + ':' + s;
-            if (remaining <= 0) {
+            // Fuente única de verdad: el plazo absoluto guardado al abrir el
+            // modal. Si no hay plazo guardado (caso raro), se cae al contador
+            // propio como red de seguridad.
+            var restantes = window.segundosModalRestantes ? window.segundosModalRestantes() : null;
+            if (restantes === null) {
+                timersActivos[tipo] = timersActivos[tipo] - 1;
+                restantes = timersActivos[tipo];
+            } else {
+                timersActivos[tipo] = restantes;
+            }
+
+            pintarTimer(tipo, restantes);
+
+            if (restantes <= 0) {
                 detenerTimer(tipo);
                 document.getElementById(tipo + 'Modal').classList.remove('active');
                 if (window.mostrarToast) window.mostrarToast('⏰ Tiempo de pago agotado. Pedido cancelado.', 'warning');
@@ -754,16 +800,17 @@
     window.restaurarDatosFormulario = restaurarDatosFormulario;
     S.modules.delivery.restaurarDatosFormulario = restaurarDatosFormulario;
 
-    function mostrarDialogoContinuar() {
-        if (S.state.carrito && S.state.carrito.length > 0) {
-            setTimeout(function() {
-                if (window.mostrarToast) window.mostrarToast('🛒 Tienes ' + S.state.carrito.length + ' items en tu carrito', 'info');
-            }, 1500);
-        }
-    }
+    // El toast "🛒 Tienes N items en tu carrito" se retiró.
+    //
+    // El dueño lo señaló en su captura: en vez de la ventana de continuación
+    // aparecía ese mensaje suelto, sin botones. El cliente no podía ni limpiar
+    // el carrito ni volver a la pantalla de pago. Ahora esa decisión la toma
+    // la ventana de `mostrarDialogoSiCorresponde`.
+    //
+    // La función se conserva porque cliente-init.js la invoca; no hace nada.
+    function mostrarDialogoContinuar() {}
     window.mostrarDialogoContinuar = mostrarDialogoContinuar;
     S.modules.delivery.mostrarDialogoContinuar = mostrarDialogoContinuar;
-
     // Cleanup all timers
     function detenerTodosLosTimers() {
         for (var key in intervalosTimer) {
