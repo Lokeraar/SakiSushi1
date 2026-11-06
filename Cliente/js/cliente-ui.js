@@ -7,11 +7,61 @@
 
     // ==================== PANEL TOGGLES ====================
 
+    // ═══════════════════════════════════════════════════════════
+    // UN PANEL A LA VEZ EN PRIMER PLANO
+    //
+    // Antes cada panel se abría por su cuenta: podías tener el menú de
+    // categorías, el carrito y las notificaciones abiertos a la vez,
+    // apilados uno sobre otro. En un teléfono eso tapa media pantalla y
+    // no se sabe qué cerrar primero.
+    //
+    // La regla ahora: ABRIR UNO CIERRA LOS OTROS DOS. No se cierra el
+    // que se está abriendo (eso anularía el toque), solo los ajenos.
+    //
+    // Se resuelve aquí, en un solo sitio, y no en cada botón: así
+    // cualquier camino nuevo que abra un panel hereda la regla sin
+    // tener que acordarse de repetirla.
+    // ═══════════════════════════════════════════════════════════
+
+    /** Cierra los paneles que NO son `excepto`. */
+    function _cerrarPanelesExcepto(excepto) {
+        if (excepto !== 'categorias') {
+            var cat = document.getElementById('categorySidebar');
+            if (cat) cat.classList.remove('open');
+        }
+        if (excepto !== 'carrito') {
+            var cart = document.getElementById('cartSidebar');
+            if (cart) cart.classList.remove('open');
+            if (window.detenerSeguimientoScroll) window.detenerSeguimientoScroll();
+        }
+        if (excepto !== 'notificaciones') {
+            var noti = document.getElementById('notificationsPanel');
+            if (noti) noti.classList.remove('active');
+        }
+
+        // El velo oscuro solo tiene sentido con un panel lateral abierto.
+        // Las notificaciones son una tarjeta flotante, no un panel que
+        // tape el costado: con ellas no va velo.
+        var overlay = document.getElementById('overlay');
+        if (overlay) {
+            if (excepto === 'categorias' || excepto === 'carrito') {
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+    }
+    window.cerrarPanelesExcepto = _cerrarPanelesExcepto;
+    S.modules.ui.cerrarPanelesExcepto = _cerrarPanelesExcepto;
+
     function toggleMenuCategorias() {
         var sidebar = document.getElementById('categorySidebar');
+        var seAbre = !sidebar.classList.contains('open');
+        if (seAbre) _cerrarPanelesExcepto('categorias');
         sidebar.classList.toggle('open');
         var overlay = document.getElementById('overlay');
         if (sidebar.classList.contains('open')) overlay.classList.add('active');
+        else overlay.classList.remove('active');
     }
     window.toggleMenuCategorias = toggleMenuCategorias;
     S.modules.ui.toggleMenuCategorias = toggleMenuCategorias;
@@ -25,6 +75,8 @@
 
     function toggleCarrito() {
         var sidebar = document.getElementById('cartSidebar');
+        var seAbre = !sidebar.classList.contains('open');
+        if (seAbre) _cerrarPanelesExcepto('carrito');
         sidebar.classList.toggle('open');
         var overlay = document.getElementById('overlay');
         if (sidebar.classList.contains('open')) {
@@ -32,6 +84,8 @@
             if (S.state.carrito && S.state.carrito.length > 0) {
                 if (window.iniciarSeguimientoScroll) window.iniciarSeguimientoScroll();
             }
+        } else {
+            overlay.classList.remove('active');
         }
     }
     window.toggleCarrito = toggleCarrito;

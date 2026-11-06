@@ -278,9 +278,23 @@
     function toggleNotifications() {
         var panel = document.getElementById('notificationsPanel');
         if (!panel) return;
+
+        // Abrir las notificaciones cierra el menú de categorías y el
+        // carrito: solo un panel queda en primer plano. La regla vive en
+        // cliente-ui.js para que valga igual desde cualquier botón.
+        var seAbre = !panel.classList.contains('active');
+        if (seAbre && window.cerrarPanelesExcepto) {
+            window.cerrarPanelesExcepto('notificaciones');
+        }
+
         panel.classList.toggle('active');
         if (panel.classList.contains('active')) {
             marcarTodasComoLeidas();
+        } else {
+            // Al cerrarlas, el velo oscuro sobra: el velo existe para los
+            // paneles que ocupan el costado, no para este.
+            var overlay = document.getElementById('overlay');
+            if (overlay) overlay.classList.remove('active');
         }
     }
     window.toggleNotifications = toggleNotifications;

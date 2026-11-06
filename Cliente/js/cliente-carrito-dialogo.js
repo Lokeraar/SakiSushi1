@@ -140,10 +140,18 @@
                     window.Saki.utils.mostrarToast('🔄 Pedido anterior restaurado', 'success');
                 }
                 // Reabrir la barra del carrito para que lo vea.
-                var sidebar = document.getElementById('cartSidebar');
-                var ov = document.getElementById('overlay');
-                if (sidebar && window.innerWidth <= 992) {
-                    sidebar.classList.add('open');
+                //
+                // Pasa por la regla de un panel a la vez: si el menú de
+                // categorías o las notificaciones estaban abiertos, se
+                // cierran. Abrir el carrito a mano aquí dejaba dos paneles
+                // superpuestos.
+                if (window.innerWidth <= 992) {
+                    if (window.cerrarPanelesExcepto) {
+                        window.cerrarPanelesExcepto('carrito');
+                    }
+                    var sidebar = document.getElementById('cartSidebar');
+                    var ov = document.getElementById('overlay');
+                    if (sidebar) sidebar.classList.add('open');
                     if (ov) ov.classList.add('active');
                 }
             }
