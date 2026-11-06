@@ -250,19 +250,13 @@
         var addToCartModal = document.getElementById('addToCartFromModal');
         if (addToCartModal) addToCartModal.addEventListener('click', function() {
             window.conAccionUnica(addToCartModal, function () {
-                // Dos caminos comparten este botón: la vista del plato
-                // (agregar tal cual) y la pantalla de personalizar (agregar
-                // con los cambios). `_previewPlatilloId` dice en cuál estamos.
+                // Hay UNA sola ventana del platillo, así que hay UNA sola
+                // cosa que hacer: agregar con las opciones elegidas.
                 //
-                // Esto es lo que faltaba: la vista del plato no tenía su
-                // propio path y dependía de un segundo botón inyectado en
-                // el cuerpo, que era el que aparecía duplicado.
-                var idPreview = window._previewPlatilloId;
-                if (idPreview) {
-                    window._previewPlatilloId = null;
-                    document.getElementById('customizeModal').classList.remove('active');
-                    if (window.agregarAlCarrito) window.agregarAlCarrito(idPreview);
-                } else if (window.agregarPersonalizadoAlCarrito) {
+                // Antes este botón tenía que adivinar de qué ventana venía
+                // (`_previewPlatilloId`). Ese modo ya no existe: tocar la
+                // foto y tocar «Personalizar» abren la misma pantalla.
+                if (window.agregarPersonalizadoAlCarrito) {
                     window.agregarPersonalizadoAlCarrito();
                 }
                 return Promise.resolve();
@@ -292,7 +286,6 @@
             customizeModalEl.addEventListener('click', function (e) {
                 if (e.target === customizeModalEl) {
                     customizeModalEl.classList.remove('active');
-                    window._previewPlatilloId = null;
                 }
             });
         }

@@ -31,11 +31,6 @@
         var item = (S.state.menuItems || []).find(function(i) { return i.id == platilloId; });
         if (!item) return;
 
-        // Este modal lo comparte la vista del plato. Al entrar a
-        // personalizar, el modo «agregar tal cual» se apaga: si quedaba
-        // encendido, el botón Añadir se saltaba los cambios del usuario.
-        window._previewPlatilloId = null;
-
         currentCustomizeItem = item;
         var modal = document.getElementById('customizeModal');
         var body = document.getElementById('customizeModalBody');
@@ -83,8 +78,45 @@
 
         var precioBase = item.precio || 0;
 
-        var html = '<div style="margin-bottom:1rem">' +
-            '<h4 style="color:var(--accent);margin-bottom:.5rem;font-size:1.1rem">' + item.nombre + '</h4>' +
+        // ── FOTO DEL PLATO ──
+        //
+        // Esta ventana es la ÚNICA del platillo: se abre igual desde la
+        // tarjeta (tocando la foto) y desde el botón «Personalizar». Antes
+        // eran dos ventanas distintas que compartían el mismo <div>, y eso
+        // obligaba a mantener dos maquetas y dos juegos de botones —de ahí
+        // salieron los «Añadir» duplicados.
+        //
+        // La foto se toma de la MISMA url optimizada que ya usa la tarjeta:
+        // así aparece al instante, sin volver a la red.
+        var foto = item.imagen || '';
+        if (window.optimizarUrlImagen && item.imagen) {
+            foto = window.optimizarUrlImagen(item.imagen);
+        }
+        var bloqueFoto = foto
+            ? '<img id="customizeFoto" src="' + foto + '" alt="' + item.nombre + '" ' +
+              'title="Toca para ampliar" ' +
+              'style="width:100%;height:180px;object-fit:cover;border-radius:var(--radius-md);' +
+              'margin-bottom:.9rem;cursor:zoom-in;display:block">'
+            : '';
+
+        // Estado del stock: decía cuántas unidades quedan y solo se veía en
+        // la vista rápida. Ahora viaja con la ventana.
+        var stock = (window._stockPrecalculado || {})[platilloId];
+        var bloqueStock = '';
+        if (typeof stock === 'number') {
+            if (stock <= 0) {
+                bloqueStock = '<div class="stock-info" style="margin-bottom:.8rem">' +
+                    '<span style="color:var(--danger)"><i class="fas fa-times-circle"></i> Agotado</span></div>';
+            } else if (stock < 5) {
+                bloqueStock = '<div class="stock-info" style="margin-bottom:.8rem">' +
+                    '<span style="color:var(--warning)"><i class="fas fa-exclamation-triangle"></i> Últimas ' +
+                    stock + ' disponibles</span></div>';
+            }
+        }
+
+        var html = bloqueFoto + bloqueStock +
+            '<div style="margin-bottom:1rem">' +
+            '<h4 style="color:var(--accent-text);margin-bottom:.5rem;font-size:1.1rem">' + item.nombre + '</h4>' +
             '<p style="color:var(--text-secondary);font-size:.85rem">' + (item.descripcion || '') + '</p></div>' +
             '<div style="margin-bottom:1rem">' +
             '<label style="font-weight:600;color:var(--text-primary);display:block;margin-bottom:.5rem">Cantidad:</label>' +
@@ -173,6 +205,14 @@
         document.getElementById('qtyPlus').addEventListener('click', function() {
             if (window.actualizarCantidadPersonalizacion) window.actualizarCantidadPersonalizacion(1);
         });
+
+        // La foto del plato se amplía al tocarla, igual que en la vista rápida.
+        var fotoEl = document.getElementById('customizeFoto');
+        if (fotoEl) {
+            fotoEl.addEventListener('click', function() {
+                if (window.ampliarImagen) window.ampliarImagen(foto, item.nombre);
+            });
+        }
     }
     window.abrirPersonalizacion = abrirPersonalizacion;
     S.modules.customize.abrirPersonalizacion = abrirPersonalizacion;

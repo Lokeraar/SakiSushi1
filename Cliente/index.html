@@ -69,6 +69,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                :root porque las reglas base la usan en los dos temas;
                el tema claro la redefine con su propio tono. */
             --tinta-sobre-marca:#212121;
+            /* Color sólido detrás de la foto de fondo. Si la foto tardara
+               en llegar o no cargara, la carta se lee igual. */
+            --fondo-respaldo:#12121c;
             /* Platillo agotado: velo y texto atenuado. En oscuro el velo
                aclara la tarjeta y la tinta se mantiene legible. */
             --velo-agotado:rgba(255,255,255,.14);
@@ -145,18 +148,29 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             /* Separadores de una línea de texto sobre superficie clara */
             --linea-fina:var(--linea);
 
+            /* Respaldo detrás de la foto: papel cálido, no el azul nocturno
+               del tema oscuro. Si la foto no llegara, la carta se lee. */
+            --fondo-respaldo:#F0E9E0;
+
             /* Sombras: cálidas y cortas, no negro puro */
             --shadow-sm:0 1px 3px rgba(65,45,30,.07);
             --shadow-md:0 3px 10px rgba(65,45,30,.09);
             --shadow-lg:0 8px 24px rgba(65,45,30,.12);
         }
 
-        /* La foto de fondo se aclara y se desenfoca: aporta textura,
-           no compite con el texto. */
+        /* La foto de fondo se aclara y se DESENFOCA POCO.
+
+           Antes eran 14 px de desenfoque sobre una capa FIJA de pantalla
+           completa. En este teléfono eso obliga a rehacer el desenfoque
+           cada vez que algo se repinta encima, y combinado con el scroll
+           es lo que producía el tirón y la banda gris del video.
+
+           6 px alcanza: la foto ya viene suave de fábrica y detrás del
+           velo casi no se distingue. Menos trabajo por fotograma. */
         body.tema-claro::before {
             background:var(--bg-overlay);
-            backdrop-filter:blur(14px) saturate(.55);
-            -webkit-backdrop-filter:blur(14px) saturate(.55);
+            backdrop-filter:blur(6px) saturate(.6);
+            -webkit-backdrop-filter:blur(6px) saturate(.6);
         }
 
         /* ── Tarjetas de platillo ── */
@@ -335,25 +349,51 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            ESTILOS BASE — body, tipografía global
            ═══════════════════════════════════════════════════════ */
 
-        /* FONDO DE PANTALLA: antes se pedía el PNG original, 2,96 MB, en
-           CADA carga de la carta. Es una foto borrosa que se ve detrás de
-           todo, así que no necesita ni el tamaño ni la calidad del original.
+        /* FONDO DE PANTALLA
 
-           Medido con el mismo archivo servido por Supabase:
+           Antes: `background-image` + `background-attachment:fixed` en el
+           propio <body>. En Chrome de Android eso falla de una forma muy
+           visible: durante el deslizamiento el compositor no puede pintar
+           el fondo fijo a tiempo, deja una banda gris en la parte de abajo
+           y la imagen parece «perseguir» el scroll en vez de quedarse
+           quieta.
+
+           Ahora la foto vive en su PROPIA capa (`body::after`) con
+           `position:fixed`. Eso es una capa aparte del compositor: se queda
+           clavada en la ventana y el scroll no la toca ni la repinta.
+           El velo del tema (`body::before`) va encima, como ya estaba.
+
+           Orden de capas:  ::after (foto, z-index -2)  →  ::before (velo,
+           z-index -1)  →  contenido. El color de respaldo pasa a <html>
+           porque el <body> ahora es transparente; si la foto no cargara,
+           la carta sigue legible sobre el color sólido.
+
+           Peso (medido con el mismo archivo servido por Supabase):
              PNG original           2.958.142 bytes
-             WebP 1200, calidad 70     129.706 bytes   (23 veces menos)
-
-           Se usa /render/image/ con format=webp. Si el servicio de
-           transformación no estuviera disponible, el navegador recibe un
-           404 y NO se ve el fondo: por eso el color de respaldo va primero
-           en el `background`, así la carta sigue legible igual.
-           1200 px es el ancho que se ve nítido en un teléfono y aguanta
-           una tablet sin pixelear. */
+             WebP 1200, calidad 70     129.706 bytes   (23 veces menos) */
+        /* El fondo NO se mueve y la página NO se desplaza de lado.
+           `overflow-x:hidden` es necesario, no decorativo: los dos
+           paneles laterales se esconden con `translateX(±100%)`, y eso
+           deja el documento más ancho que la pantalla. Sin este recorte,
+           el navegador permite arrastrar la página en horizontal y lo que
+           se ve es la foto de fondo «corrida» hacia un lado. */
+        html{background-color:var(--fondo-respaldo,#12121c);overflow-x:hidden}
         body{font-family:'Roboto',sans-serif;
-            background-color:var(--papel-seguro,#1a1a2e);
+            background:transparent;
+            color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column;
+            overflow-x:hidden;width:100%}
+        /* La foto, en su propia capa fija: el scroll no la mueve. */
+        body::after {
+            content:'';
+            position:fixed;
+            top:0;left:0;right:0;bottom:0;
             background-image:url('https://iqwwoihiiyrtypyqzhgy.supabase.co/storage/v1/render/image/public/imagenes-platillos/Fondo%20de%20pantalla.png?width=1200&quality=70&format=webp');
-            background-size:cover;background-attachment:fixed;background-position:center;
-            color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column}
+            background-size:cover;
+            background-position:center;
+            background-repeat:no-repeat;
+            pointer-events:none;
+            z-index:-2;
+        }
         body::before {
             content:'';
             position:fixed;
@@ -3183,15 +3223,15 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
     <script src="js/cliente-menu.js?v=1793665995"></script>
     <script src="js/cliente-scroll.js"></script>
-    <script src="js/cliente-ui.js?v=1793922599"></script>
+    <script src="js/cliente-ui.js?v=1793935830"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
     <script src="js/cliente-cuenta.js?v=1793895214"></script>
     <script src="js/cliente-notificaciones.js?v=1793582360"></script>
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js"></script>
     <script src="js/cliente-carrito-dialogo.js"></script>
-    <script src="js/cliente-customize.js?v=1793920895"></script>
-    <script src="js/cliente-preview.js?v=1793933867"></script>
+    <script src="js/cliente-customize.js?v=1793935830"></script>
+    <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793890514"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793628641"></script>
