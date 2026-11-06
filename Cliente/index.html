@@ -2656,9 +2656,21 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             flex:1;
             min-height:0;
         }
-        /* El pie queda fuera de la rejilla: fila propia, siempre visible. */
+        /* El pie queda fuera de la rejilla: fila propia, siempre visible.
+           Los botones llevan alto propio y no se estiran: dentro de una
+           rejilla, `align-items` por defecto es `stretch`, y un boton con
+           `flex:1` sin alto tomaba todo el alto de la celda. Fue lo que se
+           vio como dos columnas enormes de color. */
         #customizeModal .modal-container.cust-ventana .modal-footer {
             flex-shrink:0;
+            align-items:center;
+        }
+        #customizeModal .modal-container.cust-ventana .modal-footer .btn-primary,
+        #customizeModal .modal-container.cust-ventana .modal-footer .btn-secondary {
+            align-self:center;
+            height:46px;
+            flex:0 1 auto;
+            padding:.7rem 1.6rem;
         }
 
         /* LA REJILLA VA EN EL DIV INTERIOR, NO EN EL CONTENEDOR.
@@ -3541,7 +3553,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js"></script>
     <script src="js/cliente-carrito-dialogo.js"></script>
-    <script src="js/cliente-customize.js?v=1793975287"></script>
+    <script src="js/cliente-customize.js?v=1793977089"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
