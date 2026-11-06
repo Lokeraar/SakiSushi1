@@ -335,7 +335,25 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            ESTILOS BASE — body, tipografía global
            ═══════════════════════════════════════════════════════ */
 
-        body{font-family:'Roboto',sans-serif;background-image:url('https://iqwwoihiiyrtypyqzhgy.supabase.co/storage/v1/object/public/imagenes-platillos/Fondo%20de%20pantalla.png');background-size:cover;background-attachment:fixed;background-position:center;color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column}
+        /* FONDO DE PANTALLA: antes se pedía el PNG original, 2,96 MB, en
+           CADA carga de la carta. Es una foto borrosa que se ve detrás de
+           todo, así que no necesita ni el tamaño ni la calidad del original.
+
+           Medido con el mismo archivo servido por Supabase:
+             PNG original           2.958.142 bytes
+             WebP 1200, calidad 70     129.706 bytes   (23 veces menos)
+
+           Se usa /render/image/ con format=webp. Si el servicio de
+           transformación no estuviera disponible, el navegador recibe un
+           404 y NO se ve el fondo: por eso el color de respaldo va primero
+           en el `background`, así la carta sigue legible igual.
+           1200 px es el ancho que se ve nítido en un teléfono y aguanta
+           una tablet sin pixelear. */
+        body{font-family:'Roboto',sans-serif;
+            background-color:var(--papel-seguro,#1a1a2e);
+            background-image:url('https://iqwwoihiiyrtypyqzhgy.supabase.co/storage/v1/render/image/public/imagenes-platillos/Fondo%20de%20pantalla.png?width=1200&quality=70&format=webp');
+            background-size:cover;background-attachment:fixed;background-position:center;
+            color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column}
         body::before {
             content:'';
             position:fixed;
@@ -2726,7 +2744,16 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                 </button>
             </div>
             <div class="logo-area" onclick="resetToAllCategories()">
-                <img src="https://lh3.googleusercontent.com/pw/AP1GczPrZAoWxmsOGRD9xl1hO5Q65JXuwUZzoR6gUk-cw5lVmarxQe_-lwqpA60tTKLlXfpvIjAJlKC6jFls-xETJOPkebLIIPhbGlUkknmhrRbdhMUll2UViGSUj3WmHKg2YEsZlAfxBPPTjIHhScjD0jfe=w1439-h1439-s-no-gm" alt="Saki Sushi" class="logo">
+                <!-- Logo del header. Se muestra a 70 px (60 en móvil), pero se
+                     pedía a 1439x1439: 400 KB para un cuadro de 70.
+                     Medido con esta misma dirección:
+                       =w1439-h1439   400.070 bytes
+                       =w200-h200      16.882 bytes   (24 veces menos)
+                     200 px cubre pantallas de alta densidad (2,8x sobre 70 px)
+                     y sigue viéndose nítido. loading="eager" porque está arriba
+                     y es lo primero que se ve; width/height fijos para que el
+                     navegador reserve el hueco y no salte el encabezado. -->
+                <img src="https://lh3.googleusercontent.com/pw/AP1GczPrZAoWxmsOGRD9xl1hO5Q65JXuwUZzoR6gUk-cw5lVmarxQe_-lwqpA60tTKLlXfpvIjAJlKC6jFls-xETJOPkebLIIPhbGlUkknmhrRbdhMUll2UViGSUj3WmHKg2YEsZlAfxBPPTjIHhScjD0jfe=w200-h200-s-no-gm" alt="Saki Sushi" class="logo" width="70" height="70" loading="eager" decoding="async">
                 <h1>Saki Sushi</h1>
                 <span class="header-slogan">"Adictos al universo saki"</span>
             </div>
@@ -3160,11 +3187,11 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-identidad.js?v=1793890514"></script>
     <script src="js/cliente-cuenta.js?v=1793895214"></script>
     <script src="js/cliente-notificaciones.js?v=1793582360"></script>
-    <script src="js/cliente-carrito.js?v=1793890514"></script>
+    <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js"></script>
     <script src="js/cliente-carrito-dialogo.js"></script>
     <script src="js/cliente-customize.js?v=1793920895"></script>
-    <script src="js/cliente-preview.js?v=1793922599"></script>
+    <script src="js/cliente-preview.js?v=1793933867"></script>
     <script src="js/cliente-historial.js?v=1793890514"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793628641"></script>

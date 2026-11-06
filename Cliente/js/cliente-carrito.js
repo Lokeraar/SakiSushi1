@@ -286,6 +286,31 @@
         }
     }
 
+    /**
+     * Foto del carrito, en el tamaño que se ve y en WebP.
+     *
+     * La miniatura mide 40x40 px, pero antes se pedía `item.imagen` tal
+     * cual: la dirección ORIGINAL del platillo. En las fotos de Unsplash
+     * eso son 5,4 MB por una miniatura de 40 px, y el carrito la pedía
+     * DOS veces por cada plato.
+     *
+     * Se reusa `optimizarUrlImagen` —la misma función que ya usa la
+     * carta— en vez de escribir otra regla de optimización aquí. Una
+     * sola fuente de verdad para cómo se piden las fotos.
+     *
+     * Una sola consulta por espacio de nombres: las dos ramas del
+     * carrito (personalizado y simple) llaman a esta misma función.
+     */
+    function _fotoMiniatura(item) {
+        var original = item && item.imagen;
+        if (!original) return 'https://via.placeholder.com/40';
+        if (window.optimizarUrlImagen) {
+            // 120 px alcanza para un cuadro de 40 (3x en pantalla densa).
+            return window.optimizarUrlImagen(original).replace(/([?&])w=\d+/, '$1w=120');
+        }
+        return original;
+    }
+
     /** Devuelve los artículos guardados bajo una clave, o [] si no hay nada. */
     function _itemsDeClave(clave) {
         try {
@@ -654,7 +679,7 @@
                         var corta = _etiquetaCorta(item);
                         var detalleId = 'det_' + item.id;
                         html += '<div class="nivel3-item">' +
-                            '<div class="item-image" style="background-image:url(\'' + (item.imagen || 'https://via.placeholder.com/40') + '\')"></div>' +
+                            '<div class="item-image" style="background-image:url(\'' + _fotoMiniatura(item) + '\')"></div>' +
                             '<div class="item-info">' +
                             // El nombre es tocable: abre el detalle completo
                             // (la receta marcada ✓/✗) sin salir del carrito.
@@ -678,7 +703,7 @@
                     // Default group (no personalization) — show items directly
                     sub.items.forEach(function(item, ii) {
                         html += '<div class="nivel3-item">' +
-                            '<div class="item-image" style="background-image:url(\'' + (item.imagen || 'https://via.placeholder.com/40') + '\')"></div>' +
+                            '<div class="item-image" style="background-image:url(\'' + _fotoMiniatura(item) + '\')"></div>' +
                             '<div class="item-info"><span class="item-number">#' + (ii + 1) + '</span><span class="item-name">' + grupo.nombre + '</span></div>' +
                             '<div class="item-precio">' + S.utils.formatBs(item.precio * item.cantidad) + '</div>' +
                             '<button class="btn-remove-item" data-id="' + item.id + '"><i class="fas fa-times"></i></button></div>';

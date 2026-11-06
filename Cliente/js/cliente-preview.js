@@ -189,9 +189,12 @@
         document.body.appendChild(d);
 
         cerrar.addEventListener('click', cerrarImagen);
-        img.addEventListener('click', cerrarImagen);
-        // Tocar el fondo oscuro también cierra. Se compara el blanco con el
-        // contenedor: un toque en la foto o en el pie NO cierra por accidente.
+        // La foto NO cierra el visor. Antes sí: un toque en la imagen la
+        // cerraba, y eso se siente como que la app rechaza el gesto — uno
+        // toca la foto justamente para mirarla de cerca, no para salir.
+        // Ahora solo cierran la X y el fondo.
+        // Tocar el fondo oscuro sí cierra. Se compara el blanco con el
+        // contenedor: un toque en la foto o en el pie NO cierra.
         d.addEventListener('click', function (e) {
             if (e.target === d) cerrarImagen();
         });
