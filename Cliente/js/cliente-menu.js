@@ -139,7 +139,28 @@
             bloquePrecio = '<span class="menu-card-price">' + window.Saki.utils.formatBs(window.Saki.utils.usdToBs(
                 item.oferta_activa ? item.precio_vigente : item.precio)) + '</span>';
         }
-        return `<div class="menu-card${agotado?' agotado':''}" data-id="${item.id}"><div class="menu-card-image" style="background-image:url('${img}')"${agotado?'':` onclick="abrirPreview('${item.id}')"`}>${badge}</div><div class="menu-card-content"><div class="menu-card-header"><div style="display:flex;align-items:center"><button class="favorite-btn ${fav}" onclick="event.stopPropagation();toggleFavorito('${item.id}')" data-id="${item.id}" data-tooltip="${fav?'Quitar de favoritos':'Agregar a favoritos'}"><i class="fas fa-star"></i></button><h3 class="menu-card-title">${item.nombre}</h3></div>${bloquePrecio}</div><p class="menu-card-description">${item.descripcion||''}</p><div class="menu-card-footer">${footer}</div>${stockInfo}</div></div>`;
+        // La estrella va SOBRE LA FOTO, arriba a la izquierda.
+        //
+        // Antes vivía en la fila de texto, pegada al nombre del plato. Ahí
+        // competía con el título y con el precio, y en tarjetas de nombre
+        // largo quedaba apretada. Sobre la foto tiene su propia esquina, se
+        // encuentra siempre en el mismo sitio y no roba ancho al texto.
+        //
+        // La esquina derecha de la foto ya está ocupada por el aviso de
+        // «Últimas», así que la izquierda es la libre.
+        const estrella =
+            '<button class="favorite-btn favorite-btn--foto ' + fav + '" ' +
+              'onclick="event.stopPropagation();toggleFavorito(\'' + item.id + '\')" ' +
+              'data-id="' + item.id + '" ' +
+              'aria-pressed="' + (fav ? 'true' : 'false') + '" ' +
+              'aria-label="' + (fav ? 'Quitar de favoritos' : 'Agregar a favoritos') + '" ' +
+              'data-tooltip="' + (fav ? 'Quitar de favoritos' : 'Agregar a favoritos') + '">' +
+              '<i class="fas fa-star"></i></button>';
+
+        // El data-tooltip de la estrella necesitaba que el contenedor no
+        // cortara el globo: la foto tiene overflow visible por defecto, así
+        // que sirve tal cual.
+        return `<div class="menu-card${agotado?' agotado':''}" data-id="${item.id}"><div class="menu-card-image" style="background-image:url('${img}')"${agotado?'':` onclick="abrirPreview('${item.id}')"`}>${estrella}${badge}</div><div class="menu-card-content"><div class="menu-card-header"><h3 class="menu-card-title">${item.nombre}</h3>${bloquePrecio}</div><p class="menu-card-description">${item.descripcion||''}</p><div class="menu-card-footer">${footer}</div>${stockInfo}</div></div>`;
     }
 
     // Function to generate pagination HTML
@@ -347,8 +368,28 @@
                 // Se filtra por el NOMBRE (data-filtro), no por la clave.
                 // Antes se pasaba la clave ('sushi') y la base guarda el
                 // nombre ('Sushi'): nunca coincidían y la sección salía vacía.
-                const nombreFiltro = item.dataset.filtro || categoria;
-                renderizarMenuPaginado(categoria === 'todos' ? null : nombreFiltro);
+                // ── LAS SECCIONES ESPECIALES SE FILTRAN POR SU CLAVE ──
+                //
+                // Se filtra por el NOMBRE (data-filtro) porque la base guarda
+                // el nombre de la sección ('Sushi'), no su clave ('sushi').
+                //
+                // Pero 'Favoritos' y 'Ofertas' NO son secciones de la base: son
+                // filtros calculados. La base no tiene ninguna sección llamada
+                // '⭐ Favoritos', así que al mandar el nombre caía en el filtro
+                // genérico, no encontraba nada y la lista salía SIEMPRE VACÍA
+                // aunque el cliente tuviera favoritos guardados.
+                //
+                // Estas dos van por su clave, que es la que entiende la función.
+                const SECCIONES_ESPECIALES = { favoritos: 1, ofertas: 1 };
+                let filtroElegido;
+                if (categoria === 'todos') {
+                    filtroElegido = null;
+                } else if (SECCIONES_ESPECIALES[categoria]) {
+                    filtroElegido = categoria;
+                } else {
+                    filtroElegido = item.dataset.filtro || categoria;
+                }
+                renderizarMenuPaginado(filtroElegido);
                 // Cerrar el panel de categorías de verdad.
                 //
                 // Antes solo se quitaba la clase 'open' del sidebar, pero NO

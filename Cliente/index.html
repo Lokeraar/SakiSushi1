@@ -1650,6 +1650,93 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         }
         .favorite-btn.active{color:var(--accent)}
         .favorite-btn:hover{transform:scale(1.2)}
+
+        /* ═══ ESTRELLA SOBRE LA FOTO ═══
+
+           Variante del mismo botón, para las esquinas de una foto. La
+           clase base queda intacta: se usa en otros lugares de la app.
+
+           Por qué hace falta una variante y no basta la base:
+             · la base es gris (--gray-400), que sobre una foto oscura
+               desaparece;
+             · el globo del precio y el nombre están en el cuerpo de la
+               tarjeta, no encima de una imagen;
+             · al pasar el puntero la base crece a 1.2, y en una esquina
+               ese crecimiento se sale del borde recortado por
+               `.menu-card{overflow:hidden}`.
+
+           CONTRASTE. La estrella blanca va sobre un velo oscuro, no
+           sobre la foto pelada: así se lee igual sobre una foto clara
+           (plato de arroz) que sobre una oscura (sushi con alga).
+           Peor caso medido —foto BLANCA debajo— con la fórmula de
+           luminancia relativa WCAG:
+             velo rgba(0,0,0,.55) sobre #fff → fondo #737373 (L 0.171)
+             blanco puro encima            → 4.76:1   (>3:1 de icono)
+             dorado activo sobre .72       → 3.69:1   (>3:1 de icono)
+           El velo activo sube a .72 justamente por eso: con el .55 el
+           dorado caía a 2.6:1 y la estrella marcada no se distinguía de
+           la foto. */
+        .favorite-btn--foto {
+            position:absolute;
+            top:.6rem;
+            left:.6rem;
+            z-index:2;
+            width:40px;
+            height:40px;
+            /* El mínimo táctil no se negocia: 40px es lo que pide un dedo.
+               Las reglas de móvil de más abajo NO reducen este botón,
+               pero se deja fijado también aquí para que ningún cambio
+               posterior lo encoja sin darse cuenta. */
+            min-width:40px;
+            min-height:40px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:50%;
+            padding:0;
+            margin:0;
+            font-size:1rem;
+            /* La envoltura de la foto de la ventana del platillo tiene
+               line-height:0; sin esto el ícono queda pegado al borde. */
+            line-height:1;
+            color:#fff;
+            background:rgba(0,0,0,.55);
+            -webkit-backdrop-filter:blur(4px);
+            backdrop-filter:blur(4px);
+            box-shadow:0 2px 8px rgba(0,0,0,.35);
+        }
+        /* Marcada: dorado de marca y velo más cerrado, para que el dorado
+           tenga de dónde agarrarse. */
+        .favorite-btn--foto.active{
+            color:var(--accent);
+            background:rgba(0,0,0,.72);
+        }
+        /* En tema claro la regla general pinta `.favorite-btn.active` con
+           el dorado oscurecido de texto (#8A5A00), pensado para papel.
+           Sobre el velo de una foto ese marrón da 1.25:1: se pierde. Aquí
+           vuelve al dorado de relleno, que sobre el velo da 3.69:1. */
+        body.tema-claro .favorite-btn--foto.active{color:var(--accent)}
+        /* Sin crecimiento: la esquina de la foto está recortada. */
+        .favorite-btn--foto:hover,
+        .favorite-btn--foto:focus{transform:none}
+        .favorite-btn--foto:focus-visible{
+            outline:3px solid var(--accent);
+            outline-offset:2px;
+        }
+        /* El globo del tooltip de la base se ancla con left:0 porque nace
+           en la fila de texto. Aquí el botón está pegado al borde
+           izquierdo de la foto: centrarlo (`translateX(-50%)`) lo saca de
+           la pantalla y `.menu-card{overflow:hidden}` lo recorta a la
+           mitad. Se deja que arranque en el borde izquierdo del botón y
+           crezca hacia la derecha, y se pasa ABAJO de la estrella para que
+           no choque con el borde superior de la foto, que también recorta. */
+        .favorite-btn--foto[data-tooltip]:before{
+            left:0;
+            right:auto;
+            transform:translateX(0);
+            top:calc(100% + 6px);
+            bottom:auto;
+        }
         .menu-card-price {
             font-weight:700;
             color:var(--accent);
@@ -2773,6 +2860,30 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             outline-offset:2px;
         }
 
+        /* ESTRELLA DE FAVORITOS DE ESTA VENTANA, arriba a la IZQUIERDA.
+
+           Las dos esquinas de arriba ya tienen dueño y son distintas según
+           la pantalla:
+             · teléfono    → la X está sobre la foto, a la derecha
+             · tablet / PC → la X está en la esquina de la TARJETA, a la
+                             derecha (ver el @media de 600px más abajo)
+           En los dos casos la derecha es de la X. Por eso la estrella se
+           ancla a la izquierda y no comparte ni `left` ni `right` con
+           ella: nunca se pisan, ni siquiera en la ventana estrecha de
+           600px, donde la foto mide 280px y la X cae a la derecha de esa
+           columna.
+
+           `right:auto` es explícito a propósito: si algún día alguien
+           copia el bloque de la X, el `right` heredado no arrastra la
+           estrella a la otra esquina. */
+        .cust-fav {
+            position:absolute;
+            top:.6rem;
+            left:.6rem;
+            right:auto;
+            z-index:2;
+        }
+
         /* La foto se recorta sola: alto fijo en el teléfono, columna
            completa en pantalla ancha. */
         .cust-foto {
@@ -3632,16 +3743,16 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-mesonero.js?v=1793986233"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
-    <script src="js/cliente-menu.js?v=1793665995"></script>
+    <script src="js/cliente-menu.js?v=1794001460"></script>
     <script src="js/cliente-scroll.js?v=1793990592"></script>
-    <script src="js/cliente-ui.js?v=1793991431"></script>
+    <script src="js/cliente-ui.js?v=1794001460"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
     <script src="js/cliente-cuenta.js?v=1793895214"></script>
     <script src="js/cliente-notificaciones.js?v=1793990553"></script>
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1793998240"></script>
+    <script src="js/cliente-customize.js?v=1794001460"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>

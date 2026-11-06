@@ -122,12 +122,46 @@
 
         var html = '<div class="cust-layout">';
 
+        // ── ESTRELLA DE FAVORITOS, SOBRE LA FOTO ──
+        //
+        // Antes esta ventana no tenía forma de marcar el plato: el cliente
+        // tenía que cerrarla, buscarlo en la carta y tocar la estrella de la
+        // tarjeta. Aquí la decisión se toma en el momento en que el plato se
+        // está mirando, que es cuando tiene sentido.
+        //
+        // Va dentro de `.cust-foto-wrap` (para colocarse sobre la foto) y a
+        // la IZQUIERDA: la esquina derecha es de la X de cerrar, tanto en el
+        // teléfono (X sobre la foto) como en tablet y PC (X en la esquina de
+        // la tarjeta). Ver `.cust-fav` en el <style>.
+        //
+        // El estado inicial sale de `window.esFavorito`, que es la misma
+        // función que usa la tarjeta: una sola fuente de verdad. Si el
+        // módulo de favoritos no cargó (sin señal, caché vieja), se asume
+        // que no es favorito en vez de romper la ventana entera.
+        var esFav = false;
+        if (typeof window.esFavorito === 'function') {
+            esFav = !!window.esFavorito(item.id);
+        }
+        var etiquetaFav = esFav ? 'Quitar de favoritos' : 'Agregar a favoritos';
+        var estrellaFav =
+            '<button type="button" class="favorite-btn favorite-btn--foto cust-fav' +
+              (esFav ? ' active' : '') + '" ' +
+              'id="custFavBtn" data-id="' + item.id + '" ' +
+              'aria-pressed="' + (esFav ? 'true' : 'false') + '" ' +
+              'aria-label="' + etiquetaFav + '" ' +
+              'data-tooltip="' + etiquetaFav + '">' +
+              '<i class="fas fa-star"></i></button>';
+
         // La foto y su X. La X vive SOBRE la foto, no en una cabecera:
         // es donde el pulgar la encuentra sin estirarse.
         // La foto va en su envoltura; la X va FUERA, como hija directa del
         // contenedor. Así el CSS decide a qué se ancla: en el teléfono a la
         // foto, en tablet y PC a la esquina de la tarjeta.
+        //
+        // La estrella sí va DENTRO de la envoltura: su posición es la foto,
+        // no la tarjeta, y no cambia entre pantallas.
         html += '<div class="cust-foto-wrap">' +
+            estrellaFav +
             (foto
                 ? '<img id="customizeFoto" class="cust-foto" src="' + foto + '" ' +
                   'alt="' + item.nombre + '" title="Toca para ampliar">'
@@ -320,6 +354,48 @@
         if (cerrarEl) {
             cerrarEl.addEventListener('click', function() {
                 modal.classList.remove('active');
+            });
+        }
+
+        // ── LA ESTRELLA NO CIERRA LA VENTANA ──
+        //
+        // Marcar un favorito no es una decisión irrelevante que se pueda
+        // tirar: si el cliente abrió el plato para verlo, después puede
+        // querer pedirlo. Antes de esto la ventana no tenía estrella; al
+        // añadirla, cerrarla en cada toque habría echado al cliente justo
+        // cuando decide guardar algo para después.
+        //
+        // Los tres estados visibles se actualizan AQUÍ y no re-renderizando:
+        // volver a pintar la ventana borraría la cantidad escrita y los
+        // ingredientes marcados.
+        //
+        // `stopPropagation` NO es para el zoom de la foto (la estrella es su
+        // hermana, no su hija, así que el toque no llegaría hasta ella), sino
+        // para no depender de ese detalle de la maqueta. El día que alguien
+        // mueva el botón dentro de la foto, sigue funcionando.
+        var favEl = document.getElementById('custFavBtn');
+        if (favEl) {
+            favEl.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (typeof window.toggleFavorito !== 'function') return;
+                window.toggleFavorito(item.id);
+
+                // Se relee el estado desde la fuente de verdad en vez de
+                // invertir una variable local: si `toggleFavorito` no llegó
+                // a guardar, el botón no miente.
+                var ahoraEsFav = typeof window.esFavorito === 'function'
+                    ? !!window.esFavorito(item.id)
+                    : !favEl.classList.contains('active');
+
+                if (ahoraEsFav) favEl.classList.add('active');
+                else favEl.classList.remove('active');
+
+                favEl.setAttribute('aria-pressed', ahoraEsFav ? 'true' : 'false');
+                var nuevaEtiqueta = ahoraEsFav ? 'Quitar de favoritos' : 'Agregar a favoritos';
+                favEl.setAttribute('aria-label', nuevaEtiqueta);
+                // El globo de ayuda dice lo mismo que la etiqueta: si no se
+                // sincroniza, sigue ofreciendo «Agregar» cuando ya está.
+                favEl.setAttribute('data-tooltip', nuevaEtiqueta);
             });
         }
 

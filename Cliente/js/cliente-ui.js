@@ -244,7 +244,31 @@
                 }
                 document.querySelectorAll('.category-item').forEach(function(c) { c.classList.remove('active'); });
                 item.classList.add('active');
-                if (window.renderizarMenuPaginado) window.renderizarMenuPaginado(item.dataset.categoria, null, document.getElementById('searchInput').value);
+                // ── LA SECCIÓN SE FILTRA POR SU NOMBRE, NO POR SU CLAVE ──
+                //
+                // Aquí se pasaba `dataset.categoria` (la clave: 'sushi') y la
+                // base guarda el nombre ('Sushi'), así que las secciones
+                // normales salían vacías por este camino.
+                //
+                // Con 'favoritos' y 'ofertas' pasaba lo contrario: la clave
+                // acierta porque son filtros calculados, no secciones.
+                //
+                // Es el ESPEJO del defecto que tenía cliente-menu.js. Se
+                // arreglan los dos con la misma regla: las secciones
+                // especiales van por clave, el resto por el nombre real.
+                //
+                // Este listener hoy casi no se ejecuta porque el de
+                // cliente-menu.js hace stopPropagation antes, pero dejarlo
+                // mal es dejar una mina: cualquier día que ese camino cambie,
+                // la carta se vacía y nadie sabría por qué.
+                var clave = item.dataset.categoria;
+                var esEspecial = (clave === 'favoritos' || clave === 'ofertas');
+                var filtro = esEspecial
+                    ? clave
+                    : (item.dataset.filtro || clave);
+                if (window.renderizarMenuPaginado) {
+                    window.renderizarMenuPaginado(filtro, null, document.getElementById('searchInput').value);
+                }
                 if (window.innerWidth <= 992) cerrarMenuCategorias();
             });
         }
