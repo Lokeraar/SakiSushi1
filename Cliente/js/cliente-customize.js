@@ -111,7 +111,7 @@
             }
         }
 
-        var html = '<div class="cust-ventana">';
+        var html = '<div class="cust-layout">';
 
         // La foto y su X. La X vive SOBRE la foto, no en una cabecera:
         // es donde el pulgar la encuentra sin estirarse.
@@ -220,7 +220,7 @@
 
         html += '</div>' +   // #ingredientesList
                 '</div>' +   // .cust-cuerpo
-                '</div>';    // .cust-ventana
+                '</div>';    // .cust-layout
 
         body.innerHTML = html;
 

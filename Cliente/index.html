@@ -2643,9 +2643,37 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         #customizeModal .modal-container.cust-ventana {
             max-width:460px;
             overflow:hidden;
+            display:flex;
+            flex-direction:column;
+            max-height:90vh;
+        }
+        /* El cuerpo del modal es quien desplaza. Se le quita el relleno
+           porque la foto tiene que llegar a los bordes; el relleno lo pone
+           .cust-cuerpo, que es el que sí lleva texto. */
+        #customizeModal .modal-container.cust-ventana .modal-body {
+            padding:0;
+            overflow-y:auto;
+            flex:1;
+            min-height:0;
+        }
+        /* El pie queda fuera de la rejilla: fila propia, siempre visible. */
+        #customizeModal .modal-container.cust-ventana .modal-footer {
+            flex-shrink:0;
         }
 
-        .cust-ventana {
+        /* LA REJILLA VA EN EL DIV INTERIOR, NO EN EL CONTENEDOR.
+
+           Error que esto corrige: `.cust-ventana` se aplicaba al mismo
+           tiempo al .modal-container y al <div> de dentro. El contenedor
+           tiene TRES hijos (header, body, footer), así que la rejilla de
+           dos columnas lo partía en tres: la foto, el cuerpo y —como
+           tercera columna— el pie con «Cancelar» y «Añadir», estirados a
+           lo alto de la pantalla.
+
+           Ahora la rejilla vive en `.cust-layout`, que es el <div> que sí
+           tiene exactamente dos hijos: la foto y el cuerpo. El pie se
+           queda fuera, ocupando su fila propia al fondo, como debe. */
+        .cust-layout {
             display:grid;
             grid-template-columns:1fr;
             grid-template-areas:"foto" "cuerpo";
@@ -2879,7 +2907,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             #customizeModal .modal-container.cust-ventana {
                 max-width:720px;
             }
-            .cust-ventana {
+            .cust-layout {
                 grid-template-columns:280px 1fr;
                 grid-template-areas:"foto cuerpo";
             }
@@ -3513,7 +3541,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js"></script>
     <script src="js/cliente-carrito-dialogo.js"></script>
-    <script src="js/cliente-customize.js?v=1793971149"></script>
+    <script src="js/cliente-customize.js?v=1793975287"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
