@@ -78,6 +78,14 @@
         html += '</div>';
         body.innerHTML = html;
         document.getElementById('customizeModalHeader').textContent = 'Historial';
+
+        // El historial comparte este <div> con la ventana del platillo, pero
+        // NO es un platillo: necesita su cabecera con el título. Se quita la
+        // clase que oculta la cabecera y la que pone la rejilla de dos
+        // columnas, para que se vea como una lista normal.
+        var contenedor = modal.querySelector('.modal-container');
+        if (contenedor) contenedor.classList.remove('cust-ventana');
+
         modal.classList.add('active');
 
         document.getElementById('closeCustomizeModal').addEventListener('click', function() { modal.classList.remove('active'); });

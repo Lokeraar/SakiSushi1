@@ -78,124 +78,157 @@
 
         var precioBase = item.precio || 0;
 
-        // ── FOTO DEL PLATO ──
+        // ── LA VENTANA ──
         //
-        // Esta ventana es la ÚNICA del platillo: se abre igual desde la
-        // tarjeta (tocando la foto) y desde el botón «Personalizar». Antes
-        // eran dos ventanas distintas que compartían el mismo <div>, y eso
-        // obligaba a mantener dos maquetas y dos juegos de botones —de ahí
-        // salieron los «Añadir» duplicados.
+        // Una sola, con dos disposiciones por CSS (ver .cust-ventana):
+        //   · teléfono    → la foto manda, arriba a todo el ancho
+        //   · tablet / PC → foto fija a la izquierda, datos a la derecha
         //
-        // La foto se toma de la MISMA url optimizada que ya usa la tarjeta:
-        // así aparece al instante, sin volver a la red.
+        // Todo el estilo vive en las clases del <style>, no aquí: el mismo
+        // HTML se ve distinto según el ancho de la pantalla, sin duplicar
+        // nada en JavaScript.
+        //
+        // La foto usa la MISMA url optimizada que la tarjeta, así aparece al
+        // instante y se puede ampliar al tocarla.
         var foto = item.imagen || '';
         if (window.optimizarUrlImagen && item.imagen) {
             foto = window.optimizarUrlImagen(item.imagen);
         }
-        var bloqueFoto = foto
-            ? '<img id="customizeFoto" src="' + foto + '" alt="' + item.nombre + '" ' +
-              'title="Toca para ampliar" ' +
-              'style="width:100%;height:180px;object-fit:cover;border-radius:var(--radius-md);' +
-              'margin-bottom:.9rem;cursor:zoom-in;display:block">'
-            : '';
 
-        // Estado del stock: decía cuántas unidades quedan y solo se veía en
-        // la vista rápida. Ahora viaja con la ventana.
+        // Estado del stock. Solo se avisa cuando hay algo que decir: con
+        // existencias de sobra no se ocupa espacio.
         var stock = (window._stockPrecalculado || {})[platilloId];
         var bloqueStock = '';
         if (typeof stock === 'number') {
             if (stock <= 0) {
-                bloqueStock = '<div class="stock-info" style="margin-bottom:.8rem">' +
-                    '<span style="color:var(--danger)"><i class="fas fa-times-circle"></i> Agotado</span></div>';
+                bloqueStock = '<span class="cust-stock" style="color:var(--danger)">' +
+                    '<i class="fas fa-times-circle"></i> Agotado</span>';
             } else if (stock < 5) {
-                bloqueStock = '<div class="stock-info" style="margin-bottom:.8rem">' +
-                    '<span style="color:var(--warning)"><i class="fas fa-exclamation-triangle"></i> Últimas ' +
-                    stock + ' disponibles</span></div>';
+                bloqueStock = '<span class="cust-stock" style="color:var(--warning)">' +
+                    '<i class="fas fa-exclamation-triangle"></i> Ultimas ' + stock + '</span>';
+            } else {
+                bloqueStock = '<span class="cust-stock">' + stock + ' disponibles</span>';
             }
         }
 
-        var html = bloqueFoto + bloqueStock +
-            '<div style="margin-bottom:1rem">' +
-            '<h4 style="color:var(--accent-text);margin-bottom:.5rem;font-size:1.1rem">' + item.nombre + '</h4>' +
-            '<p style="color:var(--text-secondary);font-size:.85rem">' + (item.descripcion || '') + '</p></div>' +
-            '<div style="margin-bottom:1rem">' +
-            '<label style="font-weight:600;color:var(--text-primary);display:block;margin-bottom:.5rem">Cantidad:</label>' +
-            '<div style="display:flex;align-items:center;gap:1rem">' +
-            '<button class="btn-secondary" id="qtyMinus" style="width:36px;height:36px;padding:0;border-radius:50%;min-width:unset">-</button>' +
-            '<span id="customizeQty" style="font-size:1.4rem;font-weight:700;color:var(--accent);min-width:40px;text-align:center">1</span>' +
-            '<button class="btn-secondary" id="qtyPlus" style="width:36px;height:36px;padding:0;border-radius:50%;min-width:unset">+</button>' +
-            '</div></div>' +
-            '<div style="margin-bottom:.8rem">' +
-            '<div class="completo-option activo" id="completoOption" onclick="window.selectCompleto()">' +
-            '<div style="display:flex;align-items:center;gap:.8rem">' +
-            '<div class="completo-circle activo" id="completoCircle"><i class="fas fa-check"></i></div>' +
-            '<div><strong style="color:var(--text-primary)">Completo</strong><br><small style="color:var(--text-secondary)">Incluye todos los ingredientes</small></div>' +
-            '</div></div>' +
-            '<div class="completo-option" id="personalizadoOption" onclick="window.selectPersonalizado()">' +
-            '<div style="display:flex;align-items:center;gap:.8rem">' +
-            '<div class="completo-circle" id="personalizadoCircle"></div>' +
-            '<div><strong style="color:var(--text-primary)">Personalizar ingredientes</strong><br><small style="color:var(--text-secondary)">Quitar alguno, o pedir extra</small></div>' +
-            '</div></div></div>' +
+        var html = '<div class="cust-ventana">';
+
+        // La foto y su X. La X vive SOBRE la foto, no en una cabecera:
+        // es donde el pulgar la encuentra sin estirarse.
+        html += '<div class="cust-foto-wrap">' +
+            (foto
+                ? '<img id="customizeFoto" class="cust-foto" src="' + foto + '" ' +
+                  'alt="' + item.nombre + '" title="Toca para ampliar">'
+                : '<div class="cust-foto" aria-hidden="true"></div>') +
+            '<button type="button" class="cust-cerrar" id="custCerrar" ' +
+              'aria-label="Cerrar la ventana del plato">&times;</button>' +
+          '</div>';
+
+        html += '<div class="cust-cuerpo">' +
+
+            // Nombre, descripción y precio: lo primero que se lee.
+            '<div>' +
+              '<h3 class="cust-titulo">' + item.nombre + '</h3>' +
+              (item.descripcion ? '<p class="cust-desc">' + item.descripcion + '</p>' : '') +
+            '</div>' +
+
+            '<div class="cust-meta">' +
+              '<span class="cust-precio-total" id="customizePrice">' +
+                S.utils.formatBs(S.utils.usdToBs(precioBase)) + '</span>' +
+              bloqueStock +
+            '</div>' +
+
+            // Cantidad
+            '<div class="cust-fila">' +
+              '<span class="cust-etiqueta">Cantidad</span>' +
+              '<div class="cust-stepper">' +
+                '<button type="button" class="cust-stepper-btn" id="qtyMinus" ' +
+                  'aria-label="Quitar una unidad">&minus;</button>' +
+                '<span class="cust-qty" id="customizeQty">1</span>' +
+                '<button type="button" class="cust-stepper-btn" id="qtyPlus" ' +
+                  'aria-label="Agregar una unidad">+</button>' +
+              '</div>' +
+            '</div>' +
+
+            // Modo: Completo o Personalizar
+            '<div class="cust-modos">' +
+              '<div class="completo-option activo" id="completoOption" role="button" tabindex="0" ' +
+                'onclick="window.selectCompleto()">' +
+                '<div style="display:flex;align-items:center;gap:.7rem">' +
+                  '<div class="completo-circle activo" id="completoCircle">' +
+                    '<i class="fas fa-check"></i></div>' +
+                  '<div><strong style="color:var(--customize-text)">Completo</strong><br>' +
+                    '<small style="color:var(--customize-subtext)">Incluye todos los ingredientes</small></div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="completo-option" id="personalizadoOption" role="button" tabindex="0" ' +
+                'onclick="window.selectPersonalizado()">' +
+                '<div style="display:flex;align-items:center;gap:.7rem">' +
+                  '<div class="completo-circle" id="personalizadoCircle"></div>' +
+                  '<div><strong style="color:var(--customize-text)">Personalizar ingredientes</strong><br>' +
+                    '<small style="color:var(--customize-subtext)">Quitar alguno, o pedir extra</small></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
             '<div id="ingredientesList" style="display:none">';
 
         if (ingredientes.length > 0) {
-            html += '<label style="font-weight:600;color:var(--text-primary);display:block;margin-bottom:.5rem">Ingredientes:</label>';
             // Tres estados por ingrediente: quitarlo, dejarlo, o duplicarlo.
-            //
-            // Antes era un tilde: puesto = el plato lo lleva, destildado = no.
-            // No había forma de AÑADIR. Y los principales venían bloqueados.
-            //
-            // El dueño pidió que los principales también se puedan duplicar:
-            // "más anguila" en un Dragon Roll es legítimo aunque la anguila
-            // defina el plato.
+            // Los principales también se pueden duplicar: «más anguila» en un
+            // Dragon Roll es legítimo aunque la anguila defina el plato.
             ingredientes.forEach(function(ing, idx) {
                 var cantTxt = ing.cantidad + (ing.unidad ? ' ' + ing.unidad : '');
                 var precioTxt = ing.precio_porcion > 0
-                    ? ' <span style="color:var(--text-secondary);font-size:.72rem">(' +
-                      (ing.principal ? 'fijo' : '-' + S.utils.formatBs(S.utils.usdToBs(ing.precio_porcion))) +
-                      ' · extra +' + S.utils.formatBs(S.utils.usdToBs(ing.precio_porcion)) + ')</span>'
+                    ? ' · ' + (ing.principal
+                        ? 'fijo'
+                        : '-' + S.utils.formatBs(S.utils.usdToBs(ing.precio_porcion)) +
+                          ' / extra +' + S.utils.formatBs(S.utils.usdToBs(ing.precio_porcion)))
                     : '';
 
-                var btnBase = 'style="width:30px;height:30px;border-radius:50%;border:1px solid var(--customize-border);' +
-                              'background:transparent;color:var(--customize-text);font-size:.9rem;cursor:pointer;padding:0"';
-
-                html += '<div style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid var(--customize-border)">' +
-                    // Miniatura del ingrediente. Sin foto no se muestra nada:
-                    // se prefiere un renglón pelado antes que un cuadrado gris.
+                html += '<div class="cust-ing">' +
+                    // Miniatura del ingrediente. Sin foto no se pinta nada:
+                    // mejor un renglón pelado que un cuadrado gris.
+                    // SIN loading="lazy": la lista arranca oculta y el
+                    // navegador nunca baja una imagen perezosa que está
+                    // dentro de algo no visible. Son 34 px ya en caché.
                     (ing.imagen
-                        // SIN loading="lazy": la lista de ingredientes arranca
-                        // oculta (display:none) y el navegador NUNCA empieza a
-                        // bajar una imagen perezosa que está dentro de algo no
-                        // visible. Medido en pantalla: naturalWidth 0 en las 5
-                        // filas. Son miniaturas de 34 px ya en caché: no hay
-                        // nada que ganar difiriéndolas.
-                        ? '<img src="' + ing.imagen + '" alt="" ' +
-                          'style="width:34px;height:34px;flex-shrink:0;border-radius:8px;object-fit:cover;' +
-                          'background:#fff;border:1px solid var(--customize-border)">'
+                        ? '<img class="cust-ing-mini" src="' + ing.imagen + '" alt="">'
                         : '') +
-                    '<div style="flex:1;min-width:0">' +
-                      '<div style="color:var(--customize-text);font-size:.9rem">' + ing.nombre +
-                        (ing.principal ? ' <span style="color:var(--accent);font-size:.66rem">(define el plato)</span>' : '') +
+                    '<div class="cust-ing-info">' +
+                      '<div class="cust-ing-nombre">' + ing.nombre +
+                        (ing.principal
+                          ? ' <span style="color:var(--accent-text);font-size:.66rem">(define el plato)</span>'
+                          : '') +
                       '</div>' +
-                      '<div style="font-size:.72rem;opacity:.75">' + cantTxt + precioTxt + '</div>' +
+                      '<span class="cust-ing-cant">' + cantTxt + precioTxt + '</span>' +
                     '</div>' +
-                    '<button ' + btnBase + ' data-ing="' + idx + '" data-estado="quitar" ' +
-                      'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'quitar\')" ' +
-                      'title="Quitar">−</button>' +
-                    '<span id="estado_ing_' + idx + '" style="width:52px;text-align:center;font-size:.74rem;' +
-                      'font-weight:600;color:var(--customize-text)">Normal</span>' +
-                    '<button ' + btnBase + ' data-ing="' + idx + '" data-estado="extra" ' +
-                      'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'extra\')" ' +
-                      'title="Duplicar la cantidad">×2</button>' +
-                    '</div>';
+                    '<div class="cust-ing-ctrl">' +
+                      '<button type="button" class="cust-ing-btn" data-ing="' + idx + '" ' +
+                        'data-estado="quitar" title="Quitar" ' +
+                        'aria-label="Quitar ' + ing.nombre + '" ' +
+                        'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'quitar\')">&minus;</button>' +
+                      '<span class="cust-ing-estado" id="estado_ing_' + idx + '">Normal</span>' +
+                      '<button type="button" class="cust-ing-btn" data-ing="' + idx + '" ' +
+                        'data-estado="extra" title="Duplicar la cantidad" ' +
+                        'aria-label="Duplicar ' + ing.nombre + '" ' +
+                        'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'extra\')">&times;2</button>' +
+                    '</div>' +
+                  '</div>';
             });
         }
-        html += '</div>' +
-            '<div style="margin-top:1rem;padding:.8rem;background:var(--customize-row-bg);border-radius:var(--radius-sm);text-align:center">' +
-            '<span style="font-size:.85rem;color:var(--customize-subtext)">Precio unitario:</span> ' +
-            '<span id="customizePrice" style="font-size:1.3rem;font-weight:700;color:var(--accent)">' + S.utils.formatBs(S.utils.usdToBs(precioBase)) + '</span></div>';
+
+        html += '</div>' +   // #ingredientesList
+                '</div>' +   // .cust-cuerpo
+                '</div>';    // .cust-ventana
 
         body.innerHTML = html;
+
+        // La clase cambia la ventana a modo «platillo»: cabecera oculta y
+        // foto con la X encima. El historial la quita al abrirse.
+        var contenedor = modal.querySelector('.modal-container');
+        if (contenedor) contenedor.classList.add('cust-ventana');
+
         modal.classList.add('active');
 
         // Event listeners for quantity
@@ -205,6 +238,14 @@
         document.getElementById('qtyPlus').addEventListener('click', function() {
             if (window.actualizarCantidadPersonalizacion) window.actualizarCantidadPersonalizacion(1);
         });
+
+        // La X cierra la ventana.
+        var cerrarEl = document.getElementById('custCerrar');
+        if (cerrarEl) {
+            cerrarEl.addEventListener('click', function() {
+                modal.classList.remove('active');
+            });
+        }
 
         // La foto del plato se amplía al tocarla, igual que en la vista rápida.
         var fotoEl = document.getElementById('customizeFoto');

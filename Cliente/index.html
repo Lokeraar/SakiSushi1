@@ -2612,6 +2612,289 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         .text-center{text-align:center}
 
         /* ── Modal personalización: opción platillo completo ── */
+
+        /* ═══════════════════════════════════════════════════════
+           VENTANA DEL PLATILLO — una sola, dos disposiciones
+
+           Es la misma ventana que se abre tocando la foto de la tarjeta
+           y tocando «Personalizar». Cambia solo cómo se reparte:
+
+             · teléfono     → la foto manda, arriba y a todo el ancho
+             · tablet / PC  → foto fija a la izquierda, datos a la derecha
+
+           El corte está en 600 px, que es donde la ventana tiene ancho
+           suficiente para dos columnas sin apretar el contenido.
+
+           Todos los colores y radios son tokens del tema: por eso
+           funciona igual en claro y en oscuro sin duplicar reglas. */
+
+        /* ── Modo «ventana del platillo» ──
+
+           Cuando se abre un plato, la cabecera con el título «Personalizar»
+           sobra: el nombre del plato ya está en el cuerpo y la X se pone
+           sobre la foto, que es donde el pulgar la encuentra.
+
+           La clase `cust-ventana` la pone el JS del platillo y la quita el
+           del historial, que SÍ necesita su cabecera con el título. Una
+           sola ventana, dos usos, y cada uno con su cabecera correcta. */
+        #customizeModal .modal-container.cust-ventana .modal-header {
+            display:none;
+        }
+        #customizeModal .modal-container.cust-ventana {
+            max-width:460px;
+            overflow:hidden;
+        }
+
+        .cust-ventana {
+            display:grid;
+            grid-template-columns:1fr;
+            grid-template-areas:"foto" "cuerpo";
+        }
+
+        /* Envoltura de la foto: sostiene la X encima. */
+        .cust-foto-wrap {
+            grid-area:foto;
+            position:relative;
+            line-height:0;
+        }
+
+        .cust-cerrar {
+            position:absolute;
+            top:.7rem;
+            right:.7rem;
+            width:40px;
+            height:40px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            border:none;
+            border-radius:50%;
+            background:var(--superficie);
+            color:var(--text-primary);
+            font-size:1.45rem;
+            line-height:1;
+            cursor:pointer;
+            padding:0;
+            box-shadow:0 2px 8px rgba(0,0,0,.25);
+        }
+        /* En oscuro --superficie es translucido: se refuerza para que la X
+           siempre tenga un fondo legible sobre la foto. */
+        html:not(.tema-claro) .cust-cerrar {
+            background:rgba(255,255,255,.14);
+            color:#fff;
+            backdrop-filter:blur(6px);
+        }
+        .cust-cerrar:hover { filter:brightness(1.08); }
+        .cust-cerrar:focus-visible {
+            outline:3px solid var(--accent);
+            outline-offset:2px;
+        }
+
+        /* La foto se recorta sola: alto fijo en el teléfono, columna
+           completa en pantalla ancha. */
+        .cust-foto {
+            grid-area:foto;
+            display:block;
+            width:100%;
+            height:200px;
+            object-fit:cover;
+            background:var(--customize-row-bg);
+            cursor:zoom-in;
+        }
+
+        .cust-cuerpo {
+            grid-area:cuerpo;
+            display:flex;
+            flex-direction:column;
+            gap:.85rem;
+            padding:1.05rem;
+            min-width:0;
+        }
+
+        .cust-titulo {
+            margin:0;
+            font-size:1.15rem;
+            line-height:1.25;
+            color:var(--customize-text);
+        }
+        .cust-desc {
+            margin:.2rem 0 0;
+            font-size:.85rem;
+            line-height:1.45;
+            color:var(--customize-subtext);
+        }
+
+        /* Fila precio + stock. El precio pesa más: es la marca. */
+        .cust-meta {
+            display:flex;
+            align-items:baseline;
+            justify-content:space-between;
+            gap:.75rem;
+            flex-wrap:wrap;
+        }
+        .cust-precio-total {
+            font-size:1.3rem;
+            font-weight:700;
+            color:var(--primary-text);
+            font-variant-numeric:tabular-nums;
+        }
+        .cust-stock {
+            display:inline-flex;
+            align-items:center;
+            gap:.35rem;
+            font-size:.78rem;
+            color:var(--customize-subtext);
+        }
+
+        .cust-fila {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:.75rem;
+        }
+        .cust-etiqueta {
+            font-size:.87rem;
+            color:var(--customize-subtext);
+        }
+
+        /* Controles de cantidad. 40 px es el mínimo que un dedo acierta
+           sin esfuerzo. */
+        .cust-stepper {
+            display:flex;
+            align-items:center;
+            gap:.7rem;
+        }
+        .cust-stepper-btn {
+            width:40px;
+            height:40px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:50%;
+            border:1px solid var(--borde-control);
+            background:transparent;
+            color:var(--customize-text);
+            font-size:1.05rem;
+            line-height:1;
+            cursor:pointer;
+            padding:0;
+            transition:background .15s,border-color .15s;
+        }
+        .cust-stepper-btn:hover { background:var(--customize-row-bg); }
+        .cust-stepper-btn:focus-visible {
+            outline:3px solid var(--accent);
+            outline-offset:2px;
+        }
+        .cust-qty {
+            font-size:1.2rem;
+            font-weight:700;
+            min-width:2ch;
+            text-align:center;
+            color:var(--customize-text);
+            font-variant-numeric:tabular-nums;
+        }
+
+        /* Selector Completo / Personalizar: dos filas tocables enteras. */
+        .cust-modos {
+            display:flex;
+            flex-direction:column;
+            gap:.5rem;
+        }
+
+        /* Renglón de ingrediente con sus tres estados. */
+        .cust-ing {
+            display:flex;
+            align-items:center;
+            gap:.6rem;
+            padding:.55rem 0;
+            border-bottom:1px solid var(--customize-border);
+        }
+        .cust-ing:last-child { border-bottom:none; }
+        .cust-ing-mini {
+            width:34px;
+            height:34px;
+            flex-shrink:0;
+            border-radius:var(--radius-sm);
+            object-fit:cover;
+            background:var(--customize-row-bg);
+            border:1px solid var(--customize-border);
+        }
+        .cust-ing-info { flex:1; min-width:0; }
+        .cust-ing-nombre {
+            font-size:.88rem;
+            color:var(--customize-text);
+        }
+        .cust-ing-cant {
+            display:block;
+            font-size:.72rem;
+            color:var(--customize-subtext);
+            margin-top:.1rem;
+        }
+        .cust-ing-ctrl {
+            display:flex;
+            align-items:center;
+            gap:.3rem;
+            flex-shrink:0;
+        }
+        .cust-ing-btn {
+            width:30px;
+            height:30px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:50%;
+            border:1px solid var(--borde-control);
+            background:transparent;
+            color:var(--customize-text);
+            font-size:.9rem;
+            line-height:1;
+            cursor:pointer;
+            padding:0;
+        }
+        .cust-ing-btn:hover { background:var(--customize-row-bg); }
+        .cust-ing-btn:focus-visible {
+            outline:3px solid var(--accent);
+            outline-offset:2px;
+        }
+        .cust-ing-estado {
+            width:52px;
+            text-align:center;
+            font-size:.74rem;
+            font-weight:600;
+            color:var(--customize-text);
+        }
+
+        /* Ya no se usa un cuadro aparte para el precio: vive arriba, junto
+           al stock, y se recalcula en el mismo sitio. */
+        .cust-separador {
+            height:1px;
+            background:var(--customize-border);
+        }
+
+        /* ── TABLET Y PC: dos columnas ──
+           La foto queda clavada a la izquierda y acompaña a la lista de
+           ingredientes; los datos a la derecha. Mismo HTML, solo cambia
+           la rejilla. */
+        @media (min-width:600px) {
+            #customizeModal .modal-container.cust-ventana {
+                max-width:720px;
+            }
+            .cust-ventana {
+                grid-template-columns:280px 1fr;
+                grid-template-areas:"foto cuerpo";
+            }
+            .cust-foto {
+                height:100%;
+                min-height:340px;
+            }
+        }
+
+        @media (prefers-reduced-motion:reduce) {
+            .cust-stepper-btn,
+            .cust-ing-btn { transition:none; }
+        }
+
+        /* ── Opción platillo completo ── */
         .completo-option {
             margin-bottom:.8rem;
             padding:.7rem;
@@ -3230,9 +3513,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js"></script>
     <script src="js/cliente-carrito-dialogo.js"></script>
-    <script src="js/cliente-customize.js?v=1793935830"></script>
+    <script src="js/cliente-customize.js?v=1793971149"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1793890514"></script>
+    <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793628641"></script>
     <script src="js/cliente-reservas.js"></script>
