@@ -436,32 +436,39 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            HEADER
            ═══════════════════════════════════════════════════════ */
 
+        /* EL HEADER LLENA TODO EL ANCHO.
+           `width:100%` no es decorativo: el fondo es un gradiente y un
+           gradiente no se estira solo. Sin esto quedaba la franja oscura
+           a la derecha, con el carrito fuera del rojo. */
         .header {
             background:linear-gradient(135deg,var(--primary),#b71c1c);
             color:white;
-            padding:.8rem 1rem;
+            width:100%;
+            padding:.45rem .55rem;
             position:sticky;
             top:0;
             z-index:1000;
             box-shadow:var(--shadow-md);
             display:flex;
-            align-items:center;
-            justify-content:space-between;
-            flex-wrap:wrap;
-            gap:.5rem;
-            min-height:110px;
-            flex-shrink:0;;
-            display: flex;
-            flex-direction: column;
+            flex-direction:column;
+            flex-wrap:nowrap;
+            gap:.35rem;
+            flex-shrink:0;
         }
         .header-row {
             display: flex;
             align-items: center;
             width: 100%;
         }
+        /* UNA SOLA FILA. La marca va al centro y los controles a los
+           lados; nada se envuelve. `min-width:0` deja que la marca se
+           encoja antes de empujar los botones fuera. */
         .header-row-main {
             order: 0;
-            gap: .5rem;
+            gap: .3rem;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: space-between;
         }
         .header-row-mesa {
             justify-content: center;
@@ -474,8 +481,10 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            RESPONSIVE / MEDIA QUERIES
            ═══════════════════════════════════════════════════════ */
 
-        @media (max-width:992px){.header{min-height:100px;padding:.5rem}}
-        @media (max-width:768px){.header{min-height:auto;padding:.5rem}}
+        /* El header ya no impone alto mínimo: lo dan sus piezas.
+           Antes forzaba 100-110 px por una fila que ya no existe. */
+        @media (max-width:992px){.header{padding:.45rem .5rem}}
+        @media (max-width:768px){.header{padding:.4rem .45rem}}
         /* Mobile: show mesa row as second row when has-mesa class is present */
         @media (max-width:768px) {
             .header-row-main {
@@ -506,8 +515,8 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             background:rgba(255,255,255,.15);
             border:none;
             color:white;
-            width:50px;
-            height:50px;
+            width:44px;
+            height:44px;
             border-radius:50%;
             display:flex;
             align-items:center;
@@ -523,71 +532,90 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             background:rgba(255,255,255,.15);
             border:none;
             color:white;
-            width:40px;
-            height:40px;
+            width:44px;
+            height:44px;
             border-radius:50%;
             display:flex;
             align-items:center;
             justify-content:center;
             cursor:pointer;
             transition:all .3s;
-            font-size:1.1rem;
-            margin-left:.5rem;
+            font-size:1.15rem;
+            margin-left:0;
         }
         .theme-toggle:hover{background:rgba(255,255,255,.25);transform:scale(1.1)}
+        /* LA MARCA VA APILADA: logo arriba, nombre y eslogan debajo.
+
+           Es el cambio que hace que todo quepa. Antes el nombre competía
+           en horizontal con cinco controles y empujaba el carrito fuera.
+           En vertical, la marca ocupa el ancho que sobra y los botones
+           conservan el suyo. */
         .logo-area {
             display:flex;
+            flex-direction:column;
             align-items:center;
-            gap:1rem;
-            cursor:pointer;
-            flex:1;
             justify-content:center;
-            flex-wrap:wrap;
+            gap:0;
+            cursor:pointer;
+            flex:1 1 auto;
+            min-width:0;
+            flex-wrap:nowrap;
         }
         .logo {
-            width:70px;
-            height:70px;
-            border-radius:14px;
-            box-shadow:var(--shadow-md);
+            width:52px;
+            height:52px;
+            border-radius:10px;
+            box-shadow:var(--shadow-sm);
             transform:rotate(-5deg);
             transition:transform .3s;
             object-fit:cover;
+            flex-shrink:0;
         }
         .logo:hover{transform:rotate(0) scale(1.05)}
         .logo-area h1 {
-            font-size:2rem;
-            font-weight:800;
-            letter-spacing:.5px;
+            font-size:1.02rem;
+            font-weight:700;
+            letter-spacing:-.01em;
             white-space:nowrap;
             cursor:pointer;
-            line-height:1.2;
+            line-height:1.05;
             color:white;
+            margin-top:.12rem;
         }
+        /* El eslogan ya no lleva barra lateral: va debajo del nombre, no
+           al lado. La barra era para separar dos textos en la misma línea.
+
+           EL COLOR: blanco, no dorado.
+           Medido sobre el carmesí del header, ningún dorado llega a AA:
+             #FF9800 (el original)  2.31:1
+             #FFD180 (el del logo)  3.48:1
+             #FFC107                3.05:1
+           El blanco sí: 4.98:1 en oscuro y 7.91:1 en claro. Se pierde el
+           toque dorado, pero un texto que no se lee no es un adorno. */
         .header-slogan {
             font-family:'Playfair Display',serif;
             font-style:italic;
-            font-size:1.1rem;
-            color:var(--accent);
-            margin-left:.5rem;
+            font-size:.66rem;
+            color:#FFFFFF;
+            margin-left:0;
+            padding-left:0;
+            border:none;
             white-space:nowrap;
-            border-left:2px solid rgba(255,255,255,.3);
-            padding-left:1rem;
+            line-height:1.15;
         }
-        @media (max-width:992px){.logo{width:60px;height:60px}.logo-area h1{font-size:1.6rem}.header-slogan{font-size:1rem}}
+        @media (max-width:992px){.logo{width:50px;height:50px}.logo-area h1{font-size:1rem}.header-slogan{font-size:.65rem}}
+        /* El telefono NO revierte la marca a horizontal: la version
+           apilada es la que hace que todo quepa, y es la que el dueno
+           eligio. Solo se ajustan los tamanos. */
         @media (max-width:768px) {
-            .logo-area{flex-direction:row;
-            gap:.5rem;
-            justify-content:center}.logo-area h1{font-size:1.3rem;
-            white-space:nowrap}.header-slogan{font-size:.85rem;
-            border-left:2px solid rgba(255,255,255,.3);
-            padding-left:.8rem;
-            width:auto;
-            text-align:left};
+            .logo { width:48px; height:48px; }
+            .logo-area h1 { font-size:.98rem; }
+            .header-slogan { font-size:.62rem; }
         }
         .header-icons {
             display:flex;
             align-items:center;
-            gap:.8rem;
+            gap:.3rem;
             flex:0 0 auto;
             position:relative;
         }
@@ -596,8 +624,8 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             background:rgba(255,255,255,.15);
             border:none;
             color:white;
-            width:50px;
-            height:50px;
+            width:44px;
+            height:44px;
             border-radius:50%;
             display:flex;
             align-items:center;
@@ -3162,15 +3190,14 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                  tiene cuenta pide igual como invitado, con su ficha del
                  teléfono. El botón nunca se esconde, para que quien ya está
                  registrado tenga por dónde cerrar sesión. -->
-            <button id="btnCuentaCliente"
-                    data-tooltip="Entrar o crear cuenta"
-                    aria-label="Entrar o crear cuenta"
-                    style="background:none;border:none;font-size:1.4rem;line-height:1;cursor:pointer;
-                           padding:.25rem;margin-left:.35rem;vertical-align:middle;opacity:.9;
-                           transition:opacity .2s,transform .2s"
-                    onmouseover="this.style.opacity=1;this.style.transform='scale(1.1)'"
-                    onmouseout="this.style.opacity=.9;this.style.transform='scale(1)'"><i class="fas fa-user-circle"></i></button>
             <div class="header-icons" id="headerIcons">
+                <!-- Iniciar sesión: botón redondo, igual que los demás.
+                     Antes era un emoji suelto sin fondo, y se perdía entre
+                     los demás controles. Ahora ocupa el primer lugar del
+                     grupo derecho, que es donde el pulgar lo busca. -->
+                <button class="icon-button" id="btnCuentaCliente"
+                        data-tooltip="Entrar o crear cuenta"
+                        aria-label="Entrar o crear cuenta"><i class="fas fa-user-circle"></i></button>
                 <div style="position:relative">
                     <button class="icon-button" id="notificationBell" data-tooltip="Notificaciones"><i class="fas fa-bell"></i></button>
                     <span class="notification-badge" id="notificationBadge" style="display:none">0</span>
@@ -3568,7 +3595,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-cierre.js?v=1792890542"></script>
     <script src="js/cliente-offline.js?v=1792857000"></script>
     <script src="js/cliente-accion-unica.js?v=1792802980"></script>
-    <script src="js/cliente-mesonero.js?v=1793895214"></script>
+    <script src="js/cliente-mesonero.js?v=1793985997"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
     <script src="js/cliente-menu.js?v=1793665995"></script>
