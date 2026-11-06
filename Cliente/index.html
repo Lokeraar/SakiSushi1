@@ -2876,6 +2876,40 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             color:var(--customize-text);
             font-variant-numeric:tabular-nums;
         }
+        /* La cantidad ahora se puede escribir.
+           El campo se ve como el número de antes: sin caja visible, para no
+           ensuciar la fila. Pero tiene anillo de foco y un fondo suave al
+           tocarlo, para que se note que ahí se puede escribir. */
+        .cust-qty-input {
+            width:3.4ch;              /* espacio para 3 dígitos */
+            min-width:3.4ch;
+            padding:.25rem .1rem;
+            border:none;
+            border-radius:var(--radius-sm,6px);
+            background:transparent;
+            color:var(--customize-text);
+            font:inherit;
+            font-weight:700;
+            text-align:center;
+            font-variant-numeric:tabular-nums;
+            /* Sin esto, Safari y Chrome en iOS/Android ponen su propia
+               apariencia y el número se ve distinto al resto. */
+            -webkit-appearance:none;
+            appearance:none;
+            cursor:text;
+        }
+        .cust-qty-input:focus {
+            outline:none;
+            background:var(--customize-row-bg);
+            box-shadow:0 0 0 2px var(--accent);
+        }
+        /* Que las flechitas del número no aparezcan si algún navegador
+           decide tratarlo como numérico. */
+        .cust-qty-input::-webkit-outer-spin-button,
+        .cust-qty-input::-webkit-inner-spin-button {
+            -webkit-appearance:none;
+            margin:0;
+        }
 
         /* Selector Completo / Personalizar: dos filas tocables enteras. */
         .cust-modos {
@@ -3607,7 +3641,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1793983396"></script>
+    <script src="js/cliente-customize.js?v=1793998240"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>

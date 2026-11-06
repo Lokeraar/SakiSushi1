@@ -32,6 +32,15 @@
         if (!item) return;
 
         currentCustomizeItem = item;
+
+        // La cantidad SIEMPRE empieza en 1 al abrir un platillo.
+        //
+        // Antes solo se reiniciaba al añadir al carrito. Si el cliente abría
+        // un plato, subía a 20 y cerraba sin añadir, al abrir OTRO plato se
+        // encontraba con 20 ya puestos. Con el campo de texto esto sería
+        // peor: un dedazo se arrastraría de un plato a otro.
+        _currentQty = 1;
+
         var modal = document.getElementById('customizeModal');
         var body = document.getElementById('customizeModalBody');
         if (!modal || !body) return;
@@ -147,7 +156,21 @@
               '<div class="cust-stepper">' +
                 '<button type="button" class="cust-stepper-btn" id="qtyMinus" ' +
                   'aria-label="Quitar una unidad">&minus;</button>' +
-                '<span class="cust-qty" id="customizeQty">1</span>' +
+                // La cantidad es un CAMPO DE TEXTO, no un número fijo.
+                //
+                // Antes era un <span> y la única forma de subir era pulsar
+                // "+" muchas veces: para 30 piezas había que tocar 29 veces.
+                //
+                // Se usa type="text" y no type="number" a propósito:
+                //   · en el teléfono, type="number" abre un teclado con
+                //     flechas y signos que aquí sobran, y en algunos Android
+                //     ni muestra los dígitos cómodos;
+                //   · con inputmode="numeric" se abre el teclado numérico
+                //     directo, que es lo que el cliente necesita;
+                //   · el patrón [0-9]* evita que entren letras.
+                '<input type="text" class="cust-qty cust-qty-input" id="customizeQty" ' +
+                  'value="1" inputmode="numeric" pattern="[0-9]*" maxlength="3" ' +
+                  'autocomplete="off" aria-label="Cantidad">' +
                 '<button type="button" class="cust-stepper-btn" id="qtyPlus" ' +
                   'aria-label="Agregar una unidad">+</button>' +
               '</div>' +
@@ -242,6 +265,56 @@
             if (window.actualizarCantidadPersonalizacion) window.actualizarCantidadPersonalizacion(1);
         });
 
+        var campoQty = document.getElementById('customizeQty');
+        if (campoQty) {
+            // Mientras escribe: solo dígitos y sin pasarse del stock.
+            campoQty.addEventListener('input', function () {
+                var limpio = this.value.replace(/[^0-9]/g, '');
+                var tope = _topeCantidad();
+
+                // Si escribe más de lo que hay, se recorta al tope en el acto.
+                // No se espera a que termine: si dejáramos 9999 en pantalla,
+                // el precio mostraría una cifra imposible mientras escribe.
+                var n = parseInt(limpio, 10);
+                if (!isNaN(n) && tope > 0 && n > tope) {
+                    limpio = String(tope);
+                }
+                if (this.value !== limpio) this.value = limpio;
+
+                // EL CAMPO VACÍO SE RESPETA MIENTRAS ESCRIBE.
+                //
+                // Si al borrar se rellenara solo con "1", el cliente no
+                // podría escribir un número nuevo: cada retroceso devolvería
+                // el 1, y tendría que seleccionar todo antes de teclear. Es
+                // incómodo y se siente roto.
+                //
+                // Mientras esté vacío solo se actualiza el precio si queda un
+                // número válido; la cantidad buena se conserva y se corrige
+                // al salir del campo (blur).
+                if (limpio === '') return;
+
+                _reflejarCantidad();
+            });
+
+            // Al salir del campo: si quedó vacío o en cero, vuelve a 1.
+            // Un campo vacío dejaría el total en NaN y el botón Añadir
+            // agregaría "NaN" al carrito.
+            campoQty.addEventListener('blur', function () {
+                var n = parseInt(this.value, 10);
+                if (isNaN(n) || n < 1) n = 1;
+                var tope = _topeCantidad();
+                if (tope > 0 && n > tope) n = tope;
+                this.value = String(n);
+                _reflejarCantidad();
+            });
+
+            // Enter equivale a confirmar el número, no a enviar nada: sin esto
+            // el navegador podría disparar el envío del formulario contenedor.
+            campoQty.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
+            });
+        }
+
         // La X cierra la ventana.
         var cerrarEl = document.getElementById('custCerrar');
         if (cerrarEl) {
@@ -300,10 +373,57 @@
     window.selectPersonalizado = selectPersonalizado;
     S.modules.customize.selectPersonalizado = selectPersonalizado;
 
-    function actualizarCantidadPersonalizacion(delta) {
-        _currentQty = Math.max(1, _currentQty + delta);
+    /**
+     * Máximo de unidades que se pueden pedir de este plato.
+     *
+     * Se lee del stock precalculado, que es la misma fuente que usa la
+     * tarjeta para decir "415 disponibles". Devuelve 0 cuando no hay dato:
+     * en ese caso NO se limita, porque inventar un tope bloquearía la venta.
+     */
+    function _topeCantidad() {
+        var item = currentCustomizeItem;
+        if (!item) return 0;
+        var stock = (window._stockPrecalculado || {})[item.id];
+        if (typeof stock !== 'number') return 0;
+        // Un plato agotado no se puede pedir; el tope real es al menos 1 para
+        // no dejar el campo en 0 y confundir al cliente.
+        return stock > 0 ? Math.floor(stock) : 1;
+    }
+
+    /**
+     * Lee el número escrito por el cliente y lo aplica.
+     *
+     * Antes la cantidad solo cambiaba con el "+" y el "−": para 30 piezas
+     * había que tocar 29 veces.
+     */
+    function _reflejarCantidad() {
         var el = document.getElementById('customizeQty');
-        if (el) el.textContent = _currentQty;
+        var n = el ? parseInt(el.value, 10) : _currentQty;
+
+        if (isNaN(n) || n < 1) n = 1;
+        var tope = _topeCantidad();
+        if (tope > 0 && n > tope) n = tope;
+
+        _currentQty = n;
+        if (el && el.value !== String(n)) el.value = String(n);
+        calcularPrecioPersonalizado();
+    }
+    window._reflejarCantidad = _reflejarCantidad;
+
+    function actualizarCantidadPersonalizacion(delta) {
+        var tope = _topeCantidad();
+        var nueva = Math.max(1, _currentQty + delta);
+        if (tope > 0 && nueva > tope) nueva = tope;
+        _currentQty = nueva;
+
+        var el = document.getElementById('customizeQty');
+        if (el) {
+            // El campo puede ser un <input> (nuevo) o un <span> (versión
+            // vieja en caché). Se escribe en el atributo correcto de cada uno
+            // para no romper si un cliente tiene el HTML anterior guardado.
+            if ('value' in el && el.tagName === 'INPUT') el.value = String(_currentQty);
+            else el.textContent = _currentQty;
+        }
         calcularPrecioPersonalizado();
     }
     window.actualizarCantidadPersonalizacion = actualizarCantidadPersonalizacion;

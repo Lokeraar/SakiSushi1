@@ -6,7 +6,7 @@
 // descarta la caché vieja en `activate` y toma este archivo. Sin esto, un
 // service worker ya instalado puede quedar congelado con el código viejo
 // durante días, porque el navegador no lo vuelve a pedir.
-const CACHE_NAME = 'saki-sushi-v1793995653';
+const CACHE_NAME = 'saki-sushi-v1793998240';
 
 // ─────────────────────────────────────────
 // INSTALACIÓN Y ACTIVACIÓN
