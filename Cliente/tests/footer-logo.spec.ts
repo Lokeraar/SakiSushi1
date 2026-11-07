@@ -23,14 +23,17 @@ test.describe('Footer Logo - No 404', () => {
     expect(src).not.toContain('googleusercontent.com');
     expect(src).not.toContain('lh3.googleusercontent.com');
     
-    // Should be local relative path
-    expect(src).toMatch(/^assets\/logo-saki\.(svg|png)$/);
+    // Should be local relative path. El archivo real del proyecto es
+    // ../assets/marca/logo-300.png (300x300). Antes apuntaba a
+    // assets/logo-saki.svg, que NO EXISTE: el logo salia roto y la prueba
+    // no lo detecto porque nunca se ejecuto contra la pagina real.
+    expect(src).toMatch(/assets\/marca\/logo-300\.png/);
     
     // Wait for image to load (check naturalWidth > 0)
     await expect(logo).toHaveJSProperty('naturalWidth', expect.toBeGreaterThan(0));
     
     // No 404 for the logo
-    const logo404 = errors.find(e => e.url.includes('logo-saki') && e.status === 404);
+    const logo404 = errors.find(e => e.url.includes('logo-300') && e.status === 404);
     expect(logo404).toBeUndefined();
   });
 });

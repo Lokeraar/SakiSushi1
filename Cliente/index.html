@@ -2232,13 +2232,49 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             margin:0 auto;
             width:100%;
         }
-        .footer-brand-logo {
-            width:50px;
-            height:50px;
+        /* ── LA MARCA DEL PIE ──
+           Nombre arriba · logo dentro del círculo · eslogan debajo. */
+        .footer-marca {
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:.55rem;
+        }
+        .footer-marca-nombre {
+            font-family:'Playfair Display',serif;
+            font-weight:700;
+            font-size:1.35rem;
+            line-height:1.1;
+            color:var(--text-primary);
+            letter-spacing:.02em;
+        }
+        /* El círculo es el MARCO: lleva el borde y el fondo, no la imagen.
+           Así el borde no se recorta con el redondeo de la foto. */
+        .footer-marca-circulo {
+            width:104px;
+            height:104px;
             border-radius:50%;
-            object-fit:cover;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            overflow:hidden;
             border:2px solid var(--accent);
-            margin-bottom:.5rem;
+            background:var(--superficie, #fff);
+            /* Un halo tenue del dorado: separa el círculo del papel sin
+               dibujar un borde duro. */
+            box-shadow:0 2px 14px rgba(221,149,31,.18);
+        }
+        .footer-brand-logo {
+            /* La imagen llena el círculo. object-fit:cover la recorta
+               centrada si el archivo no fuera cuadrado; este lo es
+               (300x300), así que se ve entera. */
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            display:block;
+            border:none;
+            border-radius:0;
+            margin:0;
         }
         .footer-brand-slogan {
             font-family:'Playfair Display',serif;
@@ -3935,8 +3971,29 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
-                <img src="assets/logo-saki.svg" alt="Saki Sushi" class="footer-brand-logo" style="width:140px; height:155px;">
-                <div class="footer-brand-slogan">"Adictos al universo saki"</div>
+                <!-- La marca del pie: el NOMBRE va arriba, el logo dentro del
+                     círculo y el eslogan debajo.
+
+                     Antes era un solo <img> apuntando a `assets/logo-saki.svg`,
+                     un archivo que NO EXISTE: la imagen salía rota (el círculo
+                     dorado vacío de la captura del dueño) y el texto «Saki
+                     Sushi» que se veía encima era el `alt` del navegador
+                     pintado fuera de su sitio.
+
+                     Ahora el logo es el archivo real del proyecto
+                     (../assets/marca/logo-300.png, 300x300, cuadrada: encaja
+                     en el círculo sin deformarse). -->
+                <div class="footer-marca">
+                    <div class="footer-marca-nombre">Saki Sushi</div>
+                    <div class="footer-marca-circulo">
+                        <img src="../assets/marca/logo-300.png?v=1"
+                             alt=""
+                             class="footer-brand-logo"
+                             width="96" height="96"
+                             loading="lazy" decoding="async">
+                    </div>
+                    <div class="footer-brand-slogan">"Adictos al universo saki"</div>
+                </div>
             </div>
             <div class="footer-section">
                 <h4>Av Universidad</h4>
@@ -3997,7 +4054,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794019959"></script>
+    <script src="js/cliente-customize.js?v=1794020644"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>

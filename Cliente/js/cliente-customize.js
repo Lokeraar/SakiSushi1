@@ -915,7 +915,7 @@
               '<h3>Esto son dos platos</h3>' +
               '<p>Pediste extra de todos los ingredientes principales de ' +
                 (currentCustomizeItem.nombre || 'este plato') + '. Eso equivale a ' +
-                'un plato más, no a un plato agrandado.</p>' +
+                'un segundo plato, no a un plato agrandado.</p>' +
               '<p class="dlg-precio">' +
                 '<span class="dlg-precio-antes">' + S.utils.formatBs(precioPlato * _currentQty) + '</span>' +
                 ' <i class="fas fa-arrow-right"></i> ' +
