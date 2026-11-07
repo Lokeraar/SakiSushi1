@@ -3029,41 +3029,108 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             gap:.5rem;
         }
 
-        /* Renglón de ingrediente con sus tres estados. */
+        /* ── LA LISTA ES UNA REJILLA DE CINCO COLUMNAS ──
+
+           Cabecera y filas comparten ESTA misma definición de anchos, así
+           cada rótulo cae exactamente encima de su control. No hay <table>:
+           una tabla trae su propio ancho mínimo y rompería el paso a dos
+           columnas que la ventana hace a partir de 600 px.
+
+           Orden: miniatura · nombre · Quitar · Actualmente · Agrandar.
+           El +/− de los opcionales necesita más ancho que el ×2 de los
+           principales, y la columna está dimensionada para el caso grande. */
+        #ingredientesList {
+            --cust-ing-cols: 30px minmax(0,1fr) 32px 58px 74px;
+        }
+
+        .cust-ing-cabecera,
         .cust-ing {
-            display:flex;
+            display:grid;
+            grid-template-columns:var(--cust-ing-cols);
             align-items:center;
-            gap:.6rem;
+            column-gap:.2rem;
+        }
+
+        /* Rótulos de columna: pequeños, semibold y atenuados. Es texto de
+           apoyo, no de lectura: el dato que manda es el de la fila.
+
+           Los anchos están calculados para que «Actualmente» (la palabra
+           más larga) entre en una sola línea aun en un teléfono de 360 px.
+           Por eso la columna mide 58 px y no lo que mide el texto «×2». */
+        .cust-ing-cabecera {
+            padding-bottom:.35rem;
+            border-bottom:1px solid var(--customize-border);
+        }
+        /* Se apunta con el id del modal para ganarle a la regla del tema
+           claro que fuerza TODOS los span del modal a la tinta principal
+           (`body.tema-claro .modal-body span`, especificidad 0,2,2). Sin
+           esto, el rótulo y el estado «Sin» salían del color equivocado. */
+        #customizeModal .cust-ing-cab {
+            font-size:.58rem;
+            line-height:1.2;
+            font-weight:600;
+            color:var(--customize-subtext);
+            text-align:center;
+            overflow-wrap:break-word;
+        }
+        #customizeModal .cust-ing-cab--nombre {
+            text-align:left;
+            padding-left:.1rem;
+        }
+
+        /* Renglón de ingrediente. */
+        .cust-ing {
             padding:.55rem 0;
             border-bottom:1px solid var(--customize-border);
         }
-        .cust-ing:last-child { border-bottom:none; }
+        /* La nota final es un <p>: el último <div> de la lista sigue siendo
+           la última fila real, y es la que pierde el borde. */
+        .cust-ing:last-of-type { border-bottom:none; }
+
+        /* La celda de la miniatura se pinta siempre, con o sin foto: es una
+           columna de la rejilla y si desaparece, el nombre se corre y deja
+           de coincidir con la cabecera. */
+        .cust-ing-mini-celda {
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            justify-self:center;
+            width:30px;
+            height:30px;
+        }
         .cust-ing-mini {
-            width:34px;
-            height:34px;
-            flex-shrink:0;
+            width:30px;
+            height:30px;
             border-radius:var(--radius-sm);
             object-fit:cover;
             background:var(--customize-row-bg);
             border:1px solid var(--customize-border);
         }
-        .cust-ing-info { flex:1; min-width:0; }
+        .cust-ing-info { min-width:0; }
         .cust-ing-nombre {
             font-size:.88rem;
             color:var(--customize-text);
         }
-        .cust-ing-cant {
+        /* También con el id: es un span, y en el tema claro la regla del
+           modal lo pintaba con la tinta principal, así que la línea de
+           ayuda competía con el nombre en vez de apoyarlo. */
+        #customizeModal .cust-ing-cant {
             display:block;
             font-size:.72rem;
             color:var(--customize-subtext);
             margin-top:.1rem;
         }
-        .cust-ing-ctrl {
+
+        /* Columna «Agrandar»: un solo botón ×2 en los principales, y
+           − 1 + en los opcionales. */
+        .cust-ing-agrandar {
             display:flex;
             align-items:center;
-            gap:.3rem;
-            flex-shrink:0;
+            justify-content:center;
+            justify-self:center;
+            gap:.14rem;
         }
+
         .cust-ing-btn {
             width:30px;
             height:30px;
@@ -3078,18 +3145,82 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             line-height:1;
             cursor:pointer;
             padding:0;
+            transition:background .15s,border-color .15s,color .15s;
         }
+        /* Los dos botones del stepper comparten el ancho disponible de la
+           columna con el número: 28 px cada uno los deja entrar en 74. */
+        .cust-ing-btn--paso {
+            width:28px;
+            height:28px;
+        }
+        /* El botón de quitar vive solo en su columna: se centra en ella en
+           vez de pegarse al borde izquierdo de la celda. */
+        .cust-ing-btn--quitar { justify-self:center; }
         .cust-ing-btn:hover { background:var(--customize-row-bg); }
         .cust-ing-btn:focus-visible {
             outline:3px solid var(--accent);
             outline-offset:2px;
         }
-        .cust-ing-estado {
-            width:52px;
+        /* Al llegar a 1 porción no hay nada que bajar. Se apaga y se
+           anuncia como no disponible; quitar el ingrediente entero es la
+           columna «Quitar», que está a la izquierda. */
+        .cust-ing-btn[aria-disabled="true"] {
+            opacity:.45;
+            cursor:default;
+        }
+
+        /* ── ESTADOS ACTIVOS ──
+
+           El color NO es el único aviso: el botón queda marcado (borde y
+           fondo de peligro o de extra), `aria-pressed` pasa a true, y la
+           columna «Actualmente» escribe «Sin» o «×2». Quien no distinga el
+           rojo del verde lee la palabra igual.
+
+           Las tintas son tokens porque el tema oscuro y el claro necesitan
+           valores distintos para superar 4.5:1 sobre su fondo real. */
+        #customizeModal .cust-ing-btn--quitar.activo {
+            color:var(--cust-tinta-quitar);
+            border-color:var(--cust-tinta-quitar);
+            background:var(--cust-fondo-quitar);
+        }
+        #customizeModal .cust-ing-btn--extra.activo {
+            color:var(--cust-tinta-agrandar);
+            border-color:var(--cust-tinta-agrandar);
+            background:var(--cust-fondo-agrandar);
+        }
+        /* El número de porciones encima de 1 también se marca con su
+           tinta, para que el renglón no muestre un ×3 en gris neutro. */
+        .cust-ing-btn--paso.activo {
+            color:var(--cust-tinta-agrandar);
+            border-color:var(--cust-tinta-agrandar);
+        }
+        .cust-ing-paso {
+            min-width:1.2ch;
+            text-align:center;
+            font-size:.82rem;
+            font-weight:700;
+            color:var(--customize-text);
+            font-variant-numeric:tabular-nums;
+        }
+        #customizeModal .cust-ing-paso--mas { color:var(--cust-tinta-agrandar); }
+
+        #customizeModal .cust-ing-estado {
+            width:100%;
             text-align:center;
             font-size:.74rem;
             font-weight:600;
             color:var(--customize-text);
+        }
+        #customizeModal .cust-ing-estado--sin { color:var(--cust-tinta-quitar); }
+        #customizeModal .cust-ing-estado--mas { color:var(--cust-tinta-agrandar); }
+
+        /* Texto de cierre de la lista. Va dentro de #ingredientesList, así
+           que aparece y desaparece junto con «Personalizar ingredientes». */
+        .cust-ing-nota {
+            margin:.75rem 0 0;
+            font-size:.82rem;
+            line-height:1.4;
+            color:var(--customize-subtext);
         }
 
         /* Ya no se usa un cuadro aparte para el precio: vive arriba, junto
@@ -3115,6 +3246,17 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                 height:100%;
                 min-height:340px;
             }
+            /* En pantalla ancha sobra sitio: las columnas de controles
+               crecen y los rótulos de la cabecera también. Los anchos
+               siguen saliendo de la MISMA variable que usan las filas. */
+            #ingredientesList {
+                --cust-ing-cols: 40px minmax(0,1fr) 40px 84px 104px;
+            }
+            #customizeModal .cust-ing-cab { font-size:.66rem; }
+            .cust-ing-mini-celda, .cust-ing-mini { width:38px; height:38px; }
+            .cust-ing-btn { width:34px; height:34px; }
+            .cust-ing-btn--paso { width:32px; height:32px; }
+            .cust-ing-agrandar { gap:.3rem; }
             /* En pantalla ancha la X se va a la esquina de la TARJETA, no a
                la de la foto: la foto queda a la izquierda y su esquina
                derecha cae a media ventana, lejos del puntero. La del visor
@@ -3164,12 +3306,28 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             --customize-subtext: #adb5bd;
             --customize-row-bg: rgba(0,0,0,0.2);
             --customize-border: rgba(255,255,255,0.1);
+            /* Tintas de los estados de la lista de ingredientes.
+               Medidas sobre el fondo real del modal (#1a1a2e / #16213e):
+                 quitar  #ff8a80 → 7.47:1 y 6.96:1
+                 agrandar #86efac → 12.15:1 y 11.32:1
+               Los --danger (#ef4444, 4.22:1) y --success (#388E3C, 3.86:1)
+               del tema oscuro NO llegan a 4.5 sobre ese fondo. */
+            --cust-tinta-quitar: #ff8a80;
+            --cust-tinta-agrandar: #86efac;
+            --cust-fondo-quitar: rgba(255,138,128,0.16);
+            --cust-fondo-agrandar: rgba(134,239,172,0.16);
         }
         body.tema-claro {
             --customize-text: var(--text-primary);
             --customize-subtext: var(--text-muted);
             --customize-row-bg: rgba(0,0,0,0.07);
             --customize-border: rgba(0,0,0,0.15);
+            /* Sobre papel (#F6F0E9): quitar #A81E1E → 6.47:1,
+               agrandar #2F6B3A → 5.65:1. */
+            --cust-tinta-quitar: var(--danger);
+            --cust-tinta-agrandar: var(--success);
+            --cust-fondo-quitar: rgba(168,30,30,0.10);
+            --cust-fondo-agrandar: rgba(47,107,58,0.10);
         }
         @keyframes btn-zumbido {
             0% {
@@ -3752,7 +3910,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794001460"></script>
+    <script src="js/cliente-customize.js?v=1794012770"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
