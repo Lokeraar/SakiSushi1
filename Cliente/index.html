@@ -1914,6 +1914,27 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            MODALES — overlay, contenedor, header, body, footer
            ═══════════════════════════════════════════════════════ */
 
+        /* SI NO CABE, SE DESPLAZA Y SE ALCANZA TODO.
+
+           `align-items:center` centra el hijo, pero cuando el hijo es MÁS
+           ALTO que la pantalla el centrado reparte el desborde hacia los
+           dos lados: la parte de arriba se sale por arriba y el scroll del
+           overlay no la alcanza. Así quedaba la ventana del platillo en
+           horizontal, pegada y sin cabecera ni pie.
+
+           Con relleno en el overlay y `overflow-y:auto`, más `margin:auto`
+           en el hijo (ver .modal-container), el hijo se ancla arriba cuando
+           no cabe y se alcanza entero desplazando. En horizontal el alto
+           útil es escaso, así que este respaldo hace falta de verdad.
+
+           Arregla a la vez todos los modales que usan esta clase: delivery,
+           reserva, historial, cuenta, notificaciones y los diálogos.
+
+           El relleno es SOLO vertical a propósito. Uno de 1rem en los cuatro
+           lados encogería cada ventana, porque `.modal-container` mide 95%
+           de la CAJA del overlay: ese 95% ya deja su propio margen a los
+           lados, y sumarle relleno horizontal habría estrechado todos los
+           modales de la app sin que nadie lo pidiera. */
         .modal-overlay {
             display:none;
             position:fixed;
@@ -1926,6 +1947,8 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             align-items:center;
             justify-content:center;
             backdrop-filter:blur(5px);
+            padding:1rem 0;
+            overflow-y:auto;
         }
         .modal-overlay.active{display:flex}
         .modal-container {
@@ -1935,9 +1958,21 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             border-radius:var(--radius-lg);
             max-width:500px;
             width:95%;
+            /* `dvh` mide el área visible de verdad; `vh` cuenta el viewport
+               grande, con la barra de direcciones escondida. Se dejan las dos
+               declaraciones —respaldo primero, `dvh` después— para que los
+               navegadores viejos tomen el 90% de siempre y los nuevos midan
+               sobre lo que de verdad se ve. Mismo 90% en los dos: lo único
+               que cambia es contra qué se mide. */
             max-height:90vh;
+            max-height:90dvh;
             overflow-y:auto;
             position:relative;
+            /* `margin:auto` es el que salva la cabecera: en un flex centrado,
+               los márgenes automáticos se anulan cuando el hijo desborda, y
+               el hijo pasa a anclarse arriba en vez de perder el borde de
+               arriba por el borde de la pantalla. */
+            margin:auto;
             animation:modalSlideIn .3s ease;
             box-shadow:var(--shadow-lg);
             border:1px solid rgba(255,255,255,.1);
@@ -2055,8 +2090,14 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         body.tema-claro .cart-empty{color:var(--text-muted)}
         body.tema-claro .cart-empty i{color:var(--text-muted);opacity:.7}
         @media (max-width:480px) {
+            /* En el teléfono la ventana ocupa todo el ancho y no lleva
+               esquinas redondeadas: por eso el overlay no deja margen. Si
+               lo dejara, la ventana quedaría flotando con las cuatro
+               esquinas rectas dentro de un marco negro. */
+            .modal-overlay{padding:0}
             .modal-container{width:100%;
             max-height:100vh;
+            max-height:100dvh;
             border-radius:0};
         }
         @keyframes modalSlideIn {
@@ -2663,7 +2704,12 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             text-align:center;
             border:1px solid rgba(255,255,255,.1);
             max-width:400px;
-            margin:0 auto;
+            /* `auto` en los cuatro lados, no `0 auto`: es un hijo directo del
+               overlay flexible, y con los márgenes de arriba y abajo en cero
+               un diálogo más alto que la pantalla se centraba igual y perdía
+               la cabecera fuera del borde. Con `auto` se ancla arriba y se
+               alcanza desplazando. */
+            margin:auto;
         }
         .confirm-dialog i {
             font-size:3rem;
@@ -2842,7 +2888,23 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             overflow:hidden;
             display:flex;
             flex-direction:column;
-            max-height:90vh;
+            /* AQUÍ NACE EL «A VECES» DE LA VENTANA DESCENTRADA.
+
+               `vh` mide en el teléfono el viewport GRANDE: el que se vería
+               con la barra de direcciones escondida. Cuando esa barra está
+               a la vista, el área visible real es MENOR, y un 90vh puede
+               ser más alto que la pantalla. La ventana se pasaba de alto,
+               el centrado del overlay repartía el desborde hacia los dos
+               lados y la cabecera quedaba por encima del borde: según el
+               contenido del plato cabía o no, y de ahí el «no siempre».
+
+               `dvh` (dynamic viewport height) mide el área realmente
+               visible, y cambia cuando la barra aparece o se esconde. Se
+               dejan las dos declaraciones: la primera es el respaldo para
+               navegadores viejos, la segunda manda en los que entienden
+               `dvh`. El 2rem descuenta el relleno del overlay. */
+            max-height:calc(100vh - 2rem);
+            max-height:calc(100dvh - 2rem);
         }
         /* El cuerpo del modal es quien desplaza. Se le quita el relleno
            porque la foto tiene que llegar a los bordes; el relleno lo pone
@@ -3430,6 +3492,87 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                     clamp(280px,
                           calc(340px * var(--cust-foto-ratio, 1)),
                           min(380px, calc(100% - 428px)))
+                    minmax(0, 1fr);
+            }
+        }
+
+        /* ── HORIZONTAL: AQUÍ SÍ HAY ANCHO QUE APROVECHAR ──
+
+           El tope de 810 px y el de 380 px para la foto se pensaron mirando
+           un teléfono VERTICAL, donde el ancho útil son 412 px. Girado, el
+           mismo teléfono da un viewport de 915x412 y un iPad de 2220x1080:
+           hay de dos a cinco veces más ancho del que aquel tope gastaba.
+           Con 810 px de tarjeta, una foto 16:9 seguía recortándose sin
+           necesidad. El dueño lo dijo derecho: «si uso orientación
+           horizontal sí hay más espacio, por ende, debería verse la imagen
+           completa».
+
+           LA CUENTA, con la foto a 340 px de alto (el min-height de la
+           ventana en dos columnas):
+             · 16:9 pide 340 x 16/9 = 604,4 px de columna;
+             · 4:3  pide 340 x  4/3 = 453,3 px de columna.
+
+           Con la tarjeta en `min(1100px, 92vw)`, y 2 px de borde:
+             2220x1080 → 1100 px de tarjeta, 1098 por dentro.
+               Datos en 428 px (la guarda) ⇒ la foto recibe 670 px.
+               670 ≥ 604,4 ⇒ la 16:9 ENTRA COMPLETA, y sobran 65,6 px.
+               Aun así los datos quedan en 493,6 px, por encima de la guarda.
+             1080x600 → 993,6 px de tarjeta, 991,6 por dentro.
+               Foto hasta 563,6 px: la 16:9 se recorta un 6,7% del ancho
+               (antes se recortaba un 37%); la 4:3 entra completa.
+             915x412 → 841,8 px de tarjeta, 839,8 por dentro.
+               Foto hasta 411,8 px: la 16:9 se recorta un 32% del ancho
+               (antes un 55%). No alcanza para verla entera, y NO se fuerza:
+               bajar los datos de 428 px rompería la rejilla de ingredientes.
+
+           El ancho mínimo de viewport para ver una 16:9 completa es 1124 px
+           ((604,4 + 428 + 2) / 0,92), y 960 px para una 4:3. Todo lo que
+           pase de ahí la ve entera; por debajo, se recorta lo mínimo.
+
+           Ni el umbral 1.05 ni el manejo de `load`/`complete`/`error` se
+           tocan: esto es solo el techo del CSS.
+
+           POR QUÉ EL SELECTOR REPITE `.cust-foto-horizontal`. La cascada no
+           mira «qué media query es más moderna», mira ESPECIFICIDAD, y
+           después el orden. El tope de 810 px del bloque de arriba lleva
+           `.modal-container.cust-ventana.cust-foto-horizontal` (un id y tres
+           clases). Si aquí se escribiera solo `.cust-ventana` (un id y dos
+           clases), 810 px GANARÍA sobre este bloque y el ensanche no se
+           vería nunca justo en el caso que importa: la foto apaisada. Por eso
+           las dos formas van en la misma regla.
+
+           Y va DESPUÉS del bloque de 600 px a propósito: en un viewport de
+           915x412 se cumplen los dos, y el orden es lo que decide.
+
+           `and (min-width:600px)` no es adorno: este ensanche solo tiene
+           sentido cuando la ventana YA tiene dos columnas. Sin esa
+           condición, un teléfono grande acostado de 412 px de ancho —que
+           sigue en una sola columna— heredaría el tope de 92vw y perdería
+           unos píxeles de ancho sin ganar nada. */
+        @media (orientation:landscape) and (min-width:600px) {
+            /* La tarjeta y la foto crecen con el viewport real.
+
+               Ojo con lo que NO dice esta regla: la columna de 280 px fija
+               para las fotos verticales y cuadradas sigue viniendo del
+               bloque de 600 px, sin tocar. Aquí solo sube el techo. */
+            #customizeModal .modal-container.cust-ventana,
+            #customizeModal .modal-container.cust-ventana.cust-foto-horizontal {
+                max-width:min(1100px, 92vw);
+            }
+            /* La guarda de 428 px para los datos vale igual que en vertical:
+               es lo que sostiene las columnas fijas de la rejilla de
+               ingredientes (40 + 40 + 84 + 104 = 268 px de columnas más
+               cuatro huecos de 12,8 px, más el nombre). Con menos, el nombre
+               del ingrediente se queda sin sitio y la fila se desarma.
+
+               Sustituye al tope de 380 px del bloque anterior: allí la foto
+               no pasaba de 380 px porque la tarjeta no pasaba de 810. Aquí
+               el único freno que queda es el que protege los datos. */
+            #customizeModal .modal-container.cust-ventana.cust-foto-horizontal .cust-layout {
+                grid-template-columns:
+                    clamp(280px,
+                          calc(340px * var(--cust-foto-ratio, 1)),
+                          calc(100% - 428px))
                     minmax(0, 1fr);
             }
         }
