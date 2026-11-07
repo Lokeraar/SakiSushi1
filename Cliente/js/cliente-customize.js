@@ -267,12 +267,13 @@
             // Los principales no llevan +/− libres: agrandarlos sin freno
             // no cambia la porción, cambia el plato.
             ingredientes.forEach(function(ing, idx) {
-                var cantTxt = ing.cantidad + (ing.unidad ? ' ' + ing.unidad : '');
+                // La línea de ayuda se repinta al cambiar porciones (ver
+                // _pintarEstadoIng): por eso cada trozo lleva su id.
+                var cantTxt = _cantidadEfectiva(ing, 1) + ' ' + _abrevUnidad(ing.unidad);
                 var precioTxt = '';
                 if (ing.precio_porcion > 0) {
-                    precioTxt = ing.principal
-                        ? ' · incluido en el plato'
-                        : ' · +' + S.utils.formatBs(S.utils.usdToBs(ing.precio_porcion)) + ' por porción';
+                    // En 1 porción no hay incremento que anunciar.
+                    precioTxt = ' · en este plato';
                 }
 
                 var botonAgrandar;
@@ -284,13 +285,14 @@
                           'aria-label="Agrandar ' + ing.nombre + '" ' +
                           'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'extra\')">&times;2</button>';
                 } else {
+                    // SOLO el +. El − de esta columna se retiró: para bajar
+                    // porciones se usa el − de la columna «Quitar», que ya
+                    // hace de decremento y termina en «Sin».
+                    //
+                    // El número de porciones NO se repite aquí: la columna
+                    // «Actualmente» ya lo dice («1», «×2», «×3»). Dos veces
+                    // el mismo dato en la misma fila solo confunde.
                     botonAgrandar =
-                        '<button type="button" class="cust-ing-btn cust-ing-btn--paso" ' +
-                          'id="menos_ing_' + idx + '" data-ing="' + idx + '" data-estado="menos" ' +
-                          'title="Quitar una porción" ' +
-                          'aria-label="Quitar una porción de ' + ing.nombre + '" ' +
-                          'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'menos\')">&minus;</button>' +
-                        '<span class="cust-ing-paso" id="porciones_ing_' + idx + '">1</span>' +
                         '<button type="button" class="cust-ing-btn cust-ing-btn--paso" ' +
                           'id="mas_ing_' + idx + '" data-ing="' + idx + '" data-estado="mas" ' +
                           'title="Agregar una porción" ' +
@@ -315,7 +317,10 @@
                           ? ' <span style="color:var(--accent-text);font-size:.66rem">(define el plato)</span>'
                           : '') +
                       '</div>' +
-                      '<span class="cust-ing-cant">' + cantTxt + precioTxt + '</span>' +
+                      '<span class="cust-ing-cant">' +
+                        '<span id="cantidad_ing_' + idx + '">' + cantTxt + '</span>' +
+                        '<span id="precio_ing_' + idx + '">' + precioTxt + '</span>' +
+                      '</span>' +
                     '</div>' +
                     '<button type="button" class="cust-ing-btn cust-ing-btn--quitar" ' +
                       'id="quitar_ing_' + idx + '" data-ing="' + idx + '" data-estado="quitar" ' +
@@ -329,7 +334,7 @@
 
             // Cierre de la lista. Vive DENTRO de #ingredientesList, que es
             // justo lo que se muestra y se oculta con "Personalizar".
-            html += '<p class="cust-ing-nota">¿Quieres agrandar, quitarle a tu pedido o agregarle algo más?</p>';
+            html += '<p class="cust-ing-nota">¿Quieres agrandar, quitarle a tu pedido o agregarle algún ingrediente?</p>';
         }
 
         html += '</div>' +   // #ingredientesList
@@ -500,9 +505,58 @@
     /** Lo que se lee en la columna «Actualmente». */
     function _textoEstado(n) {
         if (n === 0) return 'Sin';
-        if (n === 1) return 'Normal';
+        // En 1 se muestra «1», no «Normal»: el número es el mismo lenguaje
+        // que el resto de la columna («×2», «×3») y se lee de un vistazo.
+        if (n === 1) return '1';
         return '\u00d7' + n;
     }
+
+    /**
+     * Abrevia la unidad para que la línea de ayuda quepa en el teléfono.
+     *
+     * Los valores reales que existen en la base son tres (el admin solo
+     * ofrece esos): unidades, kilogramos y litros. Los demás están por si
+     * mañana se agregan, y cualquier valor desconocido se devuelve TAL CUAL:
+     * inventar una abreviatura sería peor que mostrar la palabra entera.
+     */
+    var _ABREV_UNIDAD = {
+        'unidades': 'unid',
+        'kilogramos': 'Kg',
+        'gramos': 'g',
+        'litros': 'L',
+        'mililitros': 'ml'
+    };
+
+    function _abrevUnidad(u) {
+        if (!u) return '';
+        var clave = String(u).trim().toLowerCase();
+        return _ABREV_UNIDAD.hasOwnProperty(clave) ? _ABREV_UNIDAD[clave] : String(u).trim();
+    }
+    window._abrevUnidadParaPrueba = _abrevUnidad;
+
+    /**
+     * Lo que el cliente paga DE MÁS por las porciones extra de un ingrediente.
+     *
+     * UNA SOLA FÓRMULA, usada en los dos sitios: el total del plato y la
+     * línea de ayuda de cada ingrediente. Si se escribieran por separado,
+     * un día uno cambiaría y el otro no, y el cliente vería un número en la
+     * fila y otro en el total.
+     */
+    function _recargoDeIngrediente(ing, n) {
+        if (!ing || typeof n !== 'number' || n <= 1) return 0;
+        return (ing.precio_porcion || 0) * (n - 1);
+    }
+    window._recargoDeIngredienteParaPrueba = _recargoDeIngrediente;
+
+    /** Cantidad efectiva: lo que lleva el plato con las porciones pedidas. */
+    function _cantidadEfectiva(ing, n) {
+        if (!ing) return 0;
+        var base = Number(ing.cantidad) || 0;
+        var porciones = (typeof n === 'number') ? n : 1;
+        // 3 decimales y fuera: 0.1 × 3 daba 0.30000000000000004.
+        return Math.round(base * porciones * 1000) / 1000;
+    }
+    window._cantidadEfectivaParaPrueba = _cantidadEfectiva;
 
     /**
      * Pinta una fila según las porciones que tenga guardadas.
@@ -554,13 +608,44 @@
             else numero.classList.remove('cust-ing-paso--mas');
         }
 
-        // En 1 no hay nada que bajar: el botón se apaga para que no parezca
-        // roto. Quitar el ingrediente entero es la columna «Quitar», que
-        // está justo a la izquierda.
-        var botonMenos = document.getElementById('menos_ing_' + idx);
-        if (botonMenos) {
-            if (n <= 1) botonMenos.setAttribute('aria-disabled', 'true');
-            else botonMenos.removeAttribute('aria-disabled');
+        // En «Sin» el − de Quitar no tiene a dónde bajar, así que se apaga:
+        // un botón que se puede pulsar y no hace nada parece roto. Se apaga
+        // visualmente pero NO se deshabilita el elemento, para que el lector
+        // de pantalla siga anunciando qué es.
+        if (botonQuitar) {
+            if (n === 0) botonQuitar.setAttribute('aria-disabled', 'true');
+            else botonQuitar.removeAttribute('aria-disabled');
+            if (n === 0) botonQuitar.classList.add('cust-ing-btn--inerte');
+            else botonQuitar.classList.remove('cust-ing-btn--inerte');
+        }
+
+        // ── La línea de ayuda se repinta con las porciones elegidas ──
+        //
+        // Antes se pintaba una sola vez al abrir la ventana: el cliente subía
+        // a ×3 y seguía leyendo la cantidad de una porción mientras el precio
+        // ya había cambiado. Los dos números tienen que moverse juntos.
+        var ing = _ingredientesActuales[idx];
+        var numEl = document.getElementById('cantidad_ing_' + idx);
+        if (numEl && ing) {
+            numEl.textContent = _cantidadEfectiva(ing, n) + ' ' + _abrevUnidad(ing.unidad);
+        }
+        var precEl = document.getElementById('precio_ing_' + idx);
+        if (precEl && ing) {
+            var recargo = _recargoDeIngrediente(ing, n);
+            if (recargo > 0) {
+                precEl.textContent = ' · +' + S.utils.formatBs(S.utils.usdToBs(recargo)) + ' en este plato';
+            } else if (n === 0) {
+                // En «Sin» no hay importe que anunciar.
+                precEl.textContent = '';
+            } else if (ing.principal) {
+                // Un principal ya viene incluido en el precio del plato: se
+                // dice «en este plato» en vez de mostrar «+Bs. 0».
+                precEl.textContent = ' · en este plato';
+            } else {
+                // Un opcional en 1 porción NO cuesta de más. Mostrar
+                // «+Bs. 0» o «en este plato» sería ruido: se deja vacío.
+                precEl.textContent = '';
+            }
         }
     }
     // La lista de ingredientes del plato abierto, con su porción y precio.
@@ -688,12 +773,16 @@
     /**
      * Cambia las porciones de un ingrediente.
      *
-     *   'quitar' → lo quita (0); tocado otra vez, lo devuelve (1). Vale para
-     *              TODOS, también para los principales: es la regla nueva.
-     *   'extra'  → ×2 y de vuelta a normal. Es el único aumento de los
+     *   'quitar' → EL DECREMENTO. En un opcional baja una porción cada vez
+     *              (×3 → ×2 → 1 → Sin) y en «Sin» ya no hace nada: se vuelve
+     *              con el +. En un principal NO quita nada y avisa por qué.
+     *   'extra'  → ×2 y de vuelta a 1. Es el único aumento de los
      *              principales: una porción más, no una cantidad libre.
-     *   'mas'    → una porción más, sin tope. Solo opcionales.
-     *   'menos'  → una porción menos, con piso en 1. Solo opcionales.
+     *   'mas'    → una porción más, sin tope. Solo opcionales, y es el único
+     *              camino de vuelta desde «Sin» (0 → 1).
+     *
+     * Ya NO existe 'menos': el − de la columna Agrandar se retiró porque
+     * había dos maneras de bajar la misma cantidad y una de ellas sobraba.
      *
      * Una "porción" es la MISMA cantidad que ya lleva el plato: si lleva
      * 25 g de salmón, una porción extra son otros 25 g, y se cobra.
@@ -737,17 +826,24 @@
                 }
                 return;
             }
-            // Tocar de nuevo el mismo botón lo devuelve: es un interruptor.
-            nuevo = (actual === 0) ? 1 : 0;
+            // EL "−" DE QUITAR HACE DE DECREMENTO (opcionales).
+            //
+            //   ×3 --(−)--> ×2 --(−)--> 1 --(−)--> Sin
+            //
+            // Y en «Sin» NO hace nada: para devolverlo a 1 se usa el "+" de
+            // la columna Agrandar. Un sentido para subir, otro para bajar.
+            //
+            // No se avisa nada al pulsar en «Sin»: aquí no hay ninguna regla
+            // de negocio que explicar (a diferencia de un principal, que sí
+            // lleva aviso). El botón se apaga para que no parezca roto.
+            if (actual === 0) return;
+            nuevo = actual - 1;
         } else if (accion === 'extra') {
             nuevo = (actual >= 2) ? 1 : 2;
         } else if (accion === 'mas') {
-            // De quitado no se salta a ×2: vuelve a normal y desde ahí sube.
+            // De «Sin» el + devuelve a 1: no salta a ×2 de golpe. Este es el
+            // único camino de vuelta cuando el ingrediente está en Sin.
             nuevo = (actual === 0) ? 1 : actual + 1;
-        } else if (accion === 'menos') {
-            // Con el ingrediente quitado no hay porciones que bajar: el −
-            // lo devuelve igual que el +, en vez de dejarlo trabado.
-            nuevo = (actual === 0) ? 1 : Math.max(1, actual - 1);
         } else {
             return;
         }
@@ -802,9 +898,10 @@
                 descuento += ing.precio_porcion;
             } else if (n > 1) {
                 // Cada porción de más se cobra: ×3 son dos porciones extra.
-                var deMas = n - 1;
-                recargo += ing.precio_porcion * deMas;
-                extras += deMas;
+                // La fórmula vive en _recargoDeIngrediente, la MISMA que usa
+                // la línea de ayuda: así no pueden dar números distintos.
+                recargo += _recargoDeIngrediente(ing, n);
+                extras += (n - 1);
             }
         });
 

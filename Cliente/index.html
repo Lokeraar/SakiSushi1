@@ -3158,6 +3158,17 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         .cust-ing-btn--quitar { justify-self:center; }
         .cust-ing-btn:hover { background:var(--customize-row-bg); }
 
+        /* Botón sin nada que hacer: en «Sin», el − de Quitar no tiene a dónde
+           bajar (se vuelve con el + de Agrandar). Se apaga para que no parezca
+           roto, pero NO se deshabilita el elemento: así el lector de pantalla
+           sigue anunciando qué es y dónde está. */
+        .cust-ing-btn--inerte {
+            opacity:.35;
+            cursor:default;
+            border-color:transparent;
+        }
+        .cust-ing-btn--inerte:hover { background:transparent; }
+
         /* Botón que NO puede hacer su trabajo (quitar un principal).
            Se agita para que el cliente vea que el toque sí llegó y que lo
            que hay es una regla, no una app colgada. El aviso de texto
@@ -3928,7 +3939,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794013968"></script>
+    <script src="js/cliente-customize.js?v=1794017009"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
