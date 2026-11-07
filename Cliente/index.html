@@ -2923,6 +2923,12 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         #customizeModal .modal-container.cust-ventana .modal-footer {
             flex-shrink:0;
             align-items:center;
+            /* En horizontal el viewport mide ~393 px CSS de alto y el pie se
+               comía un tercio de la ventana, dejando al cuerpo con ~215 px:
+               el último ingrediente no cabía ni scrolleando. Con el relleno
+               reducido el pie baja a ~60 px y el cuerpo recupera el resto. */
+            padding-top:.55rem;
+            padding-bottom:.55rem;
         }
         #customizeModal .modal-container.cust-ventana .modal-footer .btn-primary,
         #customizeModal .modal-container.cust-ventana .modal-footer .btn-secondary {
@@ -3464,7 +3470,24 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            estilo en línea gana sobre cualquier media query, así que el
            `display:none` de arriba dejaría de valer y la franja aparecería
            también en horizontal. */
-        @media (orientation:portrait) and (max-width:599px) {
+        /* ── DÓNDE VA LA FRANJA, Y POR QUÉ ESTA CONDICIÓN ──
+
+           La primera versión usaba `(orientation:portrait) and
+           (max-width:599px)`, y era IMPOSIBLE que se cumpliera en el caso
+           que importa: el hueco bajo la foto aparece justamente cuando la
+           ventana tiene DOS COLUMNAS, y eso exige min-width:600px. Con
+           max-width:599px la franja nunca podía encenderse.
+
+           La condición correcta es «dos columnas» (≥600px, o sea la
+           ventana partida) Y «vertical». En horizontal el viewport tiene
+           ~393 px de alto, la foto llena ese alto y NO sobra hueco: ahí la
+           franja estorbaría.
+
+           Chrome en modo escritorio fija un viewport ancho (~807 px CSS)
+           aunque el teléfono esté vertical. Por eso las capturas muestran
+           dos columnas en las dos orientaciones y la condición vieja no se
+           cumplía nunca. */
+        @media (min-width:600px) and (orientation:portrait) {
             #customizeModal .modal-container.cust-ventana .cust-franja-nota.activa {
                 display:block;
             }
@@ -3493,7 +3516,10 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            fila. Vale para las dos disposiciones, porque este es el mismo
            contenedor que en dos columnas lleva el scroll. */
         #customizeModal .modal-container.cust-ventana .cust-cuerpo {
-            padding-bottom:2rem;
+            /* 2.5rem y no 2rem: en pantallas de poco alto (horizontal, ~393 px
+               de viewport) el renglón de ingrediente mide ~49 px y con 32 px
+               justos quedaba pegado al borde del scroll y al pie. */
+            padding-bottom:2.5rem;
         }
 
         /* Ya no se usa un cuadro aparte para el precio: vive arriba, junto
@@ -3568,16 +3594,18 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                    fondo de la ventana en vez de quedarse sobre la foto. */
                 align-self:start;
             }
-            /* LA FOTO CONSERVA SU TAMAÑO, NO ACOMPAÑA AL CONTENIDO.
+            /* LA FOTO TIENE ALTO PROPIO, PERO NUNCA MÁS QUE LA VENTANA.
                Antes `height:100%` la hacía crecer con la fila: si la lista
-               de ingredientes medía 968 px, la foto también, y se estiraba
-               como un chicle. El dueño pide que mantenga las dimensiones que
-               ya se ven con el platillo completo.
-               Con `align-self:start` la imagen se queda arriba con su alto
-               propio y la fila del grid puede ser más alta sin estirarla.
-               El alto es el que ya tenía: 340 px, el de siempre. */
+               medía 968 px, la foto también. Se fijó en 340 px y apareció
+               otro problema: en un móvil en horizontal el viewport CSS mide
+               ~393 px de alto y, descontada la barra del navegador, quedan
+               ~300. Una foto de 340 px NO CABE y la ventana se recorta.
+
+               Por eso el alto es el que quepa: 340 px cuando hay sitio y,
+               si no lo hay, el alto disponible de la ventana menos el pie y
+               la franja. `clamp` hace las dos cosas en una línea. */
             .cust-foto {
-                height:340px;
+                height:clamp(180px, calc(100dvh - 220px), 340px);
                 align-self:start;
             }
             /* En pantalla ancha sobra sitio: las columnas de controles
