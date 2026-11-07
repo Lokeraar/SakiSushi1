@@ -3392,6 +3392,46 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                 box-shadow:0 2px 10px rgba(0,0,0,.18);
             }
 
+            /* ── FOTO APAIZADA: la tarjeta y su columna se ensanchan ──
+
+               Con la columna fija de 280 px, una foto horizontal perdía
+               los lados: se veía un trozo del centro del plato. El JS mide
+               la foto real y, solo si es apaisada, marca la tarjeta con
+               `cust-foto-horizontal` y deja su proporción en
+               `--cust-foto-ratio`.
+
+               LA CUENTA DEL ANCHO. Aquí la foto mide 340 px de alto, así
+               que para verla entera su columna necesita 340 × proporción.
+               Pero la columna de datos NO puede bajar de 428 px:
+                 · rejilla de ingredientes 268 px de columnas fijas
+                   (40 + 40 + 84 + 104) + 12,8 px de cuatro huecos = 280,8 px;
+                 · más 113 px de nombre de ingrediente (dos líneas del
+                   rótulo «Nombre del ingrediente», un nombre como «Salmón
+                   fresco» en una línea);
+                 · más 33,6 px de relleno de .cust-cuerpo (1,05rem por lado).
+               Con 380 px de foto, la tarjeta necesita 807,4 px: por eso el
+               tope sube de 720 a 810, y SOLO cuando la foto es horizontal.
+               Con la tarjeta en 720 y la foto en 380 el nombre del
+               ingrediente se quedaría en 25 px: no entra.
+
+               `min(380px, 100% - 428px)` es la guarda para ventanas
+               estrechas: la foto crece solo hasta donde la columna de
+               datos todavía conserva sus 428 px. Y el suelo de 280 px de
+               `clamp` deja por debajo de eso todo EXACTAMENTE como hoy. */
+            #customizeModal .modal-container.cust-ventana.cust-foto-horizontal {
+                max-width:810px;
+            }
+            #customizeModal .modal-container.cust-ventana.cust-foto-horizontal .cust-layout {
+                /* `object-fit` sigue siendo `cover` y no se toca: `contain`
+                   dejaría barras vacías, que es justo lo que el dueño no
+                   quiere. Con el ancho adaptado, una foto horizontal se
+                   recorta menos que antes; nunca aparecen barras. */
+                grid-template-columns:
+                    clamp(280px,
+                          calc(340px * var(--cust-foto-ratio, 1)),
+                          min(380px, calc(100% - 428px)))
+                    minmax(0, 1fr);
+            }
         }
 
         @media (prefers-reduced-motion:reduce) {
@@ -4054,7 +4094,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794020644"></script>
+    <script src="js/cliente-customize.js?v=1794051084"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>

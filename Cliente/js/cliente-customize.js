@@ -27,6 +27,79 @@
         return v === true;
     }
 
+    /* ── LA FOTO APAIZADA ENSANCHA SU PROPIA COLUMNA ──
+     *
+     * Una fila de fotos de plato mezcla formatos: unas vienen de una cámara
+     * apaisada (16:9) y otras de un teléfono vertical (3:4). En pantalla
+     * ancha la columna de la foto medía 280 px fijos, así que una foto
+     * apaisada se recortaba por los lados y solo se veía el centro del plato.
+     *
+     * Aquí solo se MIDE. La cuenta del ancho vive en el CSS, que es donde
+     * se decide el tamaño: el JS le pasa la proporción real de la foto en
+     * `--cust-foto-ratio` y el CSS decide cuánto ensanchar, con su tope.
+     * Separarlo así permite que el modo teléfono no cambie: allí la foto
+     * ocupa todo el ancho y la proporción no se usa.
+     *
+     * Umbral 1.05 y no 1.00: un cuadrado exacto (1.00) o una foto casi
+     * cuadrada (1.02) al ensancharse ganarían dos píxeles y solo movían la
+     * ventana sin mostrar nada más. Por debajo de 1.05 se queda el diseño
+     * de siempre.
+     */
+    var UMBRAL_FOTO_HORIZONTAL = 1.05;
+
+    /** Devuelve la ventana a su diseño de siempre: sin ensanche ni proporción.
+     *
+     * Se llama al abrir (para no arrastrar la foto del plato anterior) y
+     * cuando la foto falla o resulta vertical.
+     *
+     * `contenedor.style` se comprueba antes de tocarlo porque esta función
+     * también corre en pruebas con un elemento de mentira. En un navegador
+     * siempre existe, así que la comprobación no cuesta nada y evita que
+     * una ventana sin `<style>` rompa la apertura del platillo entera. */
+    function _limpiarAspectoFoto(contenedor) {
+        if (!contenedor) return;
+        contenedor.classList.remove('cust-foto-horizontal');
+        if (contenedor.style) contenedor.style.removeProperty('--cust-foto-ratio');
+    }
+
+    /** Mide la foto ya pintada y, si es apaisada, ensancha su columna.
+     *
+     * Hay dos caminos y hacen falta los dos:
+     *   · `load`  → la foto todavía venía en camino;
+     *   · `complete` → la foto ya estaba en caché y el `load` ocurrió ANTES
+     *     de enganchar el oyente. Es el caso normal, porque la ventana usa
+     *     la MISMA url optimizada que la tarjeta que el cliente acaba de
+     *     tocar. Sin esta comprobación el arreglo no se vería casi nunca.
+     */
+    function _medirAspectoFoto(contenedor) {
+        var img = document.getElementById('customizeFoto');
+        if (!img || !contenedor) return;
+
+        function aplicar() {
+            var ancho = img.naturalWidth || 0;
+            var alto = img.naturalHeight || 0;
+            // Sin medidas no hay proporción: se queda el diseño de siempre.
+            if (!ancho || !alto) { _limpiarAspectoFoto(contenedor); return; }
+
+            var proporcion = ancho / alto;
+            if (!(proporcion > UMBRAL_FOTO_HORIZONTAL)) {
+                _limpiarAspectoFoto(contenedor);
+                return;
+            }
+            contenedor.classList.add('cust-foto-horizontal');
+            if (contenedor.style) {
+                contenedor.style.setProperty('--cust-foto-ratio', proporcion.toFixed(4));
+            }
+        }
+
+        img.addEventListener('load', aplicar);
+        // La foto rota no se marca: sin medidas reales no hay ensanche que
+        // hacer, y el diseño de siempre ya se ve bien.
+        img.addEventListener('error', function () { _limpiarAspectoFoto(contenedor); });
+
+        if (img.complete) aplicar();
+    }
+
     function abrirPersonalizacion(platilloId) {
         var item = (S.state.menuItems || []).find(function(i) { return i.id == platilloId; });
         if (!item) return;
@@ -365,6 +438,14 @@
         // foto con la X encima. El historial la quita al abrirse.
         var contenedor = modal.querySelector('.modal-container');
         if (contenedor) contenedor.classList.add('cust-ventana');
+
+        // LA PROPORCIÓN SE MIDE EN CADA APERTURA, DESDE CERO.
+        //
+        // Si el cliente abre un plato apaisado y después uno vertical, el
+        // ensanche del primero no puede quedarse pegado al segundo: la
+        // clase y la variable se borran antes de medir la foto nueva.
+        _limpiarAspectoFoto(contenedor);
+        _medirAspectoFoto(contenedor);
 
         modal.classList.add('active');
 
