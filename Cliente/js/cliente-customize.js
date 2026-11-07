@@ -226,13 +226,26 @@
                 'onclick="window.selectPersonalizado()">' +
                 '<div style="display:flex;align-items:center;gap:.7rem">' +
                   '<div class="completo-circle" id="personalizadoCircle"></div>' +
-                  '<div><strong style="color:var(--customize-text)">Personalizar ingredientes</strong><br>' +
+                  '<div><strong style="color:var(--customize-text)">Personalizar platillo</strong><br>' +
                     '<small style="color:var(--customize-subtext)">Quitar alguno, o pedir extra</small></div>' +
                 '</div>' +
               '</div>' +
             '</div>' +
 
-            '<div id="ingredientesList" style="display:none">';
+            '<div id="ingredientesList" style="display:none">' +
+
+            // La introducción va PRIMERO dentro de la lista, no al final.
+            //
+            // Dos motivos:
+            //   1. Queda justo debajo de la opción «Personalizar platillo»,
+            //      que es donde el cliente acaba de tocar.
+            //   2. Al ir DENTRO de #ingredientesList, aparece y desaparece
+            //      con la opción: si estuviera fuera, se leería también en
+            //      modo «Completo», donde no hay nada que personalizar.
+            //
+            // Al final de la lista llegaba tarde: cuando el cliente la leía,
+            // ya había tomado sus decisiones.
+            '<p class="cust-ing-nota">¿Quieres agrandar, quitarle a tu pedido o agregarle algún ingrediente o algo más? Tienes:</p>';
 
         if (ingredientes.length > 0) {
             // ── CABECERA DE COLUMNAS ──
@@ -270,11 +283,11 @@
                 // La línea de ayuda se repinta al cambiar porciones (ver
                 // _pintarEstadoIng): por eso cada trozo lleva su id.
                 var cantTxt = _cantidadEfectiva(ing, 1) + ' ' + _abrevUnidad(ing.unidad);
+                // Al abrir el platillo TODO está en su estado original: no
+                // hay incremento que anunciar, así que la línea va limpia.
+                // El «en este plato» lo pinta _pintarEstadoIng en cuanto el
+                // cliente agranda algo.
                 var precioTxt = '';
-                if (ing.precio_porcion > 0) {
-                    // En 1 porción no hay incremento que anunciar.
-                    precioTxt = ' · en este plato';
-                }
 
                 var botonAgrandar;
                 if (ing.principal) {
@@ -332,9 +345,6 @@
                   '</div>';
             });
 
-            // Cierre de la lista. Vive DENTRO de #ingredientesList, que es
-            // justo lo que se muestra y se oculta con "Personalizar".
-            html += '<p class="cust-ing-nota">¿Quieres agrandar, quitarle a tu pedido o agregarle algún ingrediente?</p>';
         }
 
         html += '</div>' +   // #ingredientesList
@@ -632,18 +642,13 @@
         var precEl = document.getElementById('precio_ing_' + idx);
         if (precEl && ing) {
             var recargo = _recargoDeIngrediente(ing, n);
+            // «en este plato» solo aparece cuando hay algo que contar:
+            // cuando el cliente AGRANDA. En el platillo original y sin tocar
+            // nada, la línea se queda limpia: repetir «en este plato» en cada
+            // ingrediente llenaba la lista de texto que no aporta nada.
             if (recargo > 0) {
                 precEl.textContent = ' · +' + S.utils.formatBs(S.utils.usdToBs(recargo)) + ' en este plato';
-            } else if (n === 0) {
-                // En «Sin» no hay importe que anunciar.
-                precEl.textContent = '';
-            } else if (ing.principal) {
-                // Un principal ya viene incluido en el precio del plato: se
-                // dice «en este plato» en vez de mostrar «+Bs. 0».
-                precEl.textContent = ' · en este plato';
             } else {
-                // Un opcional en 1 porción NO cuesta de más. Mostrar
-                // «+Bs. 0» o «en este plato» sería ruido: se deja vacío.
                 precEl.textContent = '';
             }
         }
