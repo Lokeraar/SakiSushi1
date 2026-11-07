@@ -3227,8 +3227,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             padding:.55rem 0;
             border-bottom:1px solid var(--customize-border);
         }
-        /* La nota final es un <p>: el último <div> de la lista sigue siendo
-           la última fila real, y es la que pierde el borde. */
+        /* La última fila pierde el borde: abajo ya no hay nada que separar.
+           Ya no hace falta el truco de «la nota es un <p>»: la nota se mudó
+           a su propia franja, fuera de la lista (ver .cust-franja-nota). */
         .cust-ing:last-of-type { border-bottom:none; }
 
         /* La celda de la miniatura se pinta siempre, con o sin foto: es una
@@ -3399,13 +3400,100 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         #customizeModal .cust-ing-estado--sin { color:var(--cust-tinta-quitar); }
         #customizeModal .cust-ing-estado--mas { color:var(--cust-tinta-agrandar); }
 
-        /* Texto de cierre de la lista. Va dentro de #ingredientesList, así
-           que aparece y desaparece junto con «Personalizar ingredientes». */
-        .cust-ing-nota {
-            margin:.75rem 0 0;
-            font-size:.82rem;
-            line-height:1.4;
+        /* ── LA FRANJA DE LA NOTA ──
+
+           El dueño miró la ventana y reportó dos cosas de un vistazo: el
+           último ingrediente quedaba debajo del pie, y en vertical sobraba
+           un hueco vacío bajo la foto.
+
+           La nota que encabezaba la lista («¿Quieres agrandar…? Tienes:»)
+           se muda aquí: una fila propia de ANCHO COMPLETO, entre el cuerpo
+           que se desplaza y el pie con los botones. Es hermana de los dos,
+           no hija de ninguno.
+
+           Por qué la nota va aquí y no dentro de la lista:
+             · el cuerpo es el que hace scroll; lo que vive dentro de él se
+               va con el scroll. En la franja, el cliente la tiene a la
+               vista justo mientras elige ingredientes;
+             · ocupa el ancho entero de la ventana, no solo la columna de
+               datos, así que la tipografía puede crecer sin apretar la
+               rejilla de ingredientes.
+
+           La CABECERA DE COLUMNAS (Nombre · Quitar · Actualmente ·
+           Agrandar) NO se sube con ella. Cabecera y filas comparten
+           `--cust-ing-cols` para que cada rótulo caiga encima de su botón;
+           separarlas las desalinea y el rótulo deja de señalar lo que dice.
+           Se queda dentro de la lista, pegada a sus filas.
+
+           Nace OCULTA. La enciende el JS con la clase `activa`, y solo en
+           teléfono vertical y en modo «Personalizar platillo». */
+        .cust-franja-nota {
+            display:none;
+            flex-shrink:0;
+            width:100%;
+            box-sizing:border-box;
+            padding:.85rem 1.15rem;
+            /* El mismo borde y el mismo fondo que el pie: la franja y los
+               botones se leen como un solo bloque de cierre. */
+            border-top:1px solid rgba(128,128,128,.2);
+            background:rgba(0,0,0,.2);
+        }
+
+        /* Tipografía: la nota ya no compite con la rejilla de ingredientes,
+           así que puede crecer. Antes medía .82rem (13,1 px) dentro de la
+           lista; aquí mide 1.05rem (16,8 px), un 28% más. */
+        .cust-franja-texto {
+            margin:0;
+            font-size:1.05rem;
+            line-height:1.45;
             color:var(--customize-subtext);
+        }
+
+        /* SOLO EN TELÉFONO VERTICAL.
+
+           `max-width:599px` ata la franja a la misma disposición de una
+           sola columna que usa la rejilla; `orientation:portrait` la apaga
+           además en un teléfono pequeño girado (568x320) que, por ancho,
+           todavía cabría en la condición. Girado, el alto es lo escaso: una
+           franja de 100 px se lo comería.
+
+           Un viewport de 915x412 no la muestra por las dos vías: 915 > 599
+           y no es vertical.
+
+           Se enciende con CLASE, nunca con `style.display` en línea: un
+           estilo en línea gana sobre cualquier media query, así que el
+           `display:none` de arriba dejaría de valer y la franja aparecería
+           también en horizontal. */
+        @media (orientation:portrait) and (max-width:599px) {
+            #customizeModal .modal-container.cust-ventana .cust-franja-nota.activa {
+                display:block;
+            }
+        }
+
+        /* Tema claro: el negro al 20% del pie sobre papel deja el fondo en
+           #C5C0BA, y ahí la tinta atenuada del tema (#7A6A60) baja a
+           2,86:1 — no se lee. Sobre papel se usa un tinte cálido del mismo
+           marrón de los bordes, y la nota toma la tinta SECUNDARIA. */
+        body.tema-claro #customizeModal .cust-franja-nota {
+            background:rgba(65,45,30,.06);
+        }
+        body.tema-claro #customizeModal .cust-franja-texto {
+            color:var(--text-secondary);
+        }
+
+        /* EL PIE NO PUEDE TAPAR EL ÚLTIMO INGREDIENTE.
+
+           El pie es hermano del cuerpo (fila propia, `flex-shrink:0`), así
+           que no lo pisa: no es fijo ni flotante. Lo que sí pasaba es que
+           la lista terminaba JUSTO en el borde del scroll, a 16,8 px del
+           pie —el relleno de .cust-cuerpo— y visualmente se leía como
+           cortada por el borde del pie.
+
+           Aquí se reserva el doble: 2rem (32 px) de aire bajo la última
+           fila. Vale para las dos disposiciones, porque este es el mismo
+           contenedor que en dos columnas lleva el scroll. */
+        #customizeModal .modal-container.cust-ventana .cust-cuerpo {
+            padding-bottom:2rem;
         }
 
         /* Ya no se usa un cuadro aparte para el precio: vive arriba, junto
@@ -3969,6 +4057,27 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                     <button class="modal-close" id="closeCustomizeModal">&times;</button>
                 </div>
                 <div class="modal-body" id="customizeModalBody"></div>
+
+                <!-- FRANJA DE LA NOTA: hermana del cuerpo y del pie, nunca
+                     dentro de ninguno de los dos.
+
+                     Antes la nota «¿Quieres agrandar…» encabezaba la lista
+                     de ingredientes, dentro del área que se desplaza: para
+                     leerla había que bajar el scroll y quedaba pegada al
+                     pie. Aquí ocupa su propia fila, de ancho completo, por
+                     encima de «Cancelar» y «Añadir».
+
+                     El texto vive en el HTML y no en el JS a propósito: el
+                     JS solo le pone o le quita la clase `activa`. Nace
+                     oculta y solo aparece en vertical y en modo
+                     «Personalizar platillo» (ver .cust-franja-nota en el
+                     <style>). Los textos de la ventana se generan por JS,
+                     pero este no: no depende de ningún platillo y así el
+                     JS puede seguir funcionando si esta franja no existe. -->
+                <div class="cust-franja-nota" id="custFranjaNota">
+                    <p class="cust-franja-texto">¿Quieres agrandar, quitarle a tu pedido o agregarle algún ingrediente o algo más? Tienes:</p>
+                </div>
+
                 <div class="modal-footer">
                     <button class="btn-secondary" id="cancelCustomize">Cancelar</button>
                     <button class="btn-primary" id="addToCartFromModal"><i class="fas fa-cart-plus"></i> Añadir</button>
@@ -4298,7 +4407,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794055924"></script>
+    <script src="js/cliente-customize.js?v=1794063541"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>

@@ -305,20 +305,24 @@
               '</div>' +
             '</div>' +
 
-            '<div id="ingredientesList" style="display:none">' +
+            '<div id="ingredientesList" style="display:none">';
 
-            // La introducción va PRIMERO dentro de la lista, no al final.
-            //
-            // Dos motivos:
-            //   1. Queda justo debajo de la opción «Personalizar platillo»,
-            //      que es donde el cliente acaba de tocar.
-            //   2. Al ir DENTRO de #ingredientesList, aparece y desaparece
-            //      con la opción: si estuviera fuera, se leería también en
-            //      modo «Completo», donde no hay nada que personalizar.
-            //
-            // Al final de la lista llegaba tarde: cuando el cliente la leía,
-            // ya había tomado sus decisiones.
-            '<p class="cust-ing-nota">¿Quieres agrandar, quitarle a tu pedido o agregarle algún ingrediente o algo más? Tienes:</p>';
+        // LA NOTA YA NO VA AQUÍ.
+        //
+        // Antes abría la lista: «¿Quieres agrandar…? Tienes:» se leía justo
+        // debajo de la opción y se iba con el scroll del cuerpo, así que
+        // para verla había que bajar, y aun así terminaba pegada al pie.
+        //
+        // Ahora vive en su propia franja, hermana del cuerpo y del pie (ver
+        // #custFranjaNota en index.html). Esta función NO reescribe su
+        // texto: solo le pone o le quita la clase `activa`.
+        //
+        // La CABECERA DE COLUMNAS se queda aquí, dentro de la lista, y no
+        // sube a la franja: cabecera y filas comparten `--cust-ing-cols`
+        // para que cada rótulo caiga encima de su botón. Separadas, el
+        // rótulo dejaría de señalar la columna que nombra, y al hacer
+        // scroll la cabecera se quedaría clavada señalando filas que ya
+        // pasaron.
 
         if (ingredientes.length > 0) {
             // ── CABECERA DE COLUMNAS ──
@@ -425,6 +429,15 @@
                 '</div>';    // .cust-layout
 
         body.innerHTML = html;
+
+        // La ventana arranca en «Completo», así que la franja también: el
+        // plato recién abierto no tiene nada que personalizar todavía.
+        //
+        // Se apaga SIEMPRE al abrir, y no según `_isCompleto`, porque ese
+        // valor es el del plato anterior: si el cliente personalizó uno y
+        // cerró con la X, quedaba en false y el siguiente plato nacía con
+        // la franja encendida y la lista apagada.
+        _pintarFranjaNota(false);
 
         // Cada fila arranca pintada desde el modelo, no solo desde el HTML.
         //
@@ -809,12 +822,37 @@
         document.getElementById('personalizadoOption').classList.remove('activo');
         document.getElementById('personalizadoCircle').classList.remove('activo');
         document.getElementById('ingredientesList').style.display = 'none';
+        // La franja acompaña a la lista: sin «Personalizar platillo» no hay
+        // nada que anunciar, y en «Completo» solo ocuparía alto.
+        _pintarFranjaNota(false);
 
         _quitados = [];
         calcularPrecioPersonalizado();
     }
     window.selectCompleto = selectCompleto;
     S.modules.customize.selectCompleto = selectCompleto;
+
+    /** Enciende o apaga la franja de la nota que vive sobre el pie.
+     *
+     * La franja es hermana de `.modal-body` y de `.modal-footer`, no hija de
+     * ellos: su texto está en el HTML y aquí solo se controla si se ve.
+     *
+     * SE USA UNA CLASE, NO `style.display`. La franja solo debe verse en
+     * teléfono vertical, y esa condición vive en una media query del CSS.
+     * Un `display` escrito en línea desde aquí gana sobre cualquier media
+     * query, así que en horizontal aparecería igual. La clase deja decidir
+     * al CSS, que es el que sabe el ancho y la orientación.
+     *
+     * Si la franja no existe (HTML viejo en caché) no pasa nada: la ventana
+     * sigue funcionando sin la nota. Los dos `if` cubren el caso de un DOM
+     * de prueba que no la monte.
+     */
+    function _pintarFranjaNota(visible) {
+        var franja = document.getElementById('custFranjaNota');
+        if (!franja || !franja.classList) return;
+        if (visible) franja.classList.add('activa');
+        else franja.classList.remove('activa');
+    }
 
     function selectPersonalizado() {
         _isCompleto = false;
@@ -823,6 +861,7 @@
         document.getElementById('completoOption').classList.remove('activo');
         document.getElementById('completoCircle').classList.remove('activo');
         document.getElementById('ingredientesList').style.display = 'block';
+        _pintarFranjaNota(true);
     }
     window.selectPersonalizado = selectPersonalizado;
     S.modules.customize.selectPersonalizado = selectPersonalizado;
