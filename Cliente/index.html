@@ -3439,12 +3439,27 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                Toda la cadena de alturas necesita min-height:0: sin él un
                hijo de flex NO scrollea nunca, porque su altura mínima es
                la del contenido y nunca desborda. */
+            /* ── LA CADENA DE ALTURAS, QUE ES LO QUE HACE POSIBLE EL SCROLL ──
+               `height:100%` NO servía: el padre (.modal-body) no tiene una
+               altura declarada, solo `flex:1`, así que el porcentaje no
+               tenía contra qué resolverse y .cust-layout crecía con el
+               CONTENIDO (968 px) en vez de quedarse en los ~878 px
+               disponibles. Con la caja del cuerpo ya enorme, su
+               `overflow-y:auto` no tenía nada que desbordar: el scroll
+               quedaba MUERTO.
+               La forma correcta es hacer del body un contenedor flex en
+               columna y que el layout lo rellene con `flex:1`. Así el alto
+               se reparte de verdad y el cuerpo sí desborda. */
             #customizeModal .modal-container.cust-ventana .modal-body {
                 overflow:hidden;
+                display:flex;
             }
             .cust-layout {
                 min-height:0;
-                height:100%;
+                flex:1;
+                /* Sin esto, un hijo de grid tampoco encoge y vuelve a crecer
+                   con el contenido. */
+                height:auto;
             }
             .cust-cuerpo {
                 overflow-y:auto;
@@ -3460,10 +3475,22 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                listener y arrastrar sobre la imagen no haría nada. */
             #customizeModal .modal-container.cust-ventana .cust-foto-wrap {
                 touch-action:pan-y;
+                /* El envoltorio tampoco se estira con la fila: si lo hiciera,
+                   la estrella de favoritos (anclada a su esquina) se iría al
+                   fondo de la ventana en vez de quedarse sobre la foto. */
+                align-self:start;
             }
+            /* LA FOTO CONSERVA SU TAMAÑO, NO ACOMPAÑA AL CONTENIDO.
+               Antes `height:100%` la hacía crecer con la fila: si la lista
+               de ingredientes medía 968 px, la foto también, y se estiraba
+               como un chicle. El dueño pide que mantenga las dimensiones que
+               ya se ven con el platillo completo.
+               Con `align-self:start` la imagen se queda arriba con su alto
+               propio y la fila del grid puede ser más alta sin estirarla.
+               El alto es el que ya tenía: 340 px, el de siempre. */
             .cust-foto {
-                height:100%;
-                min-height:340px;
+                height:340px;
+                align-self:start;
             }
             /* En pantalla ancha sobra sitio: las columnas de controles
                crecen y los rótulos de la cabecera también. Los anchos
