@@ -808,6 +808,22 @@
             //
             // Se permite QUITARLO (volver de "Sin" a normal) si ya estaba
             // quitado, para que el botón nunca quede trabado.
+            // ── PERO SI ESTÁ AGRANDADO, EL "−" BAJA ──
+            //
+            // Un principal en ×2 que pulsa "−" NO está intentando quitar el
+            // ingrediente: está deshaciendo el agrandamiento. Debe volver a
+            // 1, no recibir el aviso de que no se puede quitar.
+            //
+            // Antes el aviso saltaba con solo mirar `actual !== 0`, así que
+            // en ×2 el botón decía "no se puede quitar" en vez de bajar. El
+            // cliente quedaba atrapado en ×2 sin manera de deshacerlo.
+            if (ing.principal && actual >= 2) {
+                _estadosIng[idx] = actual - 1;
+                _pintarEstadoIng(idx);
+                calcularPrecioPersonalizado();
+                return;
+            }
+
             if (ing.principal && actual !== 0) {
                 if (window.mostrarToast) {
                     window.mostrarToast(
@@ -860,24 +876,77 @@
         // boton y abandona. Se le explica antes, con los numeros a la vista.
         if (nuevo >= 2 && actual < 2 && _seriaExtraDeTodo(idx, nuevo)) {
             var precioPlato = Math.round(S.utils.usdToBs(currentCustomizeItem.precio || 0));
-            var precioDoble = precioPlato * 2;
-            var seguir = confirm(
-                'Esto convierte el pedido en DOS platos:\n\n' +
-                'Pediste extra de todos los ingredientes principales de ' +
-                (currentCustomizeItem.nombre || 'este plato') + ', y eso equivale ' +
-                'a un plato más, no a un plato agrandado.\n\n' +
-                'Precio: ' + S.utils.formatBs(precioPlato * _currentQty) +
-                '  ->  ' + S.utils.formatBs(precioDoble * _currentQty) + '\n\n' +
-                'La cocina va a preparar ' + (_currentQty * 2) + ' platos.\n' +
-                '¿Seguir?'
-            );
-            if (!seguir) return;
+            _confirmarDosPlatos(idx, nuevo, precioPlato);
+            return;
         }
 
         _estadosIng[idx] = nuevo;
         _pintarEstadoIng(idx);
         calcularPrecioPersonalizado();
     };
+
+    /**
+     * Aviso de "esto son DOS platos", con la paleta del logo.
+     *
+     * Antes era `confirm()`: el diálogo gris del NAVEGADOR, que dice
+     * "lokeraar.github.io dice" y rompe por completo la estética de la
+     * carta. Además bloquea la página entera mientras está abierto.
+     *
+     * Ahora es una ventana del propio proyecto, la misma que usa la carta
+     * para "¿continuar con tu pedido anterior?", con el carmesí de marca y
+     * el dorado del logo.
+     */
+    function _confirmarDosPlatos(idx, nuevo, precioPlato) {
+        var ID = 'avisoDosPlatos';
+        if (document.getElementById(ID)) return;   // ya está abierto
+
+        var precioDoble = precioPlato * 2;
+        var overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.id = ID;
+        overlay.innerHTML =
+            '<div class="confirm-dialog">' +
+              '<i class="fas fa-utensils"></i>' +
+              '<h3>Esto son dos platos</h3>' +
+              '<p>Pediste extra de todos los ingredientes principales de ' +
+                (currentCustomizeItem.nombre || 'este plato') + '. Eso equivale a ' +
+                'un plato más, no a un plato agrandado.</p>' +
+              '<p class="dlg-precio">' +
+                '<span class="dlg-precio-antes">' + S.utils.formatBs(precioPlato * _currentQty) + '</span>' +
+                ' <i class="fas fa-arrow-right"></i> ' +
+                '<span class="dlg-precio-ahora">' + S.utils.formatBs(precioDoble * _currentQty) + '</span>' +
+              '</p>' +
+              '<p class="dlg-nota">La cocina va a preparar ' + (_currentQty * 2) + ' platos.</p>' +
+              '<div class="confirm-dialog-buttons">' +
+                '<button class="btn-cancel" id="' + ID + 'No">Cancelar</button>' +
+                '<button class="btn-confirm" id="' + ID + 'Si">Sí, dos platos</button>' +
+              '</div>' +
+            '</div>';
+
+        document.body.appendChild(overlay);
+
+        function cerrar() {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            document.removeEventListener('keydown', alTeclear);
+        }
+        function alTeclear(e) { if (e.key === 'Escape') cerrar(); }
+        document.addEventListener('keydown', alTeclear);
+
+        document.getElementById(ID + 'No').addEventListener('click', cerrar);
+
+        document.getElementById(ID + 'Si').addEventListener('click', function () {
+            cerrar();
+            _estadosIng[idx] = nuevo;
+            _pintarEstadoIng(idx);
+            calcularPrecioPersonalizado();
+        });
+
+        // Tocar fuera cierra, igual que el resto de ventanas de la carta.
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) cerrar();
+        });
+    }
+    window._confirmarDosPlatosParaPrueba = _confirmarDosPlatos;
 
     function calcularPrecioPersonalizado() {
         if (!currentCustomizeItem) return;

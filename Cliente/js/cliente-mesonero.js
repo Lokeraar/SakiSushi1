@@ -121,9 +121,39 @@
         // Si ya hay sesión, se ofrece cerrarla en vez de pedir el PIN otra vez.
         var actual = window.obtenerMesoneroActual();
         if (actual) {
-            if (confirm('Ya estás como ' + actual.nombre + '. ¿Cerrar la sesión de mesonero?')) {
-                window.cerrarSesionMesonero();
-            }
+            // Ventana del proyecto, no el confirm() del navegador.
+            //
+            // `confirm()` muestra un cuadro gris que dice
+            // "lokeraar.github.io dice" y rompe la estética de la carta.
+            // Aquí además lo ve el MESONERO, delante del cliente.
+            var ovCierre = document.createElement('div');
+            ovCierre.className = 'modal-overlay active';
+            ovCierre.id = 'avisoCerrarMesonero';
+            ovCierre.innerHTML =
+                '<div class="confirm-dialog">' +
+                  '<i class="fas fa-user-check"></i>' +
+                  '<h3>Ya estás como ' + actual.nombre + '</h3>' +
+                  '<p>¿Quieres cerrar la sesión de mesonero?</p>' +
+                  '<div class="confirm-dialog-buttons">' +
+                    '<button class="btn-cancel" id="avisoCerrarMesoneroNo">Seguir aquí</button>' +
+                    '<button class="btn-confirm" id="avisoCerrarMesoneroSi">Cerrar sesión</button>' +
+                  '</div>' +
+                '</div>';
+            document.body.appendChild(ovCierre);
+
+            var quitarAviso = function () {
+                if (ovCierre.parentNode) ovCierre.parentNode.removeChild(ovCierre);
+            };
+            document.getElementById('avisoCerrarMesoneroNo')
+                .addEventListener('click', quitarAviso);
+            document.getElementById('avisoCerrarMesoneroSi')
+                .addEventListener('click', function () {
+                    quitarAviso();
+                    window.cerrarSesionMesonero();
+                });
+            ovCierre.addEventListener('click', function (e) {
+                if (e.target === ovCierre) quitarAviso();
+            });
             return;
         }
 

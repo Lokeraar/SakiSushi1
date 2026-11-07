@@ -2639,6 +2639,52 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             margin-bottom:1rem;
             font-size:1.5rem;
         }
+        /* ── AVISO DE "ESTO SON DOS PLATOS" ──
+           Antes era el confirm() del navegador: un cuadro gris que dice
+           "lokeraar.github.io dice" y rompe la estética de la carta. Ahora
+           usa la paleta del logo: carmesí de marca en el borde superior y
+           el dorado en el icono y en el precio final, que es lo que el
+           cliente tiene que mirar. */
+        #avisoDosPlatos .confirm-dialog {
+            border-top:4px solid var(--primary);
+        }
+        #avisoDosPlatos .confirm-dialog i.fa-utensils {
+            color:var(--accent);
+        }
+        #avisoDosPlatos .dlg-precio {
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:.5rem;
+            flex-wrap:wrap;
+            font-size:1.05rem;
+            font-weight:700;
+            margin:.9rem 0 .5rem;
+            color:var(--accent);
+        }
+        #avisoDosPlatos .dlg-precio-antes {
+            color:var(--text-secondary);
+            font-weight:400;
+            text-decoration:line-through;
+            font-size:.95rem;
+        }
+        #avisoDosPlatos .dlg-precio-ahora { color:var(--accent); }
+        #avisoDosPlatos .dlg-precio .fa-arrow-right {
+            font-size:.8rem;
+            margin:0;
+            color:var(--text-secondary);
+        }
+        #avisoDosPlatos .dlg-nota {
+            font-size:.82rem;
+            color:var(--text-secondary);
+            margin-bottom:.9rem;
+        }
+        /* El botón de confirmar lleva el carmesí de marca. */
+        #avisoDosPlatos .btn-confirm {
+            background:var(--primary);
+            color:#fff;
+            border:none;
+        }
         .confirm-dialog p {
             color:var(--gray-300);
             margin-bottom:2rem;
@@ -3212,10 +3258,22 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             border-color:var(--cust-tinta-quitar);
             background:var(--cust-fondo-quitar);
         }
+        /* El ×2 marcado: tinta y borde de "agrandar", y un fondo muy tenue.
+           El fondo antes era rgba verde al 16%, que sobre el fondo oscuro de
+           la ventana se leía como un óvalo casi negro —parecía una sombra
+           sucia—. Se baja a un valor que tiñe sin ensuciar, y el peso visual
+           lo lleva el BORDE, que es nítido y no deja mancha al deseleccionar. */
         #customizeModal .cust-ing-btn--extra.activo {
             color:var(--cust-tinta-agrandar);
             border-color:var(--cust-tinta-agrandar);
+            border-width:2px;
             background:var(--cust-fondo-agrandar);
+        }
+        /* Al desmarcarlo no debe quedar ningún resto: el botón vuelve a ser
+           un círculo limpio con su borde normal. */
+        #customizeModal .cust-ing-btn--extra:not(.activo) {
+            background:transparent;
+            border-width:1px;
         }
         /* El número de porciones encima de 1 también se marca con su
            tinta, para que el renglón no muestre un ×3 en gris neutro. */
@@ -3344,7 +3402,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             --cust-tinta-quitar: #ff8a80;
             --cust-tinta-agrandar: #86efac;
             --cust-fondo-quitar: rgba(255,138,128,0.16);
-            --cust-fondo-agrandar: rgba(134,239,172,0.16);
+            --cust-fondo-agrandar: rgba(134,239,172,0.08);
         }
         body.tema-claro {
             --customize-text: var(--text-primary);
@@ -3356,7 +3414,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             --cust-tinta-quitar: var(--danger);
             --cust-tinta-agrandar: var(--success);
             --cust-fondo-quitar: rgba(168,30,30,0.10);
-            --cust-fondo-agrandar: rgba(47,107,58,0.10);
+            --cust-fondo-agrandar: rgba(47,107,58,0.07);
         }
         @keyframes btn-zumbido {
             0% {
@@ -3927,7 +3985,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-cierre.js?v=1792890542"></script>
     <script src="js/cliente-offline.js?v=1792857000"></script>
     <script src="js/cliente-accion-unica.js?v=1792802980"></script>
-    <script src="js/cliente-mesonero.js?v=1793986233"></script>
+    <script src="js/cliente-mesonero.js?v=1794018411"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
     <script src="js/cliente-menu.js?v=1794001460"></script>
@@ -3939,7 +3997,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794017009"></script>
+    <script src="js/cliente-customize.js?v=1794018411"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
