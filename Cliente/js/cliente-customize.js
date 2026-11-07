@@ -564,6 +564,68 @@
                 if (window.ampliarImagen) window.ampliarImagen(foto, item.nombre);
             });
         }
+
+        // ── ARRASTRAR SOBRE LA FOTO DESPLAZA LA LISTA ──
+        //
+        // En dos columnas la foto ya no scrollea (está fija a la izquierda)
+        // y el único que se desplaza es .cust-cuerpo. Pero el dedo no sabe
+        // eso: quien arrastra sobre la imagen espera que la lista baje.
+        // Sin este puente, arrastrar ahí no hace NADA y parece que la
+        // ventana se trabó.
+        //
+        // SOLO EN DOS COLUMNAS. En el teléfono la foto va arriba y scrollea
+        // con la ventana entera; ahí no hace falta ningún puente.
+        //
+        // Se engancha al contenedor de la foto (.cust-foto-wrap), no a la
+        // imagen: así también responde al arrastre sobre la estrella de
+        // favoritos, que vive en esa misma esquina.
+        var fotoWrap = modal.querySelector('.cust-foto-wrap');
+        var cuerpoDatos = modal.querySelector('.cust-cuerpo');
+        // Se comprueba que ambos elementos existan Y que sepan escuchar:
+        // si el contenedor de la foto no está, o el DOM no trae la API
+        // completa, se omite el puente sin romper la apertura del platillo.
+        // El resto de la ventana —cantidad, ingredientes, añadir— sigue
+        // funcionando igual.
+        if (fotoWrap && cuerpoDatos &&
+            typeof fotoWrap.addEventListener === 'function' &&
+            cuerpoDatos.style !== undefined) {
+            var reenviarScroll = function (delta) {
+                if (!delta) return;
+                cuerpoDatos.scrollTop += delta;
+            };
+
+            // Ratón y rueda: `deltaY` ya viene en píxeles.
+            fotoWrap.addEventListener('wheel', function (e) {
+                // Solo cuando de verdad hay dos columnas. Si la foto está
+                // arriba (teléfono), el scroll normal de la ventana manda.
+                if (window.innerWidth < 600) return;
+                reenviarScroll(e.deltaY);
+                e.preventDefault();
+            }, { passive: false });
+
+            // Dedo: se calcula el desplazamiento entre el toque anterior y
+            // el actual. El toque (sin arrastre) NO entra aquí, así que el
+            // click que abre el visor ampliado sigue funcionando.
+            var ultimoY = null;
+            fotoWrap.addEventListener('touchstart', function (e) {
+                if (window.innerWidth < 600) return;
+                ultimoY = e.touches.length === 1 ? e.touches[0].clientY : null;
+            }, { passive: true });
+
+            fotoWrap.addEventListener('touchmove', function (e) {
+                if (window.innerWidth < 600 || ultimoY === null || e.touches.length !== 1) return;
+                var y = e.touches[0].clientY;
+                reenviarScroll(ultimoY - y);
+                ultimoY = y;
+                // Sin esto el navegador cancela el gesto y además desplaza
+                // el overlay entero. El `touch-action:pan-y` del CSS es lo
+                // que permite que el gesto llegue hasta aquí.
+                if (e.cancelable) e.preventDefault();
+            }, { passive: false });
+
+            fotoWrap.addEventListener('touchend', function () { ultimoY = null; }, { passive: true });
+            fotoWrap.addEventListener('touchcancel', function () { ultimoY = null; }, { passive: true });
+        }
     }
     window.abrirPersonalizacion = abrirPersonalizacion;
     S.modules.customize.abrirPersonalizacion = abrirPersonalizacion;

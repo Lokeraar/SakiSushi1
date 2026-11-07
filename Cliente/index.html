@@ -3427,6 +3427,40 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                 grid-template-columns:280px 1fr;
                 grid-template-areas:"foto cuerpo";
             }
+
+            /* ── LA FOTO SE QUEDA QUIETA, SCROLLEA SOLO LA LISTA ──
+               Antes scrolleaba .modal-body, que contiene la foto Y los
+               datos: al bajar, la imagen se iba hacia arriba y se veía
+               cortada a media figura.
+               Ahora el body no scrollea y el único que se desplaza es
+               .cust-cuerpo, la columna de los ingredientes. El cliente
+               puede bajar por la lista mientras la foto sigue entera a la
+               izquierda, como una foto clavada en la pared.
+               Toda la cadena de alturas necesita min-height:0: sin él un
+               hijo de flex NO scrollea nunca, porque su altura mínima es
+               la del contenido y nunca desborda. */
+            #customizeModal .modal-container.cust-ventana .modal-body {
+                overflow:hidden;
+            }
+            .cust-layout {
+                min-height:0;
+                height:100%;
+            }
+            .cust-cuerpo {
+                overflow-y:auto;
+                min-height:0;
+                /* El foco de un control no debe arrastrar el scroll del
+                   navegador: aquí solo se desplaza esta columna. */
+                overscroll-behavior:contain;
+            }
+            /* Con la foto fija, el dedo que arrastra sobre ella tiene que
+               poder desplazar la lista de la derecha. `pan-y` le dice al
+               navegador que este elemento SÍ participa del desplazamiento
+               vertical: sin esto el gesto se descarta antes de llegar al
+               listener y arrastrar sobre la imagen no haría nada. */
+            #customizeModal .modal-container.cust-ventana .cust-foto-wrap {
+                touch-action:pan-y;
+            }
             .cust-foto {
                 height:100%;
                 min-height:340px;
@@ -4237,7 +4271,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794051084"></script>
+    <script src="js/cliente-customize.js?v=1794055924"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
