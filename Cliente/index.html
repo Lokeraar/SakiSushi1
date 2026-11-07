@@ -3157,6 +3157,24 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            vez de pegarse al borde izquierdo de la celda. */
         .cust-ing-btn--quitar { justify-self:center; }
         .cust-ing-btn:hover { background:var(--customize-row-bg); }
+
+        /* Botón que NO puede hacer su trabajo (quitar un principal).
+           Se agita para que el cliente vea que el toque sí llegó y que lo
+           que hay es una regla, no una app colgada. El aviso de texto
+           acompaña; la sacudida es el refuerzo visual. */
+        @keyframes cust-no-se-puede {
+            0%,100% { transform: translateX(0); }
+            25%     { transform: translateX(-3px); }
+            75%     { transform: translateX(3px); }
+        }
+        .cust-ing-btn.no-se-puede {
+            animation: cust-no-se-puede .28s ease-in-out 1;
+            border-color: var(--cust-tinta-quitar);
+        }
+        /* Quien pida menos movimiento, no lo recibe. */
+        @media (prefers-reduced-motion: reduce) {
+            .cust-ing-btn.no-se-puede { animation: none; }
+        }
         .cust-ing-btn:focus-visible {
             outline:3px solid var(--accent);
             outline-offset:2px;
@@ -3910,7 +3928,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794012770"></script>
+    <script src="js/cliente-customize.js?v=1794013968"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>

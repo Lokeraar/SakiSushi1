@@ -492,6 +492,11 @@
         return Math.floor(n);
     }
 
+    // Se exponen para que las pruebas puedan afirmar sobre las porciones y la
+    // regla de «extra de todo» EJECUTANDO el código real, sin inventarse una
+    // copia de la lógica que podría divergir de la de producción.
+    window._porcionesParaPrueba = _porciones;
+
     /** Lo que se lee en la columna «Actualmente». */
     function _textoEstado(n) {
         if (n === 0) return 'Sin';
@@ -652,14 +657,32 @@
      * que el aviso y la conversión tienen que mirar lo mismo. Con alguno
      * en ×3 ya no es "el plato duplicado" y no se avisa ni se convierte.
      */
+    /**
+     * ¿Agrandar `idx` dejaría TODOS los ingredientes PRINCIPALES agrandados?
+     *
+     * REGLA DEL DUEÑO: el «extra de todo» que equivale a otro plato se mide
+     * SOLO sobre los principales, no sobre los opcionales.
+     *
+     * Tiene sentido: agrandar todos los principales es pedir dos platos
+     * completos, porque esos son los que definen el plato. Agrandar además
+     * el aguacate o el sésamo es un capricho, no otro plato.
+     *
+     * Antes miraba TODOS los ingredientes. Con un plato de 2 principales y
+     * 2 opcionales, el cliente podía agrandar todo lo que definiría el
+     * plato y NO se le avisaba, porque los opcionales seguían en ×1.
+     */
     function _seriaExtraDeTodo(idx, porciones) {
         if (!_ingredientesActuales.length) return false;
         var nuevo = (typeof porciones === 'number') ? porciones : 2;
+        var hayPrincipal = false;
+
         for (var i = 0; i < _ingredientesActuales.length; i++) {
+            if (!_ingredientesActuales[i].principal) continue;   // se salta los opcionales
+            hayPrincipal = true;
             var n = (i === idx) ? nuevo : _porciones(i);
-            if (n !== 2) return false;
+            if (n < 2) return false;
         }
-        return true;
+        return hayPrincipal;
     }
 
     /**
@@ -675,6 +698,8 @@
      * Una "porción" es la MISMA cantidad que ya lleva el plato: si lleva
      * 25 g de salmón, una porción extra son otros 25 g, y se cobra.
      */
+    window._seriaExtraDeTodoParaPrueba = _seriaExtraDeTodo;
+
     window.cambiarEstadoIngrediente = function cambiarEstadoIngrediente (idx, accion) {
         var ing = _ingredientesActuales[idx];
         if (!ing) return;
@@ -682,6 +707,36 @@
         var actual = _porciones(idx);
         var nuevo;
         if (accion === 'quitar') {
+            // UN INGREDIENTE PRINCIPAL NO SE PUEDE QUITAR.
+            //
+            // Es la regla de negocio del dueño, y es correcta: sin el arroz
+            // y sin el atún, un Nigiri deja de ser un Nigiri.
+            //
+            // El defecto NO era la regla: era que se aplicaba en silencio.
+            // El botón − respondía al toque y no pasaba nada, así que parecía
+            // que la app estaba rota. La regla se queda; lo que se añade es
+            // la explicación.
+            //
+            // Se permite QUITARLO (volver de "Sin" a normal) si ya estaba
+            // quitado, para que el botón nunca quede trabado.
+            if (ing.principal && actual !== 0) {
+                if (window.mostrarToast) {
+                    window.mostrarToast(
+                        '🔒 Es un ingrediente principal que define el plato, no se puede quitar.',
+                        'warning'
+                    );
+                }
+                // Se agita el botón para que el cliente vea QUE respondió,
+                // aunque no cambie nada. Sin esto, el aviso puede pasar
+                // desapercibido y el toque sigue pareciendo muerto.
+                var btnQ = document.querySelector('[data-ing="' + idx + '"][data-estado="quitar"]');
+                if (btnQ) {
+                    btnQ.classList.remove('no-se-puede');
+                    void btnQ.offsetWidth;   // reinicia la animación
+                    btnQ.classList.add('no-se-puede');
+                }
+                return;
+            }
             // Tocar de nuevo el mismo botón lo devuelve: es un interruptor.
             nuevo = (actual === 0) ? 1 : 0;
         } else if (accion === 'extra') {
@@ -712,7 +767,7 @@
             var precioDoble = precioPlato * 2;
             var seguir = confirm(
                 'Esto convierte el pedido en DOS platos:\n\n' +
-                'Pediste extra de todos los ingredientes de ' +
+                'Pediste extra de todos los ingredientes principales de ' +
                 (currentCustomizeItem.nombre || 'este plato') + ', y eso equivale ' +
                 'a un plato más, no a un plato agrandado.\n\n' +
                 'Precio: ' + S.utils.formatBs(precioPlato * _currentQty) +
@@ -838,9 +893,19 @@
         // Exactamente 2 en todos: es el único caso en que «dos platos»
         // reproduce lo que el cliente pidió. Con alguno en 3 o más, el plato
         // se cobra por porciones y no se pierde comida al cambiarlo.
-        var todosEnExtra = _ingredientesActuales.length > 0 &&
-            Object.keys(_estadosIng).length === _ingredientesActuales.length &&
-            _ingredientesActuales.every(function (_, i) { return _porciones(i) === 2; });
+        // Mismo criterio que el aviso: cuenta SOLO los principales.
+        //
+        // Si se dejaran dentro los opcionales, un plato con todos los
+        // principales agrandados NO se convertiría en dos platos cuando el
+        // cliente no subiera el aguacate, y el precio se cobraría por
+        // porciones en vez de como dos platos completos. Las dos reglas
+        // tienen que medir lo mismo, o el aviso y el cobro no coinciden.
+        var principales = _ingredientesActuales.filter(function (ing) { return ing.principal; });
+        var todosEnExtra = principales.length > 0 &&
+            principales.every(function (ing) {
+                var i = _ingredientesActuales.indexOf(ing);
+                return _porciones(i) >= 2;
+            });
 
         if (todosEnExtra) {
             var precioNormalBs = S.utils.usdToBs(item.precio || 0);
