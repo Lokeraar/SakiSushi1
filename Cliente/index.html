@@ -2953,7 +2953,18 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         .cust-layout {
             display:grid;
             grid-template-columns:1fr;
-            grid-template-areas:"foto" "cuerpo";
+            /* TRES FILAS EN EL TELÉFONO: foto, datos, lista.
+
+               El dueño cerró el plano de la ventana en 2x2: la foto sola
+               en 1Y·1X, los datos en 1Y·2X, y nota + tabla + botones en 2Y
+               a todo el ancho.
+
+               En el teléfono esa misma estructura se aplana en una sola
+               columna y la ventana entera scrollea, como siempre. La lista
+               tiene su propia área (`lista`) y NO vive dentro de `.cust-`
+               cuerpo: solo así puede ocupar las dos columnas en pantalla
+               ancha. */
+            grid-template-areas:"foto" "datos" "lista";
         }
 
         /* Envoltura de la foto. En el telefono sostiene la X encima;
@@ -3046,8 +3057,11 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             cursor:zoom-in;
         }
 
+        /* Los datos ocupan la celda derecha de la primera fila. Antes la
+           llamada era `cuerpo`; ahora el área se llama `datos` porque el
+           vecino de abajo ya no es otro cuerpo sino la banda de la lista. */
         .cust-cuerpo {
-            grid-area:cuerpo;
+            grid-area:datos;
             display:flex;
             flex-direction:column;
             gap:.85rem;
@@ -3191,6 +3205,14 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            principales, y la columna está dimensionada para el caso grande. */
         #ingredientesList {
             --cust-ing-cols: 30px minmax(0,1fr) 32px 58px 74px;
+            /* EL AIRE VA AQUÍ, NO AL CUERPO.
+
+               Antes la lista terminaba el cuerpo y el cuerpo reservaba
+               2.5rem bajo la última fila. Ahora detrás de la lista viene la
+               banda inferior y después el pie: el relleno del cuerpo abriría
+               un hueco entre los modos y la nota. El aire se muda al que de
+               verdad toca el borde: la propia lista. */
+            padding-bottom:2.5rem;
         }
 
         .cust-ing-cabecera,
@@ -3233,9 +3255,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             padding:.55rem 0;
             border-bottom:1px solid var(--customize-border);
         }
-        /* La última fila pierde el borde: abajo ya no hay nada que separar.
-           Ya no hace falta el truco de «la nota es un <p>»: la nota se mudó
-           a su propia franja, fuera de la lista (ver .cust-franja-nota). */
+        /* La última fila pierde el borde: abajo ya no hay nada que separar. */
         .cust-ing:last-of-type { border-bottom:none; }
 
         /* La celda de la miniatura se pinta siempre, con o sin foto: es una
@@ -3406,120 +3426,90 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         #customizeModal .cust-ing-estado--sin { color:var(--cust-tinta-quitar); }
         #customizeModal .cust-ing-estado--mas { color:var(--cust-tinta-agrandar); }
 
-        /* ── LA FRANJA DE LA NOTA ──
+        /* ── LA BANDA INFERIOR: NOTA + TABLA + BOTONES ──
 
-           El dueño miró la ventana y reportó dos cosas de un vistazo: el
-           último ingrediente quedaba debajo del pie, y en vertical sobraba
-           un hueco vacío bajo la foto.
+           Es la fila 2Y del plano del dueño, a TODO el ancho de la ventana,
+           y la última pieza de la rejilla (área `lista`). Contiene la nota
+           que explica cómo personalizar y la tabla de ingredientes. Los
+           botones no van dentro: son el `.modal-footer` de siempre, que
+           queda justo debajo y comparte fondo y borde, así que se lee como
+           la misma banda sin duplicar una sola línea de maqueta.
 
-           La nota que encabezaba la lista («¿Quieres agrandar…? Tienes:»)
-           se muda aquí: una fila propia de ANCHO COMPLETO, entre el cuerpo
-           que se desplaza y el pie con los botones. Es hermana de los dos,
-           no hija de ninguno.
+           POR QUÉ LOS BOTONES NO SE MUDAN AQUÍ. `.modal-footer` lo
+           comparten delivery, reserva, historial y confirmar mesa, y sus
+           oyentes los enganchan `cliente-ui.js` y `cliente-historial.js`
+           sobre los botones ESTÁTICOS del HTML. El cuerpo de esta ventana
+           se regenera en cada apertura con `innerHTML`: si el pie viviera
+           dentro, cada apertura crearía botones nuevos y los oyentes
+           quedarían apuntando a nodos muertos. «Cancelar» y «Añadir»
+           dejarían de responder a la segunda apertura, en silencio.
 
-           Por qué la nota va aquí y no dentro de la lista:
-             · el cuerpo es el que hace scroll; lo que vive dentro de él se
-               va con el scroll. En la franja, el cliente la tiene a la
-               vista justo mientras elige ingredientes;
-             · ocupa el ancho entero de la ventana, no solo la columna de
-               datos, así que la tipografía puede crecer sin apretar la
-               rejilla de ingredientes.
+           QUIÉN SCROLLEA: LA BANDA ENTERA, NOTA INCLUIDA. Se decidió con
+           los números, no por gusto. En horizontal (807x393) la banda mide
+           ~160 px: 27,2 de relleno, 62 de nota de dos líneas y 19 de
+           cabecera dejan ~51 px para la primera fila. Con la nota fuera del
+           scroll se pagaban esos 62 px en cada gesto, para siempre, por un
+           texto que se lee una vez. Con la nota dentro, el primer gesto la
+           aparta y el resto de la banda queda para la tabla, que es donde el
+           cliente trabaja. En vertical sobra alto y la nota se ve al abrir
+           sin scrollear nada.
 
-           La CABECERA DE COLUMNAS (Nombre · Quitar · Actualmente ·
-           Agrandar) NO se sube con ella. Cabecera y filas comparten
-           `--cust-ing-cols` para que cada rótulo caiga encima de su botón;
-           separarlas las desalinea y el rótulo deja de señalar lo que dice.
-           Se queda dentro de la lista, pegada a sus filas.
-
-           Nace OCULTA. La enciende el JS con la clase `activa`, y solo en
-           teléfono vertical y en modo «Personalizar platillo». */
-        .cust-franja-nota {
-            display:none;
-            flex-shrink:0;
-            width:100%;
+           NACE OCULTA EN «COMPLETO». Sin la clase `con-lista` en el
+           `.cust-layout` no se pinta ni se reserva su fila: los datos se
+           quedan con todo el alto y el pie sube pegado a los modos. Es la
+           diferencia entre una ventana que se encoge y un bloque vacío de
+           120 px debajo de los modos. */
+        .cust-inferior {
+            grid-area:lista;
+            min-height:0;
             box-sizing:border-box;
             padding:.85rem 1.15rem;
-            /* El mismo borde y el mismo fondo que el pie: la franja y los
-               botones se leen como un solo bloque de cierre. */
+            /* Mismo borde y mismo fondo que el pie: banda única. */
             border-top:1px solid rgba(128,128,128,.2);
             background:rgba(0,0,0,.2);
+            /* Aquí y solo aquí se desplaza la fila inferior. El pie queda
+               fuera, así que los botones nunca se van con el scroll. */
+            overflow-y:auto;
+            overscroll-behavior:contain;
         }
+        .cust-layout:not(.con-lista) .cust-inferior { display:none; }
 
-        /* Tipografía: la nota ya no compite con la rejilla de ingredientes,
-           así que puede crecer. Antes medía .82rem (13,1 px) dentro de la
-           lista; aquí mide 1.05rem (16,8 px), un 28% más. */
-        .cust-franja-texto {
-            margin:0;
+        /* LA NOTA, primera en la banda.
+
+           Va dentro del scroll de la banda, no clavada: así el primer gesto
+           la aparta y deja todo el alto a la tabla (ver el comentario de
+           .cust-inferior, donde está la cuenta de horizontal). Es corta —dos
+           o tres líneas— y en vertical se ve al abrir sin scrollear.
+
+           Tipografía: 1.05rem (16,8 px) con interlineado 1.45. Dentro de la
+           lista medía .82rem (13,1 px); aquí compite con el título de la
+           celda de datos, no con las filas de ingredientes. */
+        .cust-inferior-nota {
+            margin:0 0 .8rem;
             font-size:1.05rem;
             line-height:1.45;
             color:var(--customize-subtext);
-        }
-
-        /* SOLO EN TELÉFONO VERTICAL.
-
-           `max-width:599px` ata la franja a la misma disposición de una
-           sola columna que usa la rejilla; `orientation:portrait` la apaga
-           además en un teléfono pequeño girado (568x320) que, por ancho,
-           todavía cabría en la condición. Girado, el alto es lo escaso: una
-           franja de 100 px se lo comería.
-
-           Un viewport de 915x412 no la muestra por las dos vías: 915 > 599
-           y no es vertical.
-
-           Se enciende con CLASE, nunca con `style.display` en línea: un
-           estilo en línea gana sobre cualquier media query, así que el
-           `display:none` de arriba dejaría de valer y la franja aparecería
-           también en horizontal. */
-        /* ── DÓNDE VA LA FRANJA, Y POR QUÉ ESTA CONDICIÓN ──
-
-           La primera versión usaba `(orientation:portrait) and
-           (max-width:599px)`, y era IMPOSIBLE que se cumpliera en el caso
-           que importa: el hueco bajo la foto aparece justamente cuando la
-           ventana tiene DOS COLUMNAS, y eso exige min-width:600px. Con
-           max-width:599px la franja nunca podía encenderse.
-
-           La condición correcta es «dos columnas» (≥600px, o sea la
-           ventana partida) Y «vertical». En horizontal el viewport tiene
-           ~393 px de alto, la foto llena ese alto y NO sobra hueco: ahí la
-           franja estorbaría.
-
-           Chrome en modo escritorio fija un viewport ancho (~807 px CSS)
-           aunque el teléfono esté vertical. Por eso las capturas muestran
-           dos columnas en las dos orientaciones y la condición vieja no se
-           cumplía nunca. */
-        @media (min-width:600px) and (orientation:portrait) {
-            #customizeModal .modal-container.cust-ventana .cust-franja-nota.activa {
-                display:block;
-            }
         }
 
         /* Tema claro: el negro al 20% del pie sobre papel deja el fondo en
            #C5C0BA, y ahí la tinta atenuada del tema (#7A6A60) baja a
            2,86:1 — no se lee. Sobre papel se usa un tinte cálido del mismo
            marrón de los bordes, y la nota toma la tinta SECUNDARIA. */
-        body.tema-claro #customizeModal .cust-franja-nota {
+        body.tema-claro #customizeModal .cust-inferior {
             background:rgba(65,45,30,.06);
         }
-        body.tema-claro #customizeModal .cust-franja-texto {
+        body.tema-claro #customizeModal .cust-inferior-nota {
             color:var(--text-secondary);
         }
 
-        /* EL PIE NO PUEDE TAPAR EL ÚLTIMO INGREDIENTE.
+        /* EL AIRE DEL FINAL YA NO VIVE AQUÍ.
 
-           El pie es hermano del cuerpo (fila propia, `flex-shrink:0`), así
-           que no lo pisa: no es fijo ni flotante. Lo que sí pasaba es que
-           la lista terminaba JUSTO en el borde del scroll, a 16,8 px del
-           pie —el relleno de .cust-cuerpo— y visualmente se leía como
-           cortada por el borde del pie.
-
-           Aquí se reserva el doble: 2rem (32 px) de aire bajo la última
-           fila. Vale para las dos disposiciones, porque este es el mismo
-           contenedor que en dos columnas lleva el scroll. */
+           La lista dejó de ser el final del cuerpo: ahora la siguen la banda
+           inferior y el pie. El relleno de 2.5rem bajo los modos abriría un
+           hueco entre ellos y la nota, así que vuelve a su relleno normal y
+           el aire se reserva dentro de la lista (ver #ingredientesList). */
         #customizeModal .modal-container.cust-ventana .cust-cuerpo {
-            /* 2.5rem y no 2rem: en pantallas de poco alto (horizontal, ~393 px
-               de viewport) el renglón de ingrediente mide ~49 px y con 32 px
-               justos quedaba pegado al borde del scroll y al pie. */
-            padding-bottom:2.5rem;
+            padding-bottom:1.05rem;
         }
 
         /* Ya no se usa un cuadro aparte para el precio: vive arriba, junto
@@ -3537,9 +3527,35 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             #customizeModal .modal-container.cust-ventana {
                 max-width:720px;
             }
+            /* ── LA REJILLA DE 2x2 ──
+
+               DOS FILAS, no una: la de arriba lleva foto y datos, y la de
+               abajo cruza las dos columnas con la nota, la tabla y —pegado
+               abajo, fuera de la rejilla— el pie.
+
+               EN «COMPLETO» HAY UNA SOLA FILA. La fila inferior se pinta
+               solo con `con-lista`; si se declararan las dos filas siempre,
+               la segunda quedaría reservada aunque no hubiera nada dentro, y
+               los botones bajarían dejando un bloque vacío debajo de los
+               modos. Por eso el reparto de filas es estado, no constante:
+               una fila sin lista, dos con lista. */
             .cust-layout {
                 grid-template-columns:280px 1fr;
-                grid-template-areas:"foto cuerpo";
+                grid-template-rows:minmax(0,1fr);
+                grid-template-areas:"foto datos";
+            }
+            /* El 50% y no `auto`: una fila `auto` crece con el contenido y,
+               con muchos ingredientes, empuja el reparto fuera de la
+               ventana hasta que el `overflow:hidden` del cuerpo recorta la
+               tabla sin poder scrollearla. Con el 50% las dos zonas se
+               reparten el alto disponible y cada una scrollea por dentro.
+
+               En horizontal el reparto sube al 55%: está calculado en el
+               comentario del bloque de `orientation:landscape`, y el número
+               sale de que la fila de ingrediente mide 57 px. */
+            .cust-layout.con-lista {
+                grid-template-rows:minmax(0,1fr) minmax(0,50%);
+                grid-template-areas:"foto datos" "lista lista";
             }
 
             /* ── LA FOTO SE QUEDA QUIETA, SCROLLEA SOLO LA LISTA ──
@@ -3589,10 +3605,20 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                listener y arrastrar sobre la imagen no haría nada. */
             #customizeModal .modal-container.cust-ventana .cust-foto-wrap {
                 touch-action:pan-y;
-                /* El envoltorio tampoco se estira con la fila: si lo hiciera,
-                   la estrella de favoritos (anclada a su esquina) se iría al
-                   fondo de la ventana en vez de quedarse sobre la foto. */
-                align-self:start;
+                /* El envoltorio SÍ se estira con la celda, para que la foto
+                   llene la celda 1Y·1X entera. Antes se quedaba en
+                   `align-self:start` porque el alto de la foto era fijo y
+                   estirarlo la hacía crecer como un chicle; ahora el alto
+                   sale de la celda, que es acotado por la rejilla.
+
+                   La estrella y la X están ancladas con `top`, no con
+                   `bottom`: se quedan en la esquina de arriba, así que el
+                   estiramiento no se las lleva al fondo.
+
+                   `overflow:hidden` recorta la foto a la celda: si la fila
+                   se queda corta, la imagen se recorta, nunca se desborda
+                   encima de la banda inferior. */
+                overflow:hidden;
             }
             /* LA FOTO TIENE ALTO PROPIO, PERO NUNCA MÁS QUE LA VENTANA.
                Antes `height:100%` la hacía crecer con la fila: si la lista
@@ -3604,15 +3630,35 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                Por eso el alto es el que quepa: 340 px cuando hay sitio y,
                si no lo hay, el alto disponible de la ventana menos el pie y
                la franja. `clamp` hace las dos cosas en una línea. */
+            /* La foto LLENA su celda.
+
+               Antes el alto salía del viewport —`clamp(180px, 100dvh -
+               220px, 340px)`— porque la foto era el único contenido de su
+               columna y había que evitar que se pasara de la ventana. Con
+               la rejilla de 2 filas el alto ya lo define la celda, y sacarlo
+               otra vez del viewport daría dos verdades que se contradicen:
+               en horizontal la fórmula daba 180 px para una celda de ~168 y
+               la foto se desbordaba sobre la banda inferior.
+
+               `height:100%` se resuelve contra la celda, que tiene alto
+               definido por `minmax(0,1fr)`. `object-fit:cover` recorta lo
+               que sobre: por eso nunca aparecen barras vacías. */
             .cust-foto {
-                height:clamp(180px, calc(100dvh - 220px), 340px);
-                align-self:start;
+                height:100%;
+                align-self:stretch;
             }
             /* En pantalla ancha sobra sitio: las columnas de controles
                crecen y los rótulos de la cabecera también. Los anchos
                siguen saliendo de la MISMA variable que usan las filas. */
             #ingredientesList {
                 --cust-ing-cols: 40px minmax(0,1fr) 40px 84px 104px;
+                /* La tabla NO tiene scroll propio: lo lleva la banda entera
+                   (ver .cust-inferior). Si scrolleara ella sola, la nota de
+                   arriba se quedaría fija comiéndose 62 px de los 160 que
+                   hay en horizontal, y la cabecera de columnas —que viaja
+                   dentro de la lista— se quedaría clavada señalando filas
+                   que ya pasaron. */
+                padding-bottom:1.25rem;
             }
             #customizeModal .cust-ing-cab { font-size:.66rem; }
             .cust-ing-mini-celda, .cust-ing-mini { width:38px; height:38px; }
@@ -3727,6 +3773,28 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            sigue en una sola columna— heredaría el tope de 92vw y perdería
            unos píxeles de ancho sin ganar nada. */
         @media (orientation:landscape) and (min-width:600px) {
+            /* ── EN HORIZONTAL LA BANDA PASA AL 55% ──
+
+               Es una cuenta con las medidas reales del CSS, no un gusto.
+               En 807x393 la ventana mide 354 px y el pie 64, así que la
+               rejilla reparte 290,2:
+
+                 al 50% → banda 145,1. Interior 117,9 (13,6 px de relleno por
+                          lado). Gasta 62 de nota y 19 de cabecera: quedan
+                          36,9 px de fila, el 65% de la primera.
+                 al 55% → banda 159,6. Interior 132,4. Quedan 51,4 px, el 90%
+                          de la primera fila: el renglón se ve casi entero y
+                          el corte del borde inferior anuncia que hay más.
+
+               No se puede tener una fila completa (57 px) sin bajar los
+               datos por debajo de 120 px, y ahí la columna derecha se queda
+               sin precio ni modos. Girado, un teléfono de 393 px de alto no
+               da para nota, cabecera, fila entera y datos a la vez; el 55%
+               es el mejor reparto que sí deja leer el plato. */
+            .cust-layout.con-lista {
+                grid-template-rows:minmax(0,1fr) minmax(0,55%);
+            }
+
             /* La tarjeta y la foto crecen con el viewport real.
 
                Ojo con lo que NO dice esta regla: la columna de 280 px fija
@@ -4086,26 +4154,23 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                 </div>
                 <div class="modal-body" id="customizeModalBody"></div>
 
-                <!-- FRANJA DE LA NOTA: hermana del cuerpo y del pie, nunca
-                     dentro de ninguno de los dos.
+                <!-- EL PIE VA AQUÍ Y NO SE MUEVE A DENTRO DEL CUERPO.
 
-                     Antes la nota «¿Quieres agrandar…» encabezaba la lista
-                     de ingredientes, dentro del área que se desplaza: para
-                     leerla había que bajar el scroll y quedaba pegada al
-                     pie. Aquí ocupa su propia fila, de ancho completo, por
-                     encima de «Cancelar» y «Añadir».
+                     Por debajo del cuerpo, los botones cierran visualmente la
+                     banda de la fila inferior: el `.cust-inferior` generado
+                     dentro del cuerpo comparte con él fondo y borde, así que
+                     los dos se leen como una sola sección a todo el ancho.
 
-                     El texto vive en el HTML y no en el JS a propósito: el
-                     JS solo le pone o le quita la clase `activa`. Nace
-                     oculta y solo aparece en vertical y en modo
-                     «Personalizar platillo» (ver .cust-franja-nota en el
-                     <style>). Los textos de la ventana se generan por JS,
-                     pero este no: no depende de ningún platillo y así el
-                     JS puede seguir funcionando si esta franja no existe. -->
-                <div class="cust-franja-nota" id="custFranjaNota">
-                    <p class="cust-franja-texto">¿Quieres agrandar, quitarle a tu pedido o agregarle algún ingrediente o algo más? Tienes:</p>
-                </div>
+                     En el teléfono, en «Completo», la fila inferior no existe
+                     y el pie queda pegado a los modos. Una sola banda, cero
+                     maqueta duplicada.
 
+                     Este bloque es ESTÁTICO y los oyentes de «Cancelar» y
+                     «Añadir» se enganchan una sola vez sobre estos nodos
+                     (ver cliente-ui.js y cliente-historial.js). El cuerpo, en
+                     cambio, se regenera en cada apertura con `innerHTML`: si
+                     el pie viviera dentro, cada apertura crearía botones
+                     nuevos sin oyente y dejarían de responder en silencio. -->
                 <div class="modal-footer">
                     <button class="btn-secondary" id="cancelCustomize">Cancelar</button>
                     <button class="btn-primary" id="addToCartFromModal"><i class="fas fa-cart-plus"></i> Añadir</button>
@@ -4435,7 +4500,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794063541"></script>
+    <script src="js/cliente-customize.js?v=1794096833"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
     <script src="js/cliente-historial.js?v=1793971149"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>

@@ -303,26 +303,27 @@
                     '<small style="color:var(--customize-subtext)">Quitar alguno, o pedir extra</small></div>' +
                 '</div>' +
               '</div>' +
-            '</div>' +
+            '</div>' +   // .cust-modos
 
-            '<div id="ingredientesList" style="display:none">';
+            // ── FILA 2: LA BANDA DE LA NOTA Y LA TABLA ──
+            //
+            // El dueño cerró el plano con la nota, la tabla y los botones a
+            // todo el ancho, debajo de la foto y de los datos. Para eso la
+            // lista tiene que SALIR de `.cust-cuerpo`: desde dentro de una
+            // columna no puede ocupar las dos.
+            //
+            // `.cust-inferior` es la celda `lista` de la rejilla. Nace vacía
+            // de estilos de visibilidad: la apaga una regla de CSS mientras
+            // la ventana no lleve la clase `con-lista`, que enciende
+            // `selectPersonalizado` y apaga `selectCompleto`. Así, en modo
+            // «Completo», la ventana no reserva ni una fila para la banda.
+            '</div>' +   // .cust-cuerpo
+            '<div class="cust-inferior">' +
+              _htmlNotaPersonalizacion() +
 
-        // LA NOTA YA NO VA AQUÍ.
-        //
-        // Antes abría la lista: «¿Quieres agrandar…? Tienes:» se leía justo
-        // debajo de la opción y se iba con el scroll del cuerpo, así que
-        // para verla había que bajar, y aun así terminaba pegada al pie.
-        //
-        // Ahora vive en su propia franja, hermana del cuerpo y del pie (ver
-        // #custFranjaNota en index.html). Esta función NO reescribe su
-        // texto: solo le pone o le quita la clase `activa`.
-        //
-        // La CABECERA DE COLUMNAS se queda aquí, dentro de la lista, y no
-        // sube a la franja: cabecera y filas comparten `--cust-ing-cols`
-        // para que cada rótulo caiga encima de su botón. Separadas, el
-        // rótulo dejaría de señalar la columna que nombra, y al hacer
-        // scroll la cabecera se quedaría clavada señalando filas que ya
-        // pasaron.
+              // La tabla va DESPUÉS de la nota y sigue naciendo oculta: en
+              // modo «Completo» no hay nada que elegir.
+              '<div id="ingredientesList" style="display:none">';
 
         if (ingredientes.length > 0) {
             // ── CABECERA DE COLUMNAS ──
@@ -425,19 +426,19 @@
         }
 
         html += '</div>' +   // #ingredientesList
-                '</div>' +   // .cust-cuerpo
+                '</div>' +   // .cust-inferior
                 '</div>';    // .cust-layout
 
         body.innerHTML = html;
 
-        // La ventana arranca en «Completo», así que la franja también: el
-        // plato recién abierto no tiene nada que personalizar todavía.
+        // La ventana arranca en «Completo», así que la banda inferior
+        // también: el plato recién abierto no tiene nada que personalizar.
         //
         // Se apaga SIEMPRE al abrir, y no según `_isCompleto`, porque ese
         // valor es el del plato anterior: si el cliente personalizó uno y
         // cerró con la X, quedaba en false y el siguiente plato nacía con
-        // la franja encendida y la lista apagada.
-        _pintarFranjaNota(false);
+        // la banda encendida y la lista apagada.
+        _marcarConLista(false);
 
         // Cada fila arranca pintada desde el modelo, no solo desde el HTML.
         //
@@ -581,10 +582,10 @@
         // ── ARRASTRAR SOBRE LA FOTO DESPLAZA LA LISTA ──
         //
         // En dos columnas la foto ya no scrollea (está fija a la izquierda)
-        // y el único que se desplaza es .cust-cuerpo. Pero el dedo no sabe
-        // eso: quien arrastra sobre la imagen espera que la lista baje.
-        // Sin este puente, arrastrar ahí no hace NADA y parece que la
-        // ventana se trabó.
+        // y lo que se desplaza es la tabla de ingredientes, o la columna de
+        // datos en modo «Completo». Pero el dedo no sabe eso: quien arrastra
+        // sobre la imagen espera que la lista baje. Sin este puente,
+        // arrastrar ahí no hace NADA y parece que la ventana se trabó.
         //
         // SOLO EN DOS COLUMNAS. En el teléfono la foto va arriba y scrollea
         // con la ventana entera; ahí no hace falta ningún puente.
@@ -604,7 +605,17 @@
             cuerpoDatos.style !== undefined) {
             var reenviarScroll = function (delta) {
                 if (!delta) return;
-                cuerpoDatos.scrollTop += delta;
+                // El que se desplaza cambia con el modo. En «Personalizar»
+                // la tabla tiene scroll propio; en «Completo» la tabla está
+                // oculta y lo que puede desbordar es la columna de datos.
+                //
+                // Se pregunta por el alto real en vez de por `_isCompleto`:
+                // así el puente funciona igual aunque el modo cambie sin
+                // pasar por aquí, y no hay dos fuentes de verdad.
+                var lista = document.getElementById('ingredientesList');
+                var puedeLista = lista && lista.scrollHeight > lista.clientHeight;
+                var destino = puedeLista ? lista : cuerpoDatos;
+                destino.scrollTop += delta;
             };
 
             // Ratón y rueda: `deltaY` ya viene en píxeles.
@@ -822,9 +833,10 @@
         document.getElementById('personalizadoOption').classList.remove('activo');
         document.getElementById('personalizadoCircle').classList.remove('activo');
         document.getElementById('ingredientesList').style.display = 'none';
-        // La franja acompaña a la lista: sin «Personalizar platillo» no hay
-        // nada que anunciar, y en «Completo» solo ocuparía alto.
-        _pintarFranjaNota(false);
+        // La banda inferior se apaga con la lista: en «Completo» no hay
+        // nada que explicar ni que elegir, y una fila vacía reservada
+        // empujaría los botones lejos de los modos.
+        _marcarConLista(false);
 
         _quitados = [];
         calcularPrecioPersonalizado();
@@ -832,26 +844,50 @@
     window.selectCompleto = selectCompleto;
     S.modules.customize.selectCompleto = selectCompleto;
 
-    /** Enciende o apaga la franja de la nota que vive sobre el pie.
+    /** El texto que explica cómo se personaliza el plato.
      *
-     * La franja es hermana de `.modal-body` y de `.modal-footer`, no hija de
-     * ellos: su texto está en el HTML y aquí solo se controla si se ve.
+     * Vive aquí, en el marcado generado, y no en el HTML estático: la banda
+     * entera se regenera en cada apertura, y la nota solo tiene sentido
+     * junto a la tabla que la sigue.
      *
-     * SE USA UNA CLASE, NO `style.display`. La franja solo debe verse en
-     * teléfono vertical, y esa condición vive en una media query del CSS.
-     * Un `display` escrito en línea desde aquí gana sobre cualquier media
-     * query, así que en horizontal aparecería igual. La clase deja decidir
-     * al CSS, que es el que sabe el ancho y la orientación.
+     * Va FUERA de `#ingredientesList`, como hermana suya dentro de
+     * `.cust-inferior`, y por ENCIMA de la tabla. El scroll lo lleva la banda
+     * entera, así que la nota se aparta con el primer gesto y deja el alto a
+     * la lista. Ese orden importa: quien abre «Personalizar» ve primero qué
+     * está eligiendo y después las columnas que lo aplican.
      *
-     * Si la franja no existe (HTML viejo en caché) no pasa nada: la ventana
-     * sigue funcionando sin la nota. Los dos `if` cubren el caso de un DOM
-     * de prueba que no la monte.
+     * La CABECERA DE COLUMNAS sí se queda dentro de la lista: comparte
+     * `--cust-ing-cols` con las filas para que cada rótulo caiga encima de su
+     * botón, y al scrollear tienen que viajar juntas.
      */
-    function _pintarFranjaNota(visible) {
-        var franja = document.getElementById('custFranjaNota');
-        if (!franja || !franja.classList) return;
-        if (visible) franja.classList.add('activa');
-        else franja.classList.remove('activa');
+    function _htmlNotaPersonalizacion() {
+        return '<p class="cust-inferior-nota">¿Quieres agrandar, quitarle a tu ' +
+            'pedido o agregarle algún ingrediente o algo más? Tienes:</p>';
+    }
+
+    /** Enciende o apaga la banda inferior de la ventana del platillo.
+     *
+     * La banda entera —nota, tabla y el aire que las rodea— se pinta solo
+     * cuando el cliente elige «Personalizar platillo».
+     *
+     * SE CAMBIA UNA CLASE EN `.cust-layout`, NO UN ESTILO EN LÍNEA. El
+     * reparto de filas de la rejilla cambia con ese estado: una fila con
+     * `minmax(0,1fr)` en «Completo» y dos cuando hay lista. Un `display`
+     * escrito en línea desde aquí ganaría sobre la media query y dejaría la
+     * rejilla pidiendo dos filas que ya nadie llena —el hueco vacío debajo
+     * de los modos que había que evitar—. La clase deja decidir al CSS, que
+     * es el único que sabe cuánto alto hay.
+     *
+     * Si la ventana no trae `.cust-layout` (HTML viejo en caché), no pasa
+     * nada: se omite y la lista sigue abriéndose y cerrándose igual.
+     */
+    function _marcarConLista(activa) {
+        var modal = document.getElementById('customizeModal');
+        if (!modal || typeof modal.querySelector !== 'function') return;
+        var layout = modal.querySelector('.cust-layout');
+        if (!layout || !layout.classList) return;
+        if (activa) layout.classList.add('con-lista');
+        else layout.classList.remove('con-lista');
     }
 
     function selectPersonalizado() {
@@ -861,7 +897,9 @@
         document.getElementById('completoOption').classList.remove('activo');
         document.getElementById('completoCircle').classList.remove('activo');
         document.getElementById('ingredientesList').style.display = 'block';
-        _pintarFranjaNota(true);
+        // La banda inferior se enciende con la lista: la nota, la tabla y
+        // el aire que las rodea no ocupan alto hasta que hacen falta.
+        _marcarConLista(true);
     }
     window.selectPersonalizado = selectPersonalizado;
     S.modules.customize.selectPersonalizado = selectPersonalizado;
