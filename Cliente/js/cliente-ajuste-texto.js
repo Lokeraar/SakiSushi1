@@ -162,11 +162,77 @@
         // falla.
         function cabe(px, lineas) {
             el.style.fontSize = px + 'px';
+
+            // ── SE MIDE SIN EL RECORTE PUESTO ──
+            //
+            // Este era el defecto que hacía CRECER la letra con el texto
+            // desbordado, y el dueño lo vio en su teléfono: «aunque aumentamos
+            // la capacidad de filas a 1 más, ahora quedó menos espacio, y veo
+            // que aumentaste el tamaño de letra».
+            //
+            // CAUSA: cuando el elemento medido lleva `line-clamp`, el navegador
+            // recorta el contenido y `scrollHeight` se queda clavado en
+            // `lineas * altoDeLinea` PARA SIEMPRE. La comparación «¿cabe?»
+            // respondía sí a cualquier tamaño, así que el medidor subía la
+            // letra al techo y el texto seguía cortado: el que decide no podía
+            // ver el desborde que tenía que corregir.
+            //
+            // El arreglo es medir con el recorte levantado. Se quitan las tres
+            // propiedades que recortan, se lee el alto real, se comparan las
+            // dimensiones y se devuelven tal como estaban. Sin esto, cualquier
+            // elemento con `line-clamp` miente sobre su tamaño.
+            var recortePrevio = {
+                clamp: el.style.webkitLineClamp || el.style.lineClamp,
+                overflow: el.style.overflow,
+                display: el.style.display
+            };
+            // Solo se levanta el recorte si de verdad lo tiene puesto; tocar el
+            // estilo de un elemento sin recorte sería trabajo inútil en cada
+            // una de las cinco pruebas de la búsqueda binaria.
+            var estiloActual = window.getComputedStyle(el);
+            var tieneRecorte = (el.style.webkitLineClamp || el.style.lineClamp ||
+                                (estiloActual && estiloActual.webkitLineClamp &&
+                                 estiloActual.webkitLineClamp !== 'none'));
+            if (tieneRecorte) {
+                el.style.webkitLineClamp = 'unset';
+                el.style.lineClamp = 'unset';
+                el.style.overflow = 'visible';
+            }
+
             // Forzar el cálculo de una vez: sin leer una propiedad geométrica,
             // el navegador puede agrupar los cambios y medir el valor viejo.
             var alto = el.scrollHeight;
             var ancho = el.scrollWidth;
             var anchoDisponible = el.clientWidth;
+
+            if (tieneRecorte) {
+                el.style.webkitLineClamp = recortePrevio.clamp || '';
+                el.style.lineClamp = recortePrevio.clamp || '';
+                el.style.overflow = recortePrevio.overflow || '';
+            }
+
+            // ── Y NO PUEDE SALIRSE DE SU RECIPIENTE ──
+            //
+            // El recorte de la tabla vive en el PADRE (`.cust-ing-info`), que
+            // es quien limita la fila a cuatro renglones. Ese padre recorta y
+            // esconde lo que sobra, así que un texto puede «caber» en sí mismo y
+            // aun así quedar cortado para quien lo lee.
+            //
+            // Se compara el alto del elemento con el de su padre: si el padre
+            // tiene un tope y el hijo lo excede, el texto se está perdiendo, y
+            // eso cuenta como no caber. Sin esta comprobación, el recorte del
+            // contenedor es invisible para el ajuste.
+            var excedeRecipiente = false;
+            var padre = el.parentNode;
+            if (padre && padre.nodeType === 1 && padre.clientHeight > 0) {
+                var estiloPadre = window.getComputedStyle(padre);
+                var recortaPadre = estiloPadre &&
+                    (estiloPadre.overflow === 'hidden' || estiloPadre.overflowY === 'hidden');
+                if (recortaPadre && alto > padre.clientHeight + TOLERANCIA) {
+                    excedeRecipiente = true;
+                }
+            }
+
             var altoLinea = altoDeLinea(px);
 
             // El presupuesto se mide AL TAMAÑO ACTIVO, no al base: si se
@@ -181,7 +247,7 @@
             // ajuste por esto dejaría el texto sin tocar en la primera pasada.
             var cabeAncho = !anchoDisponible || ancho <= anchoDisponible + TOLERANCIA;
 
-            return cabeAlto && cabeAncho;
+            return cabeAlto && cabeAncho && !excedeRecipiente;
         }
 
         // El ajuste: se busca el MAYOR tamaño que cabe en `lineasMin`.

@@ -3500,6 +3500,22 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             /* `min-width:0` deja que la columna encoja por debajo de su
                contenido en vez de empujar la rejilla fuera de la ventana. */
             min-width:0;
+            /* ── EL TOPE DE CUATRO RENGLONES VIVE AQUÍ, NO EN EL HIJO ──
+
+               Aquí sí puede recortar, porque este elemento NO se mide: el
+               medidor mide `.cust-ing-nombre`, que va dentro y conserva su
+               `scrollHeight` real. Separar las dos responsabilidades es lo que
+               hace que el auto-ajuste funcione: el que decide el tamaño no
+               lleva el recorte que le taparía el desborde.
+
+               Cuatro renglones porque son cuatro DATOS: nombre, marca «(define
+               el plato)», unidad de medida y precio. Tiene que coincidir con
+               `CAPACIDAD.ingrediente.maxLineas` del medidor. */
+            display:-webkit-box;
+            -webkit-box-orient:vertical;
+            -webkit-line-clamp:4;
+            line-clamp:4;
+            overflow:hidden;
         }
         .cust-ing-nombre {
             /* 16 pt de base. El auto-ajuste lo encoge hasta 8 pt si hace falta.
@@ -3517,11 +3533,27 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             line-height:1.25;
             color:var(--customize-text);
             overflow-wrap:anywhere;
-            display:-webkit-box;
-            -webkit-box-orient:vertical;
-            -webkit-line-clamp:4;
-            line-clamp:4;
-            overflow:hidden;
+            /* ── SIN RECORTE NI CAJA AQUÍ: ESTE ES EL ELEMENTO QUE SE MIDE ──
+
+               El recorte vive en `.cust-ing-info`, el padre. Si estuviera aquí
+               pasaban DOS cosas, y las dos se vieron en el teléfono del dueño:
+
+               1. `line-clamp` recorta el elemento, así que su `scrollHeight`
+                  nunca pasa de N líneas. El medidor preguntaba «¿cabe?» y la
+                  respuesta era SIEMPRE sí, aunque el texto estuviera desbordado.
+                  De ahí que subiera la letra a 16 pt y el precio siguiera
+                  cortado: el medidor estaba ciego.
+
+               2. `display:-webkit-box` convierte los hijos en bloques. El nombre,
+                  la marca «(define el plato)», la unidad y el precio se apilaban
+                  cada uno en su renglón en vez de fluir como texto corrido, así
+                  que se gastaban las cuatro líneas en dos datos y el resto se
+                  perdía igual.
+
+               En bloque normal, los `<span>` fluyen EN LÍNEA y el texto se
+               reparte como una sola tirada. El tope de cuatro renglones lo pone
+               el padre, que no se mide. */
+            display:block;
         }
         /* La marca «(define el plato)» va en su propio tamaño, fija: es una
            anotación, no parte del nombre, y no debe encogerlo. */
@@ -5000,7 +5032,7 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-mesonero.js?v=1794018411"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
-    <script src="js/cliente-menu.js?v=1794179682"></script>
+    <script src="js/cliente-menu.js?v=1794181646"></script>
     <script src="js/cliente-scroll.js?v=1793990592"></script>
     <script src="js/cliente-ui.js?v=1794001460"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
@@ -5011,10 +5043,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794179682"></script>
-    <script src="js/cliente-customize.js?v=1794179682"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794181646"></script>
+    <script src="js/cliente-customize.js?v=1794181646"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794179682"></script>
+    <script src="js/cliente-historial.js?v=1794181646"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>
