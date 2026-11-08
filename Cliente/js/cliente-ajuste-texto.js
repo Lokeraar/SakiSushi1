@@ -74,10 +74,14 @@
         titulo:      { lineas: 2, maxLineas: 3 },
         descripcion: { lineas: 3, maxLineas: 5 },
         nota:        { lineas: 2, maxLineas: 3 },
-        // El nombre del ingrediente puede partir en dos renglones: el dueño
-        // aprobó que la fila crezca antes que la letra encogerse.
-        ingrediente: { lineas: 2, maxLineas: 2 },
-        rotulo:      { lineas: 2, maxLineas: 2 }
+        // El nombre del ingrediente, CON SU UNIDAD DE MEDIDA, puede abarcar
+        // hasta TRES renglones. Lo fijó el dueño. Antes eran dos, y fue el
+        // mismo error de antes: un número elegido para que la fila no creciera.
+        ingrediente: { lineas: 2, maxLineas: 3 },
+        // Los tres controles ocupan UN renglón siempre. No pueden partir: son
+        // botones de una sola línea por diseño, y si el texto no cabe se
+        // encoge hasta el piso en vez de crecer de alto.
+        rotulo:      { lineas: 1, maxLineas: 1 }
     };
 
     // Tolerancia en píxeles para dar por bueno un ajuste. Sin ella, el
@@ -292,11 +296,15 @@
         if (cabecera && cabecera.length) {
             ajustarGrupo(cabecera, TECHO.ingrediente, CAPACIDAD.rotulo);
         }
-        var nombres = modal.querySelectorAll('.cust-ing-nombre');
+        var nombres = modal.querySelectorAll('.cust-ing-info');
         if (nombres && nombres.length) {
-            // Todos los nombres de la lista comparten tamaño: es una sola
-            // columna, y tres nombres con tres tamaños distintos se leerían
-            // como un error.
+            // Se mide `.cust-ing-info`, que contiene el NOMBRE Y SU UNIDAD
+            // juntos: el límite de tres renglones es para el bloque entero,
+            // no solo para la línea del nombre. Así «Arroz para sushi /
+            // 0.15 Kg» cuenta como una sola unidad de texto.
+            //
+            // Todos comparten tamaño: es una sola columna, y tres nombres con
+            // tres tamaños distintos se leerían como un error.
             ajustarGrupo(nombres, TECHO.ingrediente, CAPACIDAD.ingrediente);
         }
     }
@@ -310,7 +318,7 @@
         var modal = document.getElementById('customizeModal');
         if (!modal || !modal.querySelectorAll) return;
         var todos = modal.querySelectorAll(
-            '.cust-titulo, .cust-desc, .cust-inferior-nota, .cust-ing-cab, .cust-ing-nombre'
+            '.cust-titulo, .cust-desc, .cust-inferior-nota, .cust-ing-cab, .cust-ing-info'
         );
         for (var i = 0; i < todos.length; i++) {
             if (todos[i].style) todos[i].style.fontSize = '';

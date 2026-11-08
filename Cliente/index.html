@@ -3373,24 +3373,22 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            (`body.tema-claro .modal-body span`, especificidad 0,2,2). Sin
            esto, el rótulo y el estado «Sin» salían del color equivocado. */
         #customizeModal .cust-ing-cab {
-            /* 12 pt = 16 px.
+            /* Los tres controles ocupan UN renglón, siempre.
 
-               Antes .58rem = 9,3 px: el dueño no podía leer los rótulos. La
-               tabla es DATO para escanear, no prosa, así que su techo es 12 pt
-               y no 16: a 16 pt el nombre del ingrediente no cabe en la
-               columna (medido: quedarían ~9 letras de 16).
-
-               El auto-ajuste puede bajarlos hasta 8 pt si el rótulo no cabe,
-               y la regla de consistencia hace que los tres compartan tamaño. */
+               El dueño lo fijó así. Antes podían partir en dos y la fila
+               crecía de alto por culpa de un rótulo; ahora el rótulo se
+               encoge hasta el piso antes que partir, y si aun así no cabe,
+               el auto-ajuste recorta. Nunca dos líneas. */
             font-size:var(--letra-denso);
             line-height:1.25;
             font-weight:600;
             color:var(--customize-subtext);
             text-align:center;
-            overflow-wrap:break-word;
-            /* `hyphens:auto` parte la palabra con guión en vez de dejarla
-               entera desbordando. Necesita `lang` en el <html>, y lo tiene. */
-            hyphens:auto;
+            /* `nowrap`: si el rótulo no cabe, NO parte. El medidor lo encoge
+               y, en el peor caso, lo recorta. */
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
         }
         #customizeModal .cust-ing-cab--nombre {
             text-align:left;
@@ -3424,19 +3422,36 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             background:var(--customize-row-bg);
             border:1px solid var(--customize-border);
         }
-        .cust-ing-info { min-width:0; }
+        /* El nombre CON SU UNIDAD cabe en tres renglones como máximo.
+
+           `line-clamp` es la red de seguridad del CSS: aunque el medidor
+           fallara o no cargara, el bloque nunca pasa de tres líneas. El
+           medidor hace el trabajo fino (encoge la letra para llenarlas),
+           pero la cota dura vive aquí.
+
+           `-webkit-line-clamp` es el estándar de facto; `line-clamp` lo
+           estandariza. Se declaran los dos: gana el que el navegador
+           entienda. */
+        .cust-ing-info {
+            /* `min-width:0` deja que la columna encoja por debajo de su
+               contenido en vez de empujar la rejilla fuera de la ventana. */
+            min-width:0;
+            display:-webkit-box;
+            -webkit-box-orient:vertical;
+            -webkit-line-clamp:3;
+            line-clamp:3;
+            overflow:hidden;
+        }
         .cust-ing-nombre {
             /* 16 pt de base, como el resto del contenido. Si el nombre no
                cabe, el medidor lo encoge hasta 8 pt y, si aun así no entra,
-               la FILA CRECE DE ALTO y el nombre parte en dos renglones. */
+               la fila crece de alto hasta tres renglones. */
             font-size:var(--letra-denso);
             line-height:1.3;
             color:var(--customize-text);
-            /* Ya NO se corta en una línea. `overflow-wrap:anywhere` parte
-               palabras larguísimas (un nombre con guiones o sin espacios)
-               antes que desbordar la columna. */
+            /* `overflow-wrap:anywhere` parte palabras larguísimas antes que
+               desbordar la columna. */
             overflow-wrap:anywhere;
-            hyphens:auto;
         }
         /* También con el id: es un span, y en el tema claro la regla del
            modal lo pintaba con la tinta principal, así que la línea de
@@ -3828,34 +3843,20 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                listener y arrastrar sobre la imagen no haría nada. */
             #customizeModal .modal-container.cust-ventana .cust-foto-wrap {
                 touch-action:pan-y;
-                /* ── LA FOTO SE QUEDA QUIETA MIENTRAS EL RESTO DESLIZA ──
+                /* ── LA FOTO LLENA SU CELDA, AUNQUE SE RECORTE ──
 
-                   El scroll ahora lo lleva `.cust-layout`, que envuelve a la
-                   foto Y al contenido. Sin `sticky`, la foto subiría con el
-                   texto y desaparecería hacia arriba — justo lo que se pidió
-                   evitar. Con `top:0` se ancla al borde de arriba de su
-                   celda y el contenido se desliza a su lado.
+                   El dueño lo pidió: «la imagen de arriba a la izquierda en
+                   vertical debe abarcar todo el espacio aunque se corte
+                   porque la imagen sea horizontal. Igualmente en horizontal».
 
-                   `align-self:start` es necesario: dentro de una celda de
-                   rejilla, un hijo `sticky` se estira a todo el alto de la
-                   fila y entonces no tiene margen para pegarse a nada. */
-                position:sticky;
-                top:0;
-                align-self:start;
-                max-height:100%;
-                /* El envoltorio SÍ se estira con la celda, para que la foto
-                   llene la columna izquierda entera —las dos filas—. Antes
-                   se quedaba en `align-self:start` porque el alto de la foto
-                   era fijo y estirarlo la hacía crecer como un chicle;
-                   ahora el alto sale de su celda, que es la fila de arriba.
+                   Por eso NO hay `sticky` ni `align-self:start` aquí. Los dos
+                   encogían la celda al tamaño intrínseco de la imagen y
+                   dejaban hueco alrededor. La foto ocupa toda su celda y
+                   `object-fit:cover` se encarga del sobrante recortando.
 
-                   La estrella y la X están ancladas con `top`, no con
-                   `bottom`: se quedan en la esquina de arriba, así que el
-                   estiramiento no se las lleva al fondo.
-
-                   `overflow:hidden` recorta la foto a la celda: si el alto
-                   se queda corto, la imagen se recorta, nunca se desborda
-                   encima de la banda inferior. */
+                   El scroll lo lleva `.cust-layout`, así que la foto se va
+                   con el contenido: es el precio de que llene el hueco, y el
+                   dueño eligió esto. */
                 overflow:hidden;
             }
             /* LA FOTO TIENE ALTO PROPIO, PERO NUNCA MÁS QUE LA VENTANA.
@@ -4861,10 +4862,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794148604"></script>
-    <script src="js/cliente-customize.js?v=1794148604"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794150679"></script>
+    <script src="js/cliente-customize.js?v=1794150679"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794148604"></script>
+    <script src="js/cliente-historial.js?v=1794150679"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>
