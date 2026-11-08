@@ -441,15 +441,34 @@
                       (ing.imagen ? '<img class="cust-ing-mini" src="' + ing.imagen + '" alt="">' : '') +
                     '</span>' +
                     '<div class="cust-ing-info">' +
+                      /* ── LA UNIDAD VA DENTRO DEL NOMBRE, NO DEBAJO ──
+  
+                         El dueño lo pidió así: «el nombre del ingrediente debe
+                         abarcar máximo de tres filas... claro eso incluyendo la
+                         unidad de medida de los gramos, kilogramos, litros,
+                         mililitros, unidades».
+  
+                         Antes la unidad era un bloque hermano, DEBAJO del
+                         nombre. El nombre se limitaba a tres renglones con
+                         `line-clamp`, pero la unidad añadía un cuarto por su
+                         cuenta: la fila crecía a cuatro y el tope no servía de
+                         nada.
+  
+                         En línea, la unidad entra en el MISMO flujo de texto, así
+                         que el `line-clamp:3` del nombre la cuenta: se ven tres
+                         renglones en total, nombre y unidad juntos. Y el
+                         auto-ajuste la mide también, porque mide este div. */
                       '<div class="cust-ing-nombre">' + ing.nombre +
                         (ing.principal
                           ? ' <span class="cust-ing-principal">(define el plato)</span>'
                           : '') +
+                        // El espacio duro de delante separa nombre y unidad sin
+                        // que puedan quedar pegados al partir el renglón.
+                        ' <span class="cust-ing-cant">' +
+                          '<span id="cantidad_ing_' + idx + '">' + cantTxt + '</span>' +
+                          '<span id="precio_ing_' + idx + '">' + precioTxt + '</span>' +
+                        '</span>' +
                       '</div>' +
-                      '<span class="cust-ing-cant">' +
-                        '<span id="cantidad_ing_' + idx + '">' + cantTxt + '</span>' +
-                        '<span id="precio_ing_' + idx + '">' + precioTxt + '</span>' +
-                      '</span>' +
                     '</div>' +
                     // Los tres controles, agrupados en su propio renglón.
                     '<div class="cust-ing-controles">' +

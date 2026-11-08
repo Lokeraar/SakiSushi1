@@ -3510,10 +3510,30 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            modal lo pintaba con la tinta principal, así que la línea de
            ayuda competía con el nombre en vez de apoyarlo. */
         #customizeModal .cust-ing-cant {
-            display:block;
-            font-size:var(--letra-apoyo);
+            /* ── LA UNIDAD VA EN LÍNEA, DENTRO DEL NOMBRE ──
+
+               Antes era `display:block`, un renglón propio DEBAJO del nombre.
+               Así, aunque el nombre se limitara a tres renglones, la unidad
+               añadía un cuarto y la fila crecía igual. El dueño lo vio: «le dije
+               que debe abarcar máximo de tres filas y pasó a cuatro».
+
+               En línea comparte el flujo del nombre, así que el tope de tres
+               renglones la incluye, que es lo que el dueño pidió: nombre y
+               unidad juntos en tres filas como máximo.
+
+               El tamaño va en `em`, no en un valor fijo: se encoge junto con el
+               nombre cuando el auto-ajuste lo baja, y siempre queda un poco por
+               debajo de él, como corresponde a un dato secundario. */
+            display:inline;
+            /* El tamaño mínimo es 0,8125rem (13 px, 9,75 pt) y el máximo
+               1,0625rem (17 px): la unidad es un dato, y un dato ilegible no
+               sirve. Dentro de ese rango sigue al nombre, porque el término
+               central es un `em` que se mide contra el tamaño heredado. Se
+               usan `rem` en los extremos para no salirse del sistema de
+               medidas del resto de la página. */
+            font-size:clamp(.8125rem, .82em, 1.0625rem);
             color:var(--customize-subtext);
-            margin-top:.1rem;
+            white-space:nowrap;
         }
 
         /* Columna «Agrandar»: un solo botón ×2 en los principales, y
@@ -3999,19 +4019,43 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                `.cust-ing-cab`, que era lo que había antes: una regla con
                `font-size` fijo le ganaba al auto-ajuste y dejaba el rótulo
                clavado en un tamaño, ignorando si cabía o no. */
+            /* ── EN HORIZONTAL LOS RÓTULOS SE ENCOGEN, NO EMPUJAN ──
+
+               Aquí la columna de datos NO crece: mide lo que deja la foto.
+               Medido sobre la captura del dueño (2220x1080, foto de 398 px):
+               la columna de datos son 332 px, y con relleno quedan ~320 útiles.
+
+               EL DEFECTO QUE ESTO CORRIGE: antes esta regla declaraba
+               32/62/112/80 = 286 px de columnas fijas, así que al nombre le
+               quedaban 25 px. Partía letra por letra y, al no caber ni en tres
+               renglones, se desbordaba a un cuarto. El dueño lo vio: «el título
+               de la tabla quedó uno encima de otro» y «pasó a cuatro filas».
+
+               El reparto ahora deja que el nombre mande y da a los controles
+               solo lo que su rótulo necesita al PISO de 8 pt:
+
+                 rotulo        a 8 pt   columna
+                 Quitar         32 px     35
+                 Actualmente    59 px     63
+                 Agrandar       43 px     47
+
+               Con eso el nombre se queda con 135 px, que a 16 pt son 12 letras
+               por línea, y los tres rótulos entran a ~8,6 pt. Es justo lo que
+               pidió el dueño: «debe reducirse el tamaño hasta un mínimo de 8 PT
+               para que pueda caber». */
             .cust-ing-cabecera,
             .cust-ing {
                 grid-template-columns:
                     32px
                     minmax(0, 1fr)
-                    62px
-                    112px
-                    80px;
+                    35px
+                    63px
+                    47px;
             }
             .cust-ing-mini-celda, .cust-ing-mini { width:32px; height:32px; }
-            .cust-ing-btn { width:34px; height:34px; }
-            .cust-ing-btn--paso { width:32px; height:32px; }
-            .cust-ing-agrandar { gap:.3rem; }
+            .cust-ing-btn { width:30px; height:30px; }
+            .cust-ing-btn--paso { width:28px; height:28px; }
+            .cust-ing-agrandar { gap:.15rem; }
             /* En horizontal la X ya NO se ancla a la tarjeta: vive dentro
                del cuerpo y viaja con el contenido. Aquí solo se ajusta para
                que caiga en la esquina de su columna, que es la que se lee
@@ -4953,7 +4997,7 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-mesonero.js?v=1794018411"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
-    <script src="js/cliente-menu.js?v=1794170950"></script>
+    <script src="js/cliente-menu.js?v=1794173164"></script>
     <script src="js/cliente-scroll.js?v=1793990592"></script>
     <script src="js/cliente-ui.js?v=1794001460"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
@@ -4964,10 +5008,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794170950"></script>
-    <script src="js/cliente-customize.js?v=1794170950"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794173164"></script>
+    <script src="js/cliente-customize.js?v=1794173164"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794170950"></script>
+    <script src="js/cliente-historial.js?v=1794173164"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>
