@@ -296,12 +296,11 @@
         if (cabecera && cabecera.length) {
             ajustarGrupo(cabecera, TECHO.ingrediente, CAPACIDAD.rotulo);
         }
-        var nombres = modal.querySelectorAll('.cust-ing-info');
+        var nombres = modal.querySelectorAll('.cust-ing-nombre');
         if (nombres && nombres.length) {
-            // Se mide `.cust-ing-info`, que contiene el NOMBRE Y SU UNIDAD
-            // juntos: el límite de tres renglones es para el bloque entero,
-            // no solo para la línea del nombre. Así «Arroz para sushi /
-            // 0.15 Kg» cuenta como una sola unidad de texto.
+            // Se mide el NOMBRE, no el bloque con la unidad: el nombre es lo
+            // que tiene el tope de tres renglones, y la unidad es un dato
+            // aparte con su propio tamaño, debajo.
             //
             // Todos comparten tamaño: es una sola columna, y tres nombres con
             // tres tamaños distintos se leerían como un error.
@@ -318,7 +317,7 @@
         var modal = document.getElementById('customizeModal');
         if (!modal || !modal.querySelectorAll) return;
         var todos = modal.querySelectorAll(
-            '.cust-titulo, .cust-desc, .cust-inferior-nota, .cust-ing-cab, .cust-ing-info'
+            '.cust-titulo, .cust-desc, .cust-inferior-nota, .cust-ing-cab, .cust-ing-nombre'
         );
         for (var i = 0; i < todos.length; i++) {
             if (todos[i].style) todos[i].style.fontSize = '';
