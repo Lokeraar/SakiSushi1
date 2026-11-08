@@ -3312,30 +3312,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                pero al subir la letra a 14 px «Actualmente» ya no entra en
                58 px y la fila se desarma.
 
-               Ahora los controles se miden en `em`, o sea en función de la
-               letra: si un día la escala sube o baja, las columnas la
-               siguen solas. El `min` contra un valor en px es el tope: la
-               columna nunca se queda tan ancha que se coma el nombre del
-               ingrediente, que es el dato importante.
-
-               El nombre lleva `minmax(0,1fr)`: se queda con todo lo que
-               sobre, y `min-width:0` le permite encoger por debajo de su
-               contenido en vez de empujar la rejilla fuera de la ventana. */
-            /* ── COLUMNAS EN `em`, NO EN PX FIJOS ──
-
-               Antes eran px (30/32/58/74): cabían con rótulos de 9 px, pero
-               al subir la letra «Actualmente» no entraba en 58 px y la fila
-               se desarmaba.
-
-               En `em` las columnas siguen a la letra: si la base sube, ellas
-               suben. El `min` contra un px es el tope, para que un control no
-               se coma el nombre del ingrediente. */
-            --cust-ing-cols:
-                min(2.4em, 42px)
-                minmax(0, 1fr)
-                min(3.4em, 62px)
-                min(7.6em, 138px)
-                min(8.4em, 152px);
+               El reparto ya no se hace con una variable de columnas: la fila
+               es una rejilla de DOS renglones (miniatura + nombre arriba, los
+               tres controles debajo). Ver `.cust-ing-cabecera, .cust-ing`. */
             /* EL AIRE VA AQUÍ, NO AL CUERPO.
 
                Antes la lista terminaba el cuerpo y el cuerpo reservaba
@@ -3346,16 +3325,39 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             padding-bottom:2.5rem;
         }
 
+        /* ── LA FILA, EN DOS RENGLONES ──
+
+           Una sola rejilla de dos columnas y dos filas:
+
+             renglón 1:  miniatura | nombre (todo lo ancho que sobre)
+             renglón 2:  los tres controles, repartidos a todo el ancho
+
+           `grid-template-areas` deja claro dónde cae cada cosa y evita que
+           un cambio de contenido mueva las piezas de sitio.
+
+           POR QUÉ DOS RENGLONES Y NO CINCO COLUMNAS. Con cinco columnas, los
+           tres controles pedían 362 px en 356 disponibles: el nombre se
+           quedaba con −5 px y partía letra por letra. Aquí el nombre tiene
+           312 px para él solo, y los controles no pueden quitárselos. */
         .cust-ing-cabecera,
         .cust-ing {
             display:grid;
-            grid-template-columns:var(--cust-ing-cols);
+            grid-template-columns:var(--cust-ing-mini, 46px) minmax(0, 1fr);
+            grid-template-areas:
+                "mini nombre"
+                "ctrl ctrl";
             align-items:center;
-            column-gap:.2rem;
-            /* Las filas pueden CRECER de alto: el rótulo «Actualmente» parte
-               en dos líneas antes que desbordar su columna. El dueño aprobó
-               que crezcan antes que encoger la letra por debajo de 16 pt. */
-            row-gap:.15rem;
+            column-gap:.45rem;
+            row-gap:.3rem;
+        }
+        /* Los controles a todo el ancho, en partes iguales. */
+        .cust-ing-controles {
+            grid-area:ctrl;
+            display:grid;
+            grid-template-columns:1fr 1fr 1fr;
+            align-items:center;
+            column-gap:.3rem;
+            justify-items:center;
         }
 
         /* Rótulos de columna: pequeños, semibold y atenuados. Es texto de
@@ -3373,22 +3375,27 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            (`body.tema-claro .modal-body span`, especificidad 0,2,2). Sin
            esto, el rótulo y el estado «Sin» salían del color equivocado. */
         #customizeModal .cust-ing-cab {
-            /* Los tres controles ocupan UN renglón, siempre.
+            /* ── LOS RÓTULOS NUNCA SE TRUNCAN ──
 
-               El dueño lo fijó así. Antes podían partir en dos y la fila
-               crecía de alto por culpa de un rótulo; ahora el rótulo se
-               encoge hasta el piso antes que partir, y si aun así no cabe,
-               el auto-ajuste recorta. Nunca dos líneas. */
+               «Qui…» y «Actualmen…» no se entendían. Antes había `nowrap` +
+               `ellipsis` para forzar un renglón, y el texto quedaba mudo.
+
+               Ahora el rótulo puede partir en dos líneas si hace falta, y el
+               auto-ajuste lo encoge hasta 8 pt antes de llegar a eso. Entre
+               recortar y partir, se parte: siempre se lee.
+
+               PRIORIDAD DEL NOMBRE. El dueño la fijó: los nombres de los
+               ingredientes manda sobre los tres controles. Por eso el nombre
+               tiene su propio renglón a todo el ancho y los controles se
+               reparten el suyo; el que se aprieta es el rótulo, nunca el
+               nombre. */
             font-size:var(--letra-denso);
-            line-height:1.25;
+            line-height:1.2;
             font-weight:600;
             color:var(--customize-subtext);
             text-align:center;
-            /* `nowrap`: si el rótulo no cabe, NO parte. El medidor lo encoge
-               y, en el peor caso, lo recorta. */
-            white-space:nowrap;
-            overflow:hidden;
-            text-overflow:ellipsis;
+            overflow-wrap:break-word;
+            hyphens:auto;
         }
         #customizeModal .cust-ing-cab--nombre {
             text-align:left;
@@ -3407,6 +3414,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            columna de la rejilla y si desaparece, el nombre se corre y deja
            de coincidir con la cabecera. */
         .cust-ing-mini-celda {
+            grid-area:mini;
             display:flex;
             align-items:center;
             justify-content:center;
@@ -3433,6 +3441,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            estandariza. Se declaran los dos: gana el que el navegador
            entienda. */
         .cust-ing-info {
+            grid-area:nombre;
             /* `min-width:0` deja que la columna encoja por debajo de su
                contenido en vez de empujar la rejilla fuera de la ventana. */
             min-width:0;
@@ -3450,8 +3459,19 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             line-height:1.3;
             color:var(--customize-text);
             /* `overflow-wrap:anywhere` parte palabras larguísimas antes que
-               desbordar la columna. */
+               desbordar la columna. Ya NO parte letra por letra: el nombre
+               tiene 312 px para él solo.
+
+               El auto-ajuste mide el nombre solo, sin la unidad, que es un
+               dato aparte con su propio tamaño. */
             overflow-wrap:anywhere;
+        }
+        /* La marca «(define el plato)» va en su propio tamaño, fija: es una
+           anotación, no parte del nombre, y no debe encogerlo. */
+        .cust-ing-principal {
+            color:var(--accent-text);
+            font-size:.8em;
+            white-space:nowrap;
         }
         /* También con el id: es un span, y en el tema claro la regla del
            modal lo pintaba con la tinta principal, así que la línea de
@@ -3858,13 +3878,28 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                    con el contenido: es el precio de que llene el hueco, y el
                    dueño eligió esto.
 
-                   EL ALTO SALE DE LA CELDA, NO DEL CONTENIDO. `height:100%`
-                   en la foto, con `align-self:stretch` en la celda, hace que
-                   llene el hueco disponible. Pero sin cota, dentro de una fila
-                   `1fr` sin alto resuelto, la celda crece con el contenido y
-                   la foto la acompaña: la ventana se estira y el marco la
-                   recorta. `min-height:0` es lo que corta esa realimentación.
-                   `overflow:hidden` recorta la imagen a la celda. */
+                   EL SCROLL Y EL LLENADO, A LA VEZ.
+
+                   Dos cosas que parecían incompatibles y no lo son:
+
+                     1. La foto SIGUE AL USUARIO: `position:sticky` con
+                        `top:0`. Al deslizar, se queda pegada al borde de
+                        arriba de su celda en vez de irse con el texto, y el
+                        hueco de la izquierda nunca queda vacío.
+                     2. La foto LLENA su celda: `height:100%` +
+                        `align-self:stretch`. No deja aire alrededor aunque la
+                        imagen sea de otra proporción; `object-fit:cover`
+                        recorta el sobrante.
+
+                   La versión anterior fallaba porque el envoltorio se
+                   encogía al tamaño intrínseco de la imagen: `sticky` sin
+                   alto propio deja hueco, y `stretch` sin `sticky` se va con
+                   el scroll. Con `height:100%` + `min-height:0` se cumplen
+                   las dos. */
+                position:sticky;
+                top:0;
+                align-self:stretch;
+                height:100%;
                 min-height:0;
                 overflow:hidden;
             }
@@ -3919,14 +3954,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                crecen y los rótulos de la cabecera también. Los anchos
                siguen saliendo de la MISMA variable que usan las filas. */
             #ingredientesList {
-                /* En `em` como el bloque de base, con topes más holgados:
-                   aquí sobra ancho y los controles pueden respirar. */
-                --cust-ing-cols:
-                    min(2.4em, 48px)
-                    minmax(0, 1fr)
-                    min(3.4em, 68px)
-                    min(7.6em, 150px)
-                    min(8.4em, 165px);
+                /* En pantalla ancha las columnas de la fila de dos renglones
+                   crecen un poco: la miniatura y el hueco del nombre. */
+                --cust-ing-mini: 48px;
                 /* La tabla NO tiene scroll propio: lo lleva la banda entera
                    (ver .cust-inferior). Si scrolleara ella sola, la nota de
                    arriba se quedaría fija comiéndose 62 px de los 160 que
@@ -4872,10 +4902,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794152442"></script>
-    <script src="js/cliente-customize.js?v=1794152442"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794155567"></script>
+    <script src="js/cliente-customize.js?v=1794155567"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794152442"></script>
+    <script src="js/cliente-historial.js?v=1794155567"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>

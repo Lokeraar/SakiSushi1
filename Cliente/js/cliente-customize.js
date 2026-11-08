@@ -363,14 +363,17 @@
             // rejilla desde el <style> (.cust-ing-cabecera, .cust-ing), así
             // cada rótulo cae justo encima de su botón.
             //
-            // La primera celda va vacía porque es la columna de la
-            // miniatura: las filas de datos sí la llevan.
+            // La cabecera sigue el mismo reparto de dos renglones que las
+            // filas. En el primero va el rótulo del nombre; en el segundo, los
+            // tres rótulos de control repartidos.
             html += '<div class="cust-ing-cabecera" aria-hidden="true">' +
                 '<span class="cust-ing-mini-celda"></span>' +
                 '<span class="cust-ing-cab cust-ing-cab--nombre">Nombre del ingrediente</span>' +
-                '<span class="cust-ing-cab cust-ing-cab--ctrl">Quitar</span>' +
-                '<span class="cust-ing-cab cust-ing-cab--ctrl">Actualmente</span>' +
-                '<span class="cust-ing-cab cust-ing-cab--ctrl">Agrandar</span>' +
+                '<div class="cust-ing-controles cust-ing-controles--cab">' +
+                  '<span class="cust-ing-cab cust-ing-cab--ctrl">Quitar</span>' +
+                  '<span class="cust-ing-cab cust-ing-cab--ctrl">Actualmente</span>' +
+                  '<span class="cust-ing-cab cust-ing-cab--ctrl">Agrandar</span>' +
+                '</div>' +
               '</div>';
 
             // Cada fila: miniatura · nombre · Quitar · Actualmente · Agrandar.
@@ -418,19 +421,29 @@
 
                 html += '<div class="cust-ing">' +
                     // Miniatura del ingrediente. Sin foto no se pinta nada,
-                    // pero la celda se queda: es una columna de la rejilla y
-                    // sin ella el nombre se correría y la cabecera dejaría
-                    // de coincidir con los datos.
-                    // SIN loading="lazy": la lista arranca oculta y el
-                    // navegador nunca baja una imagen perezosa que está
-                    // dentro de algo no visible. Son 34 px ya en caché.
+                    // pero la celda se queda: sin ella el nombre se correría.
+                    //
+                    // ── LA FILA VA EN DOS RENGLONES ──
+                    //
+                    // Renglón 1: miniatura + nombre con su unidad, a todo el
+                    //            ancho disponible (312 px: ~29 caracteres por
+                    //            línea, hasta tres líneas).
+                    // Renglón 2: Quitar · Actualmente · Agrandar, repartidos.
+                    //
+                    // POR QUÉ. Antes los cinco iban en una sola fila de cinco
+                    // columnas, y los tres controles pedían 362 px en 356
+                    // disponibles: el `minmax(0,1fr)` del nombre se quedaba con
+                    // MENOS CINCO píxeles y el texto partía letra por letra.
+                    // «Arroz para sushi» salía en una columna de una letra de
+                    // ancho. Con el nombre en su propio renglón eso no puede
+                    // volver a pasar, haga lo que haga el tamaño de letra.
                     '<span class="cust-ing-mini-celda">' +
                       (ing.imagen ? '<img class="cust-ing-mini" src="' + ing.imagen + '" alt="">' : '') +
                     '</span>' +
                     '<div class="cust-ing-info">' +
                       '<div class="cust-ing-nombre">' + ing.nombre +
                         (ing.principal
-                          ? ' <span style="color:var(--accent-text);font-size:.66rem">(define el plato)</span>'
+                          ? ' <span class="cust-ing-principal">(define el plato)</span>'
                           : '') +
                       '</div>' +
                       '<span class="cust-ing-cant">' +
@@ -438,13 +451,16 @@
                         '<span id="precio_ing_' + idx + '">' + precioTxt + '</span>' +
                       '</span>' +
                     '</div>' +
-                    '<button type="button" class="cust-ing-btn cust-ing-btn--quitar" ' +
-                      'id="quitar_ing_' + idx + '" data-ing="' + idx + '" data-estado="quitar" ' +
-                      'title="Quitar" aria-pressed="false" ' +
-                      'aria-label="Quitar ' + ing.nombre + '" ' +
-                      'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'quitar\')">&minus;</button>' +
-                    '<span class="cust-ing-estado" id="estado_ing_' + idx + '">Normal</span>' +
-                    '<div class="cust-ing-agrandar">' + botonAgrandar + '</div>' +
+                    // Los tres controles, agrupados en su propio renglón.
+                    '<div class="cust-ing-controles">' +
+                      '<button type="button" class="cust-ing-btn cust-ing-btn--quitar" ' +
+                        'id="quitar_ing_' + idx + '" data-ing="' + idx + '" data-estado="quitar" ' +
+                        'title="Quitar" aria-pressed="false" ' +
+                        'aria-label="Quitar ' + ing.nombre + '" ' +
+                        'onclick="window.cambiarEstadoIngrediente(' + idx + ', \'quitar\')">&minus;</button>' +
+                      '<span class="cust-ing-estado" id="estado_ing_' + idx + '">Normal</span>' +
+                      '<div class="cust-ing-agrandar">' + botonAgrandar + '</div>' +
+                    '</div>' +
                   '</div>';
             });
 
