@@ -42,15 +42,29 @@
         // El resto del contenido de lectura, 16 pt.
         descripcion: 16 * PX_POR_PT,   // 21,33 px
         nota:        16 * PX_POR_PT,   // 21,33 px
-        // La fila de ingredientes es DATO para escanear, no prosa: 12 pt,
-        // el cuerpo estándar de Word. A 16 pt el nombre no cabe en la columna.
-        ingrediente: 12 * PX_POR_PT    // 16 px
+        // La fila de ingredientes también parte de 16 pt: el dueño la vio a
+        // 12 y dijo que se veía más chica de lo que debería. Ahora la fila
+        // crece de alto antes que la letra bajar del techo.
+        ingrediente: 16 * PX_POR_PT   // 21,33 px
     };
 
     // El piso absoluto, igual para todo: 8 pt. Por debajo, la gente puede
     // leer pero no con comodidad. Es el criterio del dueño y coincide con la
     // práctica: 8 pt es donde termina la lectura cómoda.
     var PISO = 8 * PX_POR_PT;          // 10,67 px
+
+    // ── REGLA GENERAL: CUALQUIER CAJA CON TEXTO ──
+    //
+    // El dueño lo fijó así: «text fitting sería para aplicar en toda área en la
+    // que haya algún tipo de texto, sea dentro de un cajón o dentro de otro
+    // elemento, con tal de que se autoajuste a las dimensiones que tiene
+    // disponibles».
+    //
+    // Los roles de abajo ya NO son una lista cerrada de cuatro cosas: son los
+    // valores por defecto de los campos conocidos de la ventana. Cualquier
+    // otro elemento se ajusta llamando a `ajustarCaja(el, opciones)` con su
+    // propio techo y su propia capacidad, sin tocar este archivo.
+    var CAPACIDAD_POR_DEFECTO = { lineas: 1, maxLineas: 3 };
 
     // Cuántas líneas puede ocupar cada campo COMO MÍNIMO. Si el texto no cabe
     // ni al piso en estas líneas, se le da una más y se repite el ajuste.
@@ -60,7 +74,10 @@
         titulo:      { lineas: 2, maxLineas: 3 },
         descripcion: { lineas: 3, maxLineas: 5 },
         nota:        { lineas: 2, maxLineas: 3 },
-        ingrediente: { lineas: 1, maxLineas: 2 }
+        // El nombre del ingrediente puede partir en dos renglones: el dueño
+        // aprobó que la fila crezca antes que la letra encogerse.
+        ingrediente: { lineas: 2, maxLineas: 2 },
+        rotulo:      { lineas: 2, maxLineas: 2 }
     };
 
     // Tolerancia en píxeles para dar por bueno un ajuste. Sin ella, el
@@ -202,6 +219,49 @@
     }
 
     /**
+     * Ajusta CUALQUIER caja con texto a las dimensiones que tenga disponibles.
+     *
+     * ESTA ES LA REGLA GENERAL que pidió el dueño. `ajustarElemento` es el
+     * motor; esto es la puerta pública para usar el motor en cualquier parte,
+     * no solo en los cuatro campos de la ventana del platillo.
+     *
+     * Uso:
+     *
+     *     ajustarCaja(document.querySelector('.mi-titulo'), {
+     *         techo: 24 * 96/72,      // 24 pt
+     *         lineas: 2,              // capacidad mínima
+     *         maxLineas: 3            // hasta dónde puede crecer
+     *     });
+     *
+     * Sin `techo` se usa el de contenido (16 pt). Sin capacidad, una línea y
+     * hasta tres. Devuelve el tamaño aplicado en px, o `null` si no se pudo
+     * medir.
+     */
+    function ajustarCaja(el, opciones) {
+        var op = opciones || {};
+        var techo = op.techo || TECHO.descripcion;
+        var cap = {
+            lineas: op.lineas || CAPACIDAD_POR_DEFECTO.lineas,
+            maxLineas: op.maxLineas || Math.max(op.lineas || 1, CAPACIDAD_POR_DEFECTO.maxLineas)
+        };
+        return ajustarElemento(el, techo, cap);
+    }
+
+    /**
+     * Ajusta un CONJUNTO de cajas que comparten renglón, con la regla de
+     * consistencia: todas toman el tamaño de la más restrictiva.
+     */
+    function ajustarCajas(elementos, opciones) {
+        var op = opciones || {};
+        var techo = op.techo || TECHO.descripcion;
+        var cap = {
+            lineas: op.lineas || CAPACIDAD_POR_DEFECTO.lineas,
+            maxLineas: op.maxLineas || Math.max(op.lineas || 1, CAPACIDAD_POR_DEFECTO.maxLineas)
+        };
+        return ajustarGrupo(elementos, techo, cap);
+    }
+
+    /**
      * Ajusta todos los textos de la ventana del platillo.
      *
      * SE LLAMA UNA VEZ POR APERTURA, nunca en `resize` ni por frame. Cada
@@ -230,7 +290,7 @@
         // renglón por diseño: cada fila se ajusta como grupo.
         var cabecera = modal.querySelectorAll('.cust-ing-cab');
         if (cabecera && cabecera.length) {
-            ajustarGrupo(cabecera, TECHO.ingrediente, CAPACIDAD.ingrediente);
+            ajustarGrupo(cabecera, TECHO.ingrediente, CAPACIDAD.rotulo);
         }
         var nombres = modal.querySelectorAll('.cust-ing-nombre');
         if (nombres && nombres.length) {
@@ -259,6 +319,11 @@
 
     window.ajustarVentanaPlatillo = ajustarVentanaPlatillo;
     window.limpiarAjusteTexto = limpiarAjuste;
+    // ── LA REGLA GENERAL, DISPONIBLE PARA CUALQUIER CAJA ──
+    // Cualquier elemento con texto puede autoajustarse a su espacio con
+    // `ajustarCaja(el, {techo, lineas, maxLineas})`, sin tocar este archivo.
+    window.ajustarCaja = ajustarCaja;
+    window.ajustarCajas = ajustarCajas;
     window.ajusteTexto = {
         TECHO: TECHO,
         PISO: PISO,

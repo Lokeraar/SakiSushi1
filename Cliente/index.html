@@ -2966,8 +2966,10 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                estira: ocupa su celda y la banda cruza el ancho entero
                debajo.
 
-               En el teléfono esa misma estructura se aplana en una sola
-               columna y la ventana entera scrollea, como siempre. */
+               DOS CELDAS: la foto y el flujo. Los datos y la banda viajan
+               dentro del flujo, que a su vez es `display:contents`, así que
+               sus hijos se colocan como celdas de ESTA misma rejilla. Por eso
+               el plano de abajo tiene tres áreas y no dos. */
             grid-template-areas:"foto" "datos" "lista";
         }
 
@@ -2980,6 +2982,21 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            En el teléfono y en vertical no hace nada: es un <div> más, sus
            hijos se apilan en el orden del marcado y el scroll lo lleva la
            ventana entera. */
+        /* ── EL FLUJO: LOS DATOS Y LA BANDA, EN UNA SOLA COLUMNA ──
+
+           Es el envoltorio de `.cust-cuerpo` y `.cust-inferior`. Existe para
+           que en HORIZONTAL las dos zonas sean una sola caja con un solo
+           scroll.
+
+           EN VERTICAL VUELVE A SER `display:contents`, Y ESO ES DELIBERADO.
+           Así sus hijos son otra vez celdas de la rejilla y la banda puede
+           cruzar las dos columnas, que es el plano que el dueño aprobó.
+
+           ¿Y EL SCROLL PARTIDO QUE REPORTÓ? Ese defecto no lo causaba
+           `contents`, lo causaban los DOS `overflow-y:auto` de dentro
+           (`.cust-cuerpo` y `.cust-inferior`). Ahora el único que scrollea
+           es `.cust-layout`, y por eso el gesto funciona igual sobre el
+           título que sobre la nota. */
         .cust-flujo { display:contents; }
 
         /* Envoltura de la foto. En el telefono sostiene la X encima;
@@ -3103,6 +3120,12 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                pasaba por debajo. Con el ancla aquí, la X se va con el
                contenido al deslizar, que es lo que pidio el dueño. */
             position:relative;
+            /* SIN SCROLL PROPIO. Antes tenía `overflow-y:auto`, y junto al de
+               `.cust-inferior` partía el gesto en dos: deslizar sobre el
+               título movía esta columna y deslizar sobre la nota no movía
+               nada, porque empezabas en un contenedor que ya estaba arriba
+               del todo. El único que scrollea es `.cust-layout`. */
+            overflow:visible;
         }
 
         /* ── LAS MEDIDAS DE LA LETRA, EN PUNTOS ──
@@ -3128,8 +3151,12 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         :root {
             --letra-contenido: clamp(1rem, 0.95rem + 0.3vw, 1.333rem);
             --letra-titulo: clamp(1.25rem, 1.1rem + 0.6vw, 2rem);
-            --letra-denso: 1rem;            /* 12 pt: renglones de la tabla */
-            --letra-apoyo: 0.9375rem;       /* 15 px: líneas de apoyo */
+            /* La tabla también parte de 16 pt. Antes estaba en 12 pt por una
+               decisión mía para que cupiera en un renglón; el dueño la vio y
+               dijo que se veía más chica de lo que debería. Ahora la fila
+               crece de alto antes que encoger la letra. */
+            --letra-denso: clamp(1rem, 0.95rem + 0.2vw, 1.333rem);
+            --letra-apoyo: clamp(0.9375rem, 0.9rem + 0.2vw, 1.125rem);
         }
 
         .cust-titulo {
@@ -3294,12 +3321,21 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                El nombre lleva `minmax(0,1fr)`: se queda con todo lo que
                sobre, y `min-width:0` le permite encoger por debajo de su
                contenido en vez de empujar la rejilla fuera de la ventana. */
+            /* ── COLUMNAS EN `em`, NO EN PX FIJOS ──
+
+               Antes eran px (30/32/58/74): cabían con rótulos de 9 px, pero
+               al subir la letra «Actualmente» no entraba en 58 px y la fila
+               se desarmaba.
+
+               En `em` las columnas siguen a la letra: si la base sube, ellas
+               suben. El `min` contra un px es el tope, para que un control no
+               se coma el nombre del ingrediente. */
             --cust-ing-cols:
-                min(2.2em, 34px)
+                min(2.4em, 42px)
                 minmax(0, 1fr)
-                min(3.2em, 40px)
-                min(7.4em, 78px)
-                min(8.2em, 86px);
+                min(3.4em, 62px)
+                min(7.6em, 138px)
+                min(8.4em, 152px);
             /* EL AIRE VA AQUÍ, NO AL CUERPO.
 
                Antes la lista terminaba el cuerpo y el cuerpo reservaba
@@ -3316,6 +3352,10 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             grid-template-columns:var(--cust-ing-cols);
             align-items:center;
             column-gap:.2rem;
+            /* Las filas pueden CRECER de alto: el rótulo «Actualmente» parte
+               en dos líneas antes que desbordar su columna. El dueño aprobó
+               que crezcan antes que encoger la letra por debajo de 16 pt. */
+            row-gap:.15rem;
         }
 
         /* Rótulos de columna: pequeños, semibold y atenuados. Es texto de
@@ -3386,17 +3426,17 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         }
         .cust-ing-info { min-width:0; }
         .cust-ing-nombre {
-            /* 12 pt = 16 px: el cuerpo estándar de Word, y el techo de esta
-               columna. El auto-ajuste baja hasta 8 pt si el nombre es largo. */
+            /* 16 pt de base, como el resto del contenido. Si el nombre no
+               cabe, el medidor lo encoge hasta 8 pt y, si aun así no entra,
+               la FILA CRECE DE ALTO y el nombre parte en dos renglones. */
             font-size:var(--letra-denso);
             line-height:1.3;
             color:var(--customize-text);
-            /* Si ni al piso cabe (un nombre de 40 caracteres en un teléfono),
-               se corta con puntos suspensivos. El nombre completo queda en
-               el atributo `title`, que el navegador muestra al mantener
-               pulsado en Android. */
-            overflow:hidden;
-            text-overflow:ellipsis;
+            /* Ya NO se corta en una línea. `overflow-wrap:anywhere` parte
+               palabras larguísimas (un nombre con guiones o sin espacios)
+               antes que desbordar la columna. */
+            overflow-wrap:anywhere;
+            hyphens:auto;
         }
         /* También con el id: es un span, y en el tema claro la regla del
            modal lo pintaba con la tinta principal, así que la línea de
@@ -3605,10 +3645,12 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             padding:.85rem 1.15rem;
             border-top:1px solid rgba(128,128,128,.2);
             background:rgba(0,0,0,.2);
-            /* Aquí y solo aquí se desplaza la banda: la nota, la tabla y los
-               botones viajan juntos. */
-            overflow-y:auto;
-            overscroll-behavior:contain;
+            /* SIN SCROLL PROPIO: el de la ventana es el único. Si conservara
+               `overflow-y:auto`, el dedo sobre la nota desplazaría una caja
+               que ya está al principio y el gesto no haría nada — el defecto
+               que reportó el dueño («si deslizo parado desde ella no
+               ocurre»). */
+            overflow:visible;
         }
         .cust-layout:not(.con-lista) .cust-inferior-cuerpo { display:none; }
 
@@ -3756,12 +3798,28 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                    con el contenido. */
                 height:auto;
             }
-            .cust-cuerpo {
+            /* ── EL ÚNICO QUE SCROLLEA EN VERTICAL ES LA REJILLA ──
+
+               Antes scrolleaban `.cust-cuerpo` y `.cust-inferior` por
+               separado, cada uno con su `overflow-y:auto`. Por eso el gesto
+               solo funcionaba en la mitad de arriba: al deslizar sobre la
+               nota empezabas en un contenedor que ya estaba arriba del todo,
+               y ese era el que se movía. Nada que desplazar, gesto muerto.
+
+               Con el scroll aquí, el dedo funciona igual sobre el título,
+               sobre la nota o sobre la tabla: todo es la misma superficie.
+
+               `overscroll-behavior:contain` evita que al llegar al final el
+               gesto se contagie a la página de detrás. */
+            .cust-layout {
                 overflow-y:auto;
-                min-height:0;
-                /* El foco de un control no debe arrastrar el scroll del
-                   navegador: aquí solo se desplaza esta columna. */
                 overscroll-behavior:contain;
+                touch-action:pan-y;
+            }
+            .cust-cuerpo {
+                /* Sin scroll propio: lo lleva el layout. */
+                overflow:visible;
+                min-height:0;
             }
             /* Con la foto fija, el dedo que arrastra sobre ella tiene que
                poder desplazar la lista de la derecha. `pan-y` le dice al
@@ -3770,6 +3828,21 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                listener y arrastrar sobre la imagen no haría nada. */
             #customizeModal .modal-container.cust-ventana .cust-foto-wrap {
                 touch-action:pan-y;
+                /* ── LA FOTO SE QUEDA QUIETA MIENTRAS EL RESTO DESLIZA ──
+
+                   El scroll ahora lo lleva `.cust-layout`, que envuelve a la
+                   foto Y al contenido. Sin `sticky`, la foto subiría con el
+                   texto y desaparecería hacia arriba — justo lo que se pidió
+                   evitar. Con `top:0` se ancla al borde de arriba de su
+                   celda y el contenido se desliza a su lado.
+
+                   `align-self:start` es necesario: dentro de una celda de
+                   rejilla, un hijo `sticky` se estira a todo el alto de la
+                   fila y entonces no tiene margen para pegarse a nada. */
+                position:sticky;
+                top:0;
+                align-self:start;
+                max-height:100%;
                 /* El envoltorio SÍ se estira con la celda, para que la foto
                    llene la columna izquierda entera —las dos filas—. Antes
                    se quedaba en `align-self:start` porque el alto de la foto
@@ -3836,7 +3909,14 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                crecen y los rótulos de la cabecera también. Los anchos
                siguen saliendo de la MISMA variable que usan las filas. */
             #ingredientesList {
-                --cust-ing-cols: 40px minmax(0,1fr) 40px 84px 104px;
+                /* En `em` como el bloque de base, con topes más holgados:
+                   aquí sobra ancho y los controles pueden respirar. */
+                --cust-ing-cols:
+                    min(2.4em, 48px)
+                    minmax(0, 1fr)
+                    min(3.4em, 68px)
+                    min(7.6em, 150px)
+                    min(8.4em, 165px);
                 /* La tabla NO tiene scroll propio: lo lleva la banda entera
                    (ver .cust-inferior). Si scrolleara ella sola, la nota de
                    arriba se quedaría fija comiéndose 62 px de los 160 que
@@ -4781,10 +4861,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794114937"></script>
-    <script src="js/cliente-customize.js?v=1794114937"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794148604"></script>
+    <script src="js/cliente-customize.js?v=1794148604"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794114937"></script>
+    <script src="js/cliente-historial.js?v=1794148604"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>
