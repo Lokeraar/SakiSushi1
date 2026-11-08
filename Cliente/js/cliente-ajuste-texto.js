@@ -294,12 +294,235 @@
         return ajustarGrupo(elementos, techo, cap);
     }
 
+    // ── LOS ANCHOS DE LAS TRES COLUMNAS DE CONTROL SE MIDEN EN EL APARATO ──
+    //
+    // El reparto de la rejilla de ingredientes sale del TEXTO REAL de los
+    // rótulos y del ancho que de verdad deja la pantalla, no de una tabla de
+    // píxeles calculada sobre la captura de un teléfono. Esos números, en
+    // otro aparato o con otra letra del sistema, dejaban el rótulo cortado o
+    // se comían el nombre del ingrediente.
+    //
+    // Se publica como variables CSS en la CABECERA y en CADA FILA porque cada
+    // fila es su propia rejilla: una variable puesta solo en la cabecera no
+    // llegaría a las filas, que no son hijas suyas.
+    var VARS_COLUMNAS = ['--cust-col-q', '--cust-col-a', '--cust-col-ag'];
+
+    /**
+     * Ancho del TEXTO de `el`, sin el ancho de su caja.
+     *
+     * POR QUÉ NO `scrollWidth` A SECAS. Un rótulo es una celda de la rejilla:
+     * su caja ocupa la columna entera aunque el texto sea más corto, y
+     * `scrollWidth` devuelve `max(texto, caja)`. Midiendo así, un rótulo que ya
+     * cabía cómodo devolvía el ancho de su columna —90 px de caja con 59 px de
+     * texto daban 90— y el reparto se quedaba congelado en los números viejos
+     * en vez de recalcularse. Un `Range` sobre el contenido mide las letras y
+     * nada más.
+     */
+    function anchoTexto(el) {
+        if (document.createRange) {
+            var rango = document.createRange();
+            rango.selectNodeContents(el);
+            var caja = rango.getBoundingClientRect ? rango.getBoundingClientRect() : null;
+            if (caja && caja.width > 0) return caja.width;
+        }
+        return el.scrollWidth;
+    }
+
+    /**
+     * Calcula y publica el ancho de las columnas Quitar · Actualmente ·
+     * Agrandar de la tabla de ingredientes.
+     *
+     * QUÉ MANDA Y QUÉ NO. De este aparato salen tres cosas: el ancho útil de
+     * la rejilla, y el ancho real de cada rótulo a 16 pt y a 8 pt. Del diseño
+     * salen dos, y no se tocan: la miniatura y el aire entre columnas. La
+     * miniatura es un icono con un tamaño decidido a mano, no texto que haya
+     * que leer.
+     *
+     * EL ORDEN DE PREFERENCIA, de mejor a peor:
+     *   1. Los tres rótulos caben a 16 pt → cada columna mide su texto.
+     *   2. No caben a 16 pt pero sí a 8 pt → se encogen los tres por igual, con
+     *      el mismo factor, y cada columna mide su texto ya encogido.
+     *   3. No caben ni a 8 pt → se quedan a 8 pt y el que se comprime es el
+     *      nombre. Es el único caso degenerado, y es honesto: en una pantalla
+     *      así no hay reparto que haga entrar tres rótulos y un nombre.
+     *
+     * Devuelve `true` si llegó a publicar los anchos, `false` si no había nada
+     * que medir.
+     */
+    function medirColumnasTabla(modal) {
+        if (!modal) modal = document.getElementById('customizeModal');
+        if (!modal || !modal.querySelector) return false;
+
+        var cabecera = modal.querySelector('.cust-ing-cabecera');
+        if (!cabecera) return false;
+        var rotulos = modal.querySelectorAll('.cust-ing-cab--ctrl');
+        if (!rotulos || rotulos.length < 3) return false;
+
+        // ── NO SE MIDE LO QUE NO ESTÁ EN PANTALLA ──
+        //
+        // Ojo con el criterio del resto del archivo: allí se comprueba
+        // `offsetParent`, pero aquí no sirve. El modal es `position:fixed`, y
+        // en un elemento fijo `offsetParent` vale `null` SIEMPRE, también con
+        // la ventana abierta y perfectamente visible. Con ese guardia esta
+        // función no mediría nunca. Lo que sí distingue los dos estados es el
+        // ancho: oculta, la cabecera mide 0.
+        var estiloCab = window.getComputedStyle(cabecera);
+        if (!estiloCab) return false;
+        var util = cabecera.clientWidth
+            - (parseFloat(estiloCab.paddingLeft) || 0)
+            - (parseFloat(estiloCab.paddingRight) || 0);
+        if (!(util > 0)) return false;
+
+        // ── LO QUE VIENE DEL DISEÑO, NO DEL APARATO ──
+        //
+        // La miniatura y el aire se leen del CSS en vez de repetirlos aquí:
+        // el día que cambien (en horizontal la miniatura crece a 32 px), esta
+        // cuenta se entera sola.
+        var mini = 0;
+        var celdaMini = modal.querySelector('.cust-ing-mini-celda');
+        if (celdaMini) {
+            var anchoMini = parseFloat(window.getComputedStyle(celdaMini).width);
+            if (isFinite(anchoMini) && anchoMini > 0) mini = anchoMini;
+        }
+        var hueco = parseFloat(estiloCab.columnGap);
+        if (!isFinite(hueco) || hueco < 0) hueco = 0;
+        // Cinco columnas dejan CUATRO huecos entre ellas.
+        var fijo = mini + hueco * 4;
+
+        // ── EL TEXTO, A LOS DOS TAMAÑOS EXTREMOS ──
+        //
+        // Se mide a 16 pt (techo) y a 8 pt (piso) porque entre esos dos vive
+        // cualquier reparto posible. El tamaño en línea se guarda y se
+        // devuelve tal cual estaba: si el ajuste de letra ya había escrito uno,
+        // esta medición no puede borrarlo.
+        var naturalTecho = [];
+        var naturalPiso = [];
+        var i;
+        for (i = 0; i < 3; i++) {
+            var rotulo = rotulos[i];
+            var previo = rotulo.style.fontSize;
+            rotulo.style.fontSize = TECHO.ingrediente + 'px';
+            naturalTecho.push(anchoTexto(rotulo));
+            rotulo.style.fontSize = PISO + 'px';
+            naturalPiso.push(anchoTexto(rotulo));
+            rotulo.style.fontSize = previo;
+        }
+
+        // Se redondea hacia arriba ANTES de comparar: son los píxeles que se
+        // van a publicar, y comparar con una suma que luego crece al redondear
+        // daba el caso tonto de «cabe» seguido de un nombre de 0 px.
+        var anchos = [];
+        var necesTecho = 0;
+        var necesPiso = 0;
+        // El piso de CADA columna, por separado: es hasta dónde se puede
+        // apretar esa columna sin dejar su rótulo por debajo de 8 pt.
+        var necesPisoPorColumna = [];
+        for (i = 0; i < 3; i++) {
+            anchos[i] = Math.ceil(naturalTecho[i]);
+            necesTecho += anchos[i];
+            necesPisoPorColumna[i] = Math.ceil(naturalPiso[i]);
+            necesPiso += necesPisoPorColumna[i];
+        }
+
+        // ── EL PRESUPUESTO ES UNA COTA, NO UNA INTENCIÓN ──
+        //
+        // Cada columna se redondea hacia arriba por separado porque una
+        // rejilla no acepta medios píxeles en la práctica: lo que se publica
+        // tiene que ser entero. Pero redondear tres veces puede pasarse del
+        // presupuesto por hasta 3 px, y el que paga es el nombre, que es la
+        // columna `1fr`: con el presupuesto agotado se queda en cero y el
+        // nombre del ingrediente desaparece. Por eso, después de repartir, se
+        // corrige la suma: se recorta de la columna de texto MÁS ANCHO hasta
+        // volver a entrar, sin bajar ninguna de lo que mide su propio texto a
+        // 8 pt. Es el suelo por debajo del cual el rótulo ya no se lee.
+        function ajustarAlPresupuesto(anchos, pisos, limite) {
+            var total = 0;
+            for (var j = 0; j < anchos.length; j++) total += anchos[j];
+            var sobra = total - limite;
+            // De mayor a menor: recortar a la columna ancha cuesta menos
+            // legibilidad que apretar la corta, que ya iba justa.
+            var orden = [0, 1, 2].sort(function (x, y) { return anchos[y] - anchos[x]; });
+            for (var o = 0; o < orden.length && sobra > 0; o++) {
+                var idx = orden[o];
+                var disponible = Math.max(0, anchos[idx] - pisos[idx]);
+                var quitar = Math.min(disponible, sobra);
+                anchos[idx] -= quitar;
+                sobra -= quitar;
+            }
+            return anchos;
+        }
+
+        // ── EL NOMBRE TIENE PRIORIDAD, Y ESO ES UN PRESUPUESTO, NO UN DESEO ──
+        //
+        // El dueño lo fijó: «los nombres de los ingredientes tienen
+        // prioridad». Sin esta reserva, el reparto automático tenía un agujero
+        // grave: en una tarjeta de 340-360 px los tres rótulos a 16 pt piden
+        // ~268 px y el aire otros 34, así que «caben» y se los llevan todos,
+        // dejando al nombre 18 px. El nombre es la columna `1fr`, así que
+        // absorbe cualquier descuadre y puede quedarse en nada.
+        //
+        // Por eso los controles no reparten contra el ancho útil completo, sino
+        // contra lo que queda DESPUÉS de reservar al nombre un mínimo legible.
+        // Es una reserva en píxeles y no un porcentaje a propósito: al nombre
+        // se le mide en caracteres que puede mostrar, y eso no escala con la
+        // pantalla.
+        var NOMBRE_MINIMO = 90; // ~8 letras por línea a 16 pt
+        var presupuesto = Math.floor(util - fijo - NOMBRE_MINIMO);
+        if (presupuesto < 0) presupuesto = 0;
+
+        if (necesTecho <= presupuesto) {
+            // Caso bueno: los rótulos entran a 16 pt y al nombre le sobra su
+            // reserva.
+        } else if (necesPiso <= presupuesto) {
+            // No entran a 16 pt, pero sí a 8. Se encogen los tres con el MISMO
+            // factor: tres tamaños distintos en una misma línea se leerían
+            // como un error de maquetación.
+            var factor = presupuesto / necesTecho;
+            factor = Math.max(factor, PISO / TECHO.ingrediente);
+            factor = Math.min(factor, 1);
+            for (i = 0; i < 3; i++) {
+                anchos[i] = Math.ceil(naturalTecho[i] * factor);
+            }
+        } else {
+            // Ni a 8 pt entran en el presupuesto: los rótulos se quedan en su
+            // piso y el nombre conserva su reserva. El nombre NO se comprime
+            // aquí: encogerlo es trabajo del ajuste de letra, que lo baja hasta
+            // 8 pt y, si aun así no cabe, recorta con puntos suspensivos. Lo
+            // que no se hace es dejarlo en cero por repartir mal.
+            for (i = 0; i < 3; i++) {
+                anchos[i] = Math.ceil(naturalPiso[i]);
+            }
+        }
+
+        ajustarAlPresupuesto(anchos, necesPisoPorColumna, presupuesto);
+
+        publicarColumnas(modal, cabecera, anchos);
+        return true;
+    }
+
+    /** Escribe los tres anchos en la cabecera y en cada fila de ingrediente. */
+    function publicarColumnas(modal, cabecera, anchos) {
+        var destinos = [cabecera];
+        var filas = modal.querySelectorAll('.cust-ing');
+        for (var f = 0; f < filas.length; f++) destinos.push(filas[f]);
+
+        for (var d = 0; d < destinos.length; d++) {
+            var destino = destinos[d];
+            if (!destino || !destino.style || !destino.style.setProperty) continue;
+            for (var k = 0; k < 3; k++) {
+                destino.style.setProperty(VARS_COLUMNAS[k], anchos[k] + 'px');
+            }
+        }
+    }
+
     /**
      * Ajusta todos los textos de la ventana del platillo.
      *
-     * SE LLAMA UNA VEZ POR APERTURA, nunca en `resize` ni por frame. Cada
-     * medición obliga al navegador a recalcular la maquetación; hacerlo en
-     * cada gesto convertiría el scroll en un tirón.
+     * SE LLAMA UNA VEZ POR APERTURA, nunca por frame. Cada medición obliga al
+     * navegador a recalcular la maquetación; hacerlo en cada gesto convertiría
+     * el scroll en un tirón. La única excepción es girar el teléfono o cambiar
+     * el tamaño de la ventana, que ocurre pocas veces y cambia el ancho útil:
+     * eso lo pide `cliente-customize.js`, con su propio retardo.
      */
     function ajustarVentanaPlatillo() {
         var modal = document.getElementById('customizeModal');
@@ -309,6 +532,11 @@
         // historial), y ahí no se ajusta nada.
         var contenedor = modal.querySelector('.modal-container');
         if (!contenedor || !contenedor.classList.contains('cust-ventana')) return;
+
+        // LOS ANCHOS VAN PRIMERO. El ajuste de letra mide cada rótulo contra
+        // el ancho de su columna: si se midiera antes de fijar las columnas,
+        // la letra quedaría ajustada a un reparto que ya no existe.
+        medirColumnasTabla(modal);
 
         var titulo = modal.querySelector('.cust-titulo');
         if (titulo) ajustarElemento(titulo, TECHO.titulo, CAPACIDAD.titulo);
@@ -426,6 +654,9 @@
 
     window.ajustarVentanaPlatillo = ajustarVentanaPlatillo;
     window.limpiarAjusteTexto = limpiarAjuste;
+    // Los anchos de la tabla también son públicos: el giro de pantalla y el
+    // cambio de tamaño los vuelven a pedir desde `cliente-customize.js`.
+    window.medirColumnasTabla = medirColumnasTabla;
     // ── LA REGLA GENERAL, DISPONIBLE PARA CUALQUIER CAJA ──
     // Cualquier elemento con texto puede autoajustarse a su espacio con
     // `ajustarCaja(el, {techo, lineas, maxLineas})`, sin tocar este archivo.

@@ -1073,6 +1073,72 @@
         }
     }
 
+    /** ¿Hay un platillo abierto en pantalla ahora mismo? */
+    function _platilloAbierto() {
+        var modal = document.getElementById('customizeModal');
+        if (!modal || !modal.classList) return false;
+        if (!modal.classList.contains('active')) return false;
+        var contenedor = (typeof modal.querySelector === 'function')
+            ? modal.querySelector('.modal-container')
+            : null;
+        return !!(contenedor && contenedor.classList.contains('cust-ventana'));
+    }
+
+    /**
+     * Vuelve a medir todo lo de la ventana cuando cambia el tamaño de la
+     * pantalla.
+     *
+     * POR QUÉ HACE FALTA. Los anchos de las columnas de control y el tamaño de
+     * la letra se calculan a partir del espacio disponible. Al girar el
+     * teléfono ese espacio cambia en el acto: 412 px de ancho pasan a 915. Si
+     * no se vuelve a medir, la tabla se queda con el reparto de la orientación
+     * anterior y el dueño ve el defecto de siempre —«el título de la tabla
+     * quedó uno encima de otro»— en cuanto gira el aparato.
+     *
+     * POR QUÉ CON RETARDO. `resize` dispara decenas de veces por segundo
+     * mientras el dedo arrastra el borde de la ventana, y cada medición
+     * obliga al navegador a recalcular la maquetación entera. Sin retardo, el
+     * ajuste se convertiría en el tirón que este archivo evita en todas
+     * partes. 150 ms es más que suficiente para que el gesto termine y lo
+     * bastante corto para que el cambio no se note.
+     *
+     * POR QUÉ SE REGISTRA UNA SOLA VEZ. Si el script se cargara dos veces
+     * —caché rara, doble inclusión—, cada copia engancharía su propio par de
+     * oyentes y el ajuste correría el doble por cada gesto, sin ningún aviso.
+     * La bandera en `window` lo impide.
+     */
+    function _escucharCambioDeTamano() {
+        if (window._custEscuchaTamano) return;
+        // Se comprueba que el navegador tenga los oyentes porque este archivo
+        // corre en pruebas con un DOM de mentira que no los implementa: sin la
+        // guarda, cargar el módulo reventaría antes de ajustar nada.
+        if (typeof window.addEventListener !== 'function') return;
+        window._custEscuchaTamano = true;
+
+        var temporizador = null;
+        function pedir() {
+            if (temporizador) clearTimeout(temporizador);
+            temporizador = setTimeout(function () {
+                temporizador = null;
+                // Abrir un modal o cambiar de modo ya dispara su propio ajuste;
+                // aquí solo interesa el caso de la ventana ya abierta.
+                if (!_platilloAbierto()) return;
+                // Un solo camino: `ajustarVentanaPlatillo` fija primero los
+                // anchos de las columnas y después ajusta la letra a esos
+                // anchos. Llamar a las dos por separado desde aquí sería un
+                // segundo punto de entrada, y el orden podría invertirse.
+                _pedirAjusteTexto();
+            }, 150);
+        }
+
+        window.addEventListener('resize', pedir);
+        window.addEventListener('orientationchange', pedir);
+    }
+
+    // Se engancha al cargar. Los oyentes de `window` no dependen de que el DOM
+    // esté listo, a diferencia de los que sí nacen en la apertura del platillo.
+    _escucharCambioDeTamano();
+
     /**
      * Máximo de unidades que se pueden pedir de este plato.
      *

@@ -3335,54 +3335,51 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            Cinco columnas, cabecera en UNA sola línea, y cada fila alineada
            debajo de su rótulo.
 
-           LOS ANCHOS SON LA PARTE DELICADA. La versión que falló tenía
-           138 px y 152 px para dos controles: 362 px pedidos en 356
-           disponibles, el nombre se quedaba con −5 px y partía letra por
-           letra. Ahora los tres controles suman 200 px y el nombre se queda
-           con ~110 px, que a 16 pt son unas 10 letras por línea y hasta 30
-           caracteres en las tres líneas permitidas. */
+           LOS ANCHOS DE LOS TRES CONTROLES NO SE ESCRIBEN AQUÍ. Se miden en
+           el aparato y llegan como variables CSS.
+
+           ANTES ERAN NÚMEROS FIJOS, y estaban mal por construcción: se
+           calcularon midiendo la captura de UN teléfono concreto. En otro
+           aparato, o con otra letra del sistema, el mismo texto ocupa otro
+           ancho y el reparto se desarma —el rótulo se corta o se come el
+           nombre del ingrediente—. El dueño lo detectó y pidió automatizarlo:
+           el ancho tiene que salir del espacio real de la pantalla y del ancho
+           real del texto, medidos en el momento.
+
+           QUIÉN LOS CALCULA. `medirColumnasTabla`, en cliente-ajuste-texto.js.
+           Mide el ancho útil de esta misma cabecera y el ancho del texto de
+           cada rótulo a 16 pt y a 8 pt, y publica el resultado en
+           `--cust-col-q` (Quitar), `--cust-col-a` (Actualmente) y
+           `--cust-col-ag` (Agrandar). Lo escribe en la cabecera Y en cada fila,
+           porque cada fila es su propia rejilla y no hereda de la cabecera, que
+           no es su padre.
+
+           POR QUÉ SIGUE HABIENDO UN NÚMERO DE RESPALDO. Si el JS no corre
+           —caché vieja, sin señal, un fallo que no llega a ejecutar el
+           medidor— las variables no existen y la rejilla se quedaría sin
+           columnas de control. Con el respaldo, la tabla se ve como se veía
+           antes: peor repartida en un aparato raro, pero legible y usable.
+           Nunca deja de funcionar.
+
+           La miniatura y el aire entre columnas NO se automatizan: son
+           decisiones de diseño, no medidas del aparato. La miniatura es un
+           icono con un tamaño elegido a mano, y el aire es una decisión de
+           lectura. Los dos salen del CSS, y el medidor los lee de ahí para
+           descontarlos del espacio disponible. */
         .cust-ing-cabecera,
         .cust-ing {
             display:grid;
             grid-template-columns:
-                26px               /* miniatura */
-                minmax(0, 1fr)     /* nombre: se queda con lo que sobre */
-                50px               /* Quitar */
-                90px               /* Actualmente: el más largo */
-                64px;              /* Agrandar */
-            /* LOS ANCHOS DE LOS CONTROLES SALEN DE SU RÓTULO, NO DEL GUSTO.
-
-               El dueño pidió estrecharlos para darle ese espacio al nombre,
-               y después pidió lo contrario para los rótulos: «podrían tener un
-               tamaño de fuente más grande ya que sigue habiendo más espacio a
-               lo ancho». Las dos cosas se cumplen si el ancho de cada columna
-               se calcula desde el TEXTO que lleva:
-
-                 rotulo        tamano que alcanza   columna
-                 Quitar              12 pt            50
-                 Actualmente         12 pt            90
-                 Agrandar            12 pt            64
-
-               El dueño pidió los rótulos MÁS GRANDES: «podrían tener un
-               tamaño de fuente más grande ya que sigue habiendo más espacio a
-               lo ancho, si se requiere aumentar un poco más la altura de la
-               tabla, se puede». Con el reparto anterior las columnas los
-               apretaban a 9 pt. Con este llegan a 13 pt, que es donde el
-               auto-ajuste los deja sin tocar el piso.
-
-               EL COMPROMISO, dicho claro: el ancho de la tabla es fijo —lo fija
-               la pantalla— así que cada píxel que ganan los rótulos se le quita
-               al nombre. El nombre queda en ~109 px, que a 16 pt son 10 letras
-               por línea y 30 caracteres en las tres líneas. Para un nombre
-               largo el auto-ajuste lo baja un poco en vez de recortarlo. Es el
-               intercambio que el dueño autorizó al aceptar filas más altas.
-
-               La miniatura baja de 30 a 26 px: es un icono, no texto, y sus 4
-               px van a la lectura.
-
-               ESTOS NÚMEROS SON UN SUELO, NO UN GUSTO. Si se bajan más, el
-               auto-ajuste ya no tiene a dónde encoger y el texto se desborda
-               encima de la columna vecina. */
+                var(--cust-col-mini, 26px)      /* miniatura: del CSS, no se mide */
+                minmax(0, 1fr)                  /* nombre: se queda con lo que sobre */
+                var(--cust-col-q, 50px)         /* Quitar: medido por su rótulo */
+                var(--cust-col-a, 90px)         /* Actualmente: el más largo */
+                var(--cust-col-ag, 64px);       /* Agrandar: medido por su rótulo */
+            /* El aire entre columnas se lee en el medidor (`columnGap`): son
+               cuatro huecos los que se descuentan del ancho útil, no cinco.
+               Se mantiene corto a propósito —es una tabla, y cada píxel que se
+               lleva el aire se lo quita al nombre del ingrediente—, y por eso
+               está en `rem`: con letra del sistema grande crece con ella. */
             align-items:center;
             /* Relleno MUY corto entre columnas: es una tabla, y cada píxel que
                se lleva el aire se lo quita al nombre del ingrediente. Con
@@ -4013,44 +4010,23 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                    clavada señalando filas que ya pasaron. */
                 padding-bottom:1.25rem;
             }
-            /* Las columnas crecen en pantalla ancha, con la misma proporción
-               que en el teléfono: los controles se miden por su rótulo y el
-               nombre se lleva el espacio. Se declara AQUÍ y no en
-               `.cust-ing-cab`, que era lo que había antes: una regla con
-               `font-size` fijo le ganaba al auto-ajuste y dejaba el rótulo
-               clavado en un tamaño, ignorando si cabía o no. */
-            /* ── EN HORIZONTAL LOS RÓTULOS SE ENCOGEN, NO EMPUJAN ──
+            /* ── EN PANTALLA ANCHA LA MINIATURA CRECE, LOS CONTROLES NO ──
 
-               Aquí la columna de datos NO crece: mide lo que deja la foto.
-               Medido sobre la captura del dueño (2220x1080, foto de 398 px):
-               la columna de datos son 332 px, y con relleno quedan ~320 útiles.
+               Aquí antes vivía una SEGUNDA tabla de píxeles para los tres
+               controles (35/63/47), calculada midiendo otra captura. Ya no
+               hace falta y se retiró: los anchos de Quitar · Actualmente ·
+               Agrandar se miden en el aparato y valen para las dos
+               orientaciones, porque el medidor mira el espacio que haya. Un
+               número fijo aquí solo podía desmentir a la medición.
 
-               EL DEFECTO QUE ESTO CORRIGE: antes esta regla declaraba
-               32/62/112/80 = 286 px de columnas fijas, así que al nombre le
-               quedaban 25 px. Partía letra por letra y, al no caber ni en tres
-               renglones, se desbordaba a un cuarto. El dueño lo vio: «el título
-               de la tabla quedó uno encima de otro» y «pasó a cuatro filas».
-
-               El reparto ahora deja que el nombre mande y da a los controles
-               solo lo que su rótulo necesita al PISO de 8 pt:
-
-                 rotulo        a 8 pt   columna
-                 Quitar         32 px     35
-                 Actualmente    59 px     63
-                 Agrandar       43 px     47
-
-               Con eso el nombre se queda con 135 px, que a 16 pt son 12 letras
-               por línea, y los tres rótulos entran a ~8,6 pt. Es justo lo que
-               pidió el dueño: «debe reducirse el tamaño hasta un mínimo de 8 PT
-               para que pueda caber». */
+               Lo único que sigue cambiando con el tamaño de la pantalla es la
+               MINIATURA: es un icono, no texto, y en pantalla grande tiene
+               sitio para verse mejor. Se declara como variable para que la
+               rejilla —que vive en un solo sitio— cambie la columna con ella
+               sin tener que repetir el reparto entero. */
             .cust-ing-cabecera,
             .cust-ing {
-                grid-template-columns:
-                    32px
-                    minmax(0, 1fr)
-                    35px
-                    63px
-                    47px;
+                --cust-col-mini:32px;
             }
             .cust-ing-mini-celda, .cust-ing-mini { width:32px; height:32px; }
             .cust-ing-btn { width:30px; height:30px; }
@@ -4997,7 +4973,7 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-mesonero.js?v=1794018411"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
-    <script src="js/cliente-menu.js?v=1794173164"></script>
+    <script src="js/cliente-menu.js?v=1794177838"></script>
     <script src="js/cliente-scroll.js?v=1793990592"></script>
     <script src="js/cliente-ui.js?v=1794001460"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
@@ -5008,10 +4984,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794173164"></script>
-    <script src="js/cliente-customize.js?v=1794173164"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794177838"></script>
+    <script src="js/cliente-customize.js?v=1794177838"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794173164"></script>
+    <script src="js/cliente-historial.js?v=1794177838"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>
