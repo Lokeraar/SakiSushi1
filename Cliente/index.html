@@ -3454,17 +3454,25 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            cliente trabaja. En vertical sobra alto y la nota se ve al abrir
            sin scrollear nada.
 
+           NO ES UNA BANDA A TODO EL ANCHO. Es la celda `lista` de la
+           rejilla: en vertical queda debajo de los datos, en horizontal
+           arriba de ellos, y en las dos orientaciones comparte la columna
+           derecha con la ficha del plato. La foto se queda a la izquierda
+           ocupando las dos filas.
+
            NACE OCULTA EN «COMPLETO». Sin la clase `con-lista` en el
            `.cust-layout` no se pinta ni se reserva su fila: los datos se
            quedan con todo el alto y el pie sube pegado a los modos. Es la
            diferencia entre una ventana que se encoge y un bloque vacío de
-           120 px debajo de los modos. */
+           120 px debajo de los modos.
+
+           El borde de arriba lo cambia el bloque de horizontal, donde esta
+           celda sube: con ella arriba, la raya tiene que quedar debajo. */
         .cust-inferior {
             grid-area:lista;
             min-height:0;
             box-sizing:border-box;
             padding:.85rem 1.15rem;
-            /* Mismo borde y mismo fondo que el pie: banda única. */
             border-top:1px solid rgba(128,128,128,.2);
             background:rgba(0,0,0,.2);
             /* Aquí y solo aquí se desplaza la fila inferior. El pie queda
@@ -3527,18 +3535,28 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             #customizeModal .modal-container.cust-ventana {
                 max-width:720px;
             }
-            /* ── LA REJILLA DE 2x2 ──
+            /* ── LA REJILLA DE 2x2: LA FOTO ABARCA LAS DOS FILAS ──
 
-               DOS FILAS, no una: la de arriba lleva foto y datos, y la de
-               abajo cruza las dos columnas con la nota, la tabla y —pegado
-               abajo, fuera de la rejilla— el pie.
+               La foto NO comparte alto con nada. Ocupa la columna izquierda
+               entera —`foto` aparece en las DOS filas de
+               `grid-template-areas`, y eso la convierte en una sola caja— y
+               a su derecha se apilan las otras dos zonas.
 
-               EN «COMPLETO» HAY UNA SOLA FILA. La fila inferior se pinta
-               solo con `con-lista`; si se declararan las dos filas siempre,
-               la segunda quedaría reservada aunque no hubiera nada dentro, y
-               los botones bajarían dejando un bloque vacío debajo de los
-               modos. Por eso el reparto de filas es estado, no constante:
-               una fila sin lista, dos con lista. */
+               VERTICAL (este bloque, por defecto):
+
+                 fila 1 →  foto | datos  (modos + título + precio + cantidad)
+                 fila 2 →  foto | lista  (nota + tabla + columnas)
+
+               HORIZONTAL: se invierten las dos filas de la derecha, para
+               que la tabla quede arriba y los datos abajo. Eso vive en el
+               bloque de `orientation:landscape` más abajo; aquí no se
+               duplica.
+
+               EN «COMPLETO» HAY UNA SOLA FILA. La segunda se pinta solo con
+               `con-lista`; si se declarara siempre, quedaría reservada
+               aunque no hubiera nada dentro y los botones bajarían dejando
+               un bloque vacío debajo de los modos. El reparto de filas es
+               estado, no constante: una fila sin lista, dos con lista. */
             .cust-layout {
                 grid-template-columns:280px 1fr;
                 grid-template-rows:minmax(0,1fr);
@@ -3550,12 +3568,13 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                tabla sin poder scrollearla. Con el 50% las dos zonas se
                reparten el alto disponible y cada una scrollea por dentro.
 
-               En horizontal el reparto sube al 55%: está calculado en el
-               comentario del bloque de `orientation:landscape`, y el número
-               sale de que la fila de ingrediente mide 57 px. */
+               `foto` repetida en las dos filas es lo que estira la imagen
+               de arriba abajo: no es un atajo, es la única forma de que una
+               celda cubra dos filas sin envolver nada en un contenedor
+               nuevo. */
             .cust-layout.con-lista {
                 grid-template-rows:minmax(0,1fr) minmax(0,50%);
-                grid-template-areas:"foto datos" "lista lista";
+                grid-template-areas:"foto datos" "foto lista";
             }
 
             /* ── LA FOTO SE QUEDA QUIETA, SCROLLEA SOLO LA LISTA ──
@@ -3606,18 +3625,19 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             #customizeModal .modal-container.cust-ventana .cust-foto-wrap {
                 touch-action:pan-y;
                 /* El envoltorio SÍ se estira con la celda, para que la foto
-                   llene la celda 1Y·1X entera. Antes se quedaba en
-                   `align-self:start` porque el alto de la foto era fijo y
-                   estirarlo la hacía crecer como un chicle; ahora el alto
-                   sale de la celda, que es acotado por la rejilla.
+                   llene la columna izquierda entera —las dos filas—. Antes
+                   se quedaba en `align-self:start` porque el alto de la foto
+                   era fijo y estirarlo la hacía crecer como un chicle;
+                   ahora el alto sale de la celda, que abarca las dos filas
+                   de la rejilla.
 
                    La estrella y la X están ancladas con `top`, no con
                    `bottom`: se quedan en la esquina de arriba, así que el
                    estiramiento no se las lleva al fondo.
 
-                   `overflow:hidden` recorta la foto a la celda: si la fila
-                   se queda corta, la imagen se recorta, nunca se desborda
-                   encima de la banda inferior. */
+                   `overflow:hidden` recorta la foto a la celda: si el alto
+                   se queda corto, la imagen se recorta, nunca se desborda
+                   encima de la zona de al lado. */
                 overflow:hidden;
             }
             /* LA FOTO TIENE ALTO PROPIO, PERO NUNCA MÁS QUE LA VENTANA.
@@ -3641,11 +3661,32 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                la foto se desbordaba sobre la banda inferior.
 
                `height:100%` se resuelve contra la celda, que tiene alto
-               definido por `minmax(0,1fr)`. `object-fit:cover` recorta lo
-               que sobre: por eso nunca aparecen barras vacías. */
+               definido por `minmax(0,1fr)`. Con la foto abarcando las DOS
+               filas, la celda es la columna izquierda entera: la imagen
+               llena el hueco de arriba abajo y el rincón inferior izquierdo
+               deja de aparecer vacío. */
             .cust-foto {
                 height:100%;
                 align-self:stretch;
+                /* El centrado va explícito aunque `object-position:50% 50%`
+                   ya es el valor por defecto: es la mitad visible del
+                   encargo («estática y centrada») y sin declararlo una
+                   lectura del CSS no lo encuentra.
+
+                   QUÉ SE VE, con `object-fit:cover`: la imagen llena el
+                   hueco entera y, si su proporción no coincide con la de la
+                   celda, se recorta el sobrante por igual a los dos lados.
+                   NO aparecen franjas vacías (eso sería `contain`). Cuando
+                   la proporción SÍ coincide, no se recorta nada: cubrir y
+                   no recortar son la misma cosa.
+
+                   En vertical la celda es alta y angosta (280 px de ancho,
+                   todo el alto de la ventana), así que una foto vertical
+                   pierde los lados. Es el precio de que no quede hueco; si
+                   algún día se prefiere verla completa con el tono de la
+                   ventana alrededor, es cambiar `cover` por `contain` y
+                   nada más. */
+                object-position:center;
             }
             /* En pantalla ancha sobra sitio: las columnas de controles
                crecen y los rótulos de la cabecera también. Los anchos
@@ -3773,26 +3814,44 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            sigue en una sola columna— heredaría el tope de 92vw y perdería
            unos píxeles de ancho sin ganar nada. */
         @media (orientation:landscape) and (min-width:600px) {
-            /* ── EN HORIZONTAL LA BANDA PASA AL 55% ──
+            /* ── EN HORIZONTAL LA DERECHA SE INVIERTE: TABLA ARRIBA ──
 
-               Es una cuenta con las medidas reales del CSS, no un gusto.
-               En 807x393 la ventana mide 354 px y el pie 64, así que la
-               rejilla reparte 290,2:
+               Es el mismo plano de 2x2 que en vertical, con las dos filas
+               de la derecha cambiadas de sitio. La foto sigue abarcando la
+               columna izquierda entera; lo único que se mueve es qué zona
+               ocupa la fila de arriba.
 
-                 al 50% → banda 145,1. Interior 117,9 (13,6 px de relleno por
-                          lado). Gasta 62 de nota y 19 de cabecera: quedan
-                          36,9 px de fila, el 65% de la primera.
-                 al 55% → banda 159,6. Interior 132,4. Quedan 51,4 px, el 90%
-                          de la primera fila: el renglón se ve casi entero y
-                          el corte del borde inferior anuncia que hay más.
+                 fila 1 →  foto | lista  (nota + tabla + columnas)
+                 fila 2 →  foto | datos  (modos + título + precio + cantidad)
 
-               No se puede tener una fila completa (57 px) sin bajar los
-               datos por debajo de 120 px, y ahí la columna derecha se queda
-               sin precio ni modos. Girado, un teléfono de 393 px de alto no
-               da para nota, cabecera, fila entera y datos a la vez; el 55%
-               es el mejor reparto que sí deja leer el plato. */
+               ARRIBA LA TABLA, y no los datos, por una razón de uso: en
+               horizontal el alto útil son ~297 px. La tabla es lo que el
+               cliente toca —quitar, agrandar, bajar porciones—, así que se
+               queda en la mitad que el pulgar alcanza sin estirarse, y los
+               datos del plato, que se leen una vez, van abajo.
+
+               EL REPARTO. 55 % para la tabla y el resto para los datos. La
+               banda gasta ~13,6 px de relleno por lado, 62 de nota y 19 de
+               cabecera: con 163 px (el 55 % de los 297 disponibles) quedan
+               ~55 px de fila visible, o sea un renglón entero al abrir, y el
+               corte del borde inferior anuncia que hay más. Con menos, la
+               tabla nace mostrando media fila y el cliente no ve que existe.
+
+               Los datos bajan a ~134 px con scroll propio: título, precio y
+               cantidad se ven, y los dos modos con un gesto. Antes de la
+               rejilla de 2x2 esa columna tenía exactamente el mismo
+               problema y se resolvía igual. */
             .cust-layout.con-lista {
-                grid-template-rows:minmax(0,1fr) minmax(0,55%);
+                grid-template-rows:minmax(0,55%) minmax(0,1fr);
+                grid-template-areas:"foto lista" "foto datos";
+            }
+            /* La raya separadora cambia de lado con el contenido: con la
+               tabla arriba, la línea tiene que quedar ENTRE la tabla y los
+               datos, o sea debajo. El fondo se queda: sigue siendo una zona
+               con su propio tono, solo que ahora no está pegada al pie. */
+            .cust-inferior {
+                border-top:0;
+                border-bottom:1px solid rgba(128,128,128,.2);
             }
 
             /* La tarjeta y la foto crecen con el viewport real.
@@ -3810,9 +3869,17 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                cuatro huecos de 12,8 px, más el nombre). Con menos, el nombre
                del ingrediente se queda sin sitio y la fila se desarma.
 
-               Sustituye al tope de 380 px del bloque anterior: allí la foto
-               no pasaba de 380 px porque la tarjeta no pasaba de 810. Aquí
-               el único freno que queda es el que protege los datos. */
+               OJO: LA FÓRMULA DE LOS 340 px QUEDÓ VIEJA. Se escribió cuando
+               la foto medía 340 px de alto; ahora el alto lo dicta la celda,
+               que con la foto abarcando las dos filas es la columna entera.
+               Su intención se mantiene —ensanchar la columna hasta donde la
+               proporción pida—, pero en la práctica el tercer término es el
+               que manda casi siempre: `100% - 428px` acota antes de que la
+               proporción se cumpla, porque para ver entera una foto 16:9 a
+               la altura de la ventana haría falta más del doble de ancho.
+               Se deja así a propósito: el resultado es «lo más ancha que
+               quepa sin desarmar la tabla», que es lo mejor que se puede
+               hacer en un teléfono girado. */
             #customizeModal .modal-container.cust-ventana.cust-foto-horizontal .cust-layout {
                 grid-template-columns:
                     clamp(280px,
