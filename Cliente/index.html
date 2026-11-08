@@ -3410,6 +3410,26 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         .cust-ing-cabecera {
             padding-bottom:.35rem;
             border-bottom:1px solid var(--customize-border);
+            /* La cabecera se alinea AL MEDIO. Con «Nombre del ingrediente» en
+               dos líneas, la cabecera es más alta que los tres rótulos de
+               control, que van en una sola: sin esto, «Quitar», «Actualmente» y
+               «Agrandar» quedarían pegados arriba y la fila se leería como
+               torcida. Es lo que pidió el dueño. */
+            align-items:center;
+        }
+        /* El rótulo «Nombre del ingrediente» ocupa hasta DOS renglones.
+ 
+           Iba en uno solo con `nowrap` y se recortaba a «Nombre del
+           ingredi...», que es justo el caso que la regla prohíbe: se corta
+           cuando NO cabía ni con su línea de gracia. Aquí sí cabe en dos, así
+           que se le da la segunda y se lee entero. */
+        #customizeModal .cust-ing-cab--nombre {
+            white-space:normal;
+            -webkit-line-clamp:2;
+            line-clamp:2;
+            display:-webkit-box;
+            -webkit-box-orient:vertical;
+            overflow:hidden;
         }
         /* Se apunta con el id del modal para ganarle a la regla del tema
            claro que fuerza TODOS los span del modal a la tinta principal
@@ -3482,18 +3502,25 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             min-width:0;
         }
         .cust-ing-nombre {
-            /* 16 pt de base. El auto-ajuste lo encoge hasta 8 pt si hace
-               falta, y puede ocupar hasta TRES renglones: el dueño fijó ese
-               tope. `line-clamp` es la cota dura del CSS por si el medidor no
-               cargara. */
+            /* 16 pt de base. El auto-ajuste lo encoge hasta 8 pt si hace falta.
+ 
+               CUATRO RENGLONES, y son cuatro DATOS, no un texto que se estira:
+               el nombre, la marca «(define el plato)», la unidad de medida y el
+               precio. Con tres se recortaba el precio («+Bs. 1,...») y el dueño
+               pidió el cuarto.
+ 
+               `line-clamp` es la cota DURA del CSS y tiene que coincidir con
+               `CAPACIDAD.ingrediente.maxLineas` del medidor. Si solo subiera el
+               JS, el CSS seguiría cortando en tres con puntos suspensivos y el
+               arreglo no se vería: los dos topes suben juntos o no sube ninguno. */
             font-size:var(--letra-denso);
             line-height:1.25;
             color:var(--customize-text);
             overflow-wrap:anywhere;
             display:-webkit-box;
             -webkit-box-orient:vertical;
-            -webkit-line-clamp:3;
-            line-clamp:3;
+            -webkit-line-clamp:4;
+            line-clamp:4;
             overflow:hidden;
         }
         /* La marca «(define el plato)» va en su propio tamaño, fija: es una
@@ -4973,7 +5000,7 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-mesonero.js?v=1794018411"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
-    <script src="js/cliente-menu.js?v=1794177838"></script>
+    <script src="js/cliente-menu.js?v=1794179682"></script>
     <script src="js/cliente-scroll.js?v=1793990592"></script>
     <script src="js/cliente-ui.js?v=1794001460"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
@@ -4984,10 +5011,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794177838"></script>
-    <script src="js/cliente-customize.js?v=1794177838"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794179682"></script>
+    <script src="js/cliente-customize.js?v=1794179682"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794177838"></script>
+    <script src="js/cliente-historial.js?v=1794179682"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>

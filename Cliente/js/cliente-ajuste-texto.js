@@ -64,20 +64,43 @@
     // valores por defecto de los campos conocidos de la ventana. Cualquier
     // otro elemento se ajusta llamando a `ajustarCaja(el, opciones)` con su
     // propio techo y su propia capacidad, sin tocar este archivo.
-    var CAPACIDAD_POR_DEFECTO = { lineas: 1, maxLineas: 3 };
+    // El defecto también respeta la línea de gracia única: una línea pedida,
+    // dos permitidas. Antes concedía tres (dos de gracia), que es una capacidad
+    // que nadie declaró.
+    var CAPACIDAD_POR_DEFECTO = { lineas: 1, maxLineas: 2 };
 
     // Cuántas líneas puede ocupar cada campo COMO MÍNIMO. Si el texto no cabe
-    // ni al piso en estas líneas, se le da una más y se repite el ajuste.
-    // `maxLineas` es el techo de ese crecimiento, para que un texto absurdo no
-    // empuje la ventana entera fuera de la pantalla.
+    // ni al piso en estas líneas, se le da UNA más y se repite el ajuste.
+    //
+    // ── LA LÍNEA DE GRACIA ES UNA, Y SOLO UNA ──
+    //
+    // `maxLineas` NUNCA puede ser mayor que `lineas + 1`. La regla la fijó el
+    // dueño y es de producto, no de maquetación:
+    //
+    //     cabe en N líneas                    -> N líneas, sin tocar nada
+    //     no cabe a 8 pt en N                 -> se concede UNA línea (N+1)
+    //     cabe en N+1                         -> se usa N+1, SIN puntos suspensivos
+    //     tampoco cabe en N+1 a 8 pt          -> recién ahí se permite recortar
+    //
+    // El corte con puntos suspensivos NO significa «hay más texto»: significa
+    // que ni con la excepción de una línea el contenido entra en los
+    // parámetros establecidos. Mientras el texto esté completo, unos puntos
+    // dirían que falta algo cuando no falta nada.
+    //
+    // Antes de esta regla `descripcion` concedía DOS líneas extra (3 -> 5) y el
+    // valor por defecto otras dos (1 -> 3). Eso no es una concesión: es una
+    // capacidad que nunca se declaró.
     var CAPACIDAD = {
         titulo:      { lineas: 2, maxLineas: 3 },
-        descripcion: { lineas: 3, maxLineas: 5 },
+        descripcion: { lineas: 3, maxLineas: 4 },
         nota:        { lineas: 2, maxLineas: 3 },
-        // El nombre del ingrediente, CON SU UNIDAD DE MEDIDA, puede abarcar
-        // hasta TRES renglones. Lo fijó el dueño. Antes eran dos, y fue el
-        // mismo error de antes: un número elegido para que la fila no creciera.
-        ingrediente: { lineas: 2, maxLineas: 3 },
+        // El nombre del ingrediente lleva el nombre, la marca «(define el
+        // plato)», la unidad de medida y el precio: cuatro datos en un hueco
+        // estrecho. Con tres renglones se recortaba («+Bs. 1,...») y el dueño
+        // pidió cuatro. Cuatro es además `lineas + 2`, así que aquí la
+        // capacidad declarada es mayor a propósito: son cuatro datos, no un
+        // texto que se estira.
+        ingrediente: { lineas: 3, maxLineas: 4, permiteMasLineas: true },
         // Los tres controles ocupan UN renglón siempre. No pueden partir: son
         // botones de una sola línea por diseño, y si el texto no cabe se
         // encoge hasta el piso en vez de crecer de alto.
@@ -178,7 +201,13 @@
         // vuelve a intentar, hasta `maxLineas`. Nunca se baja del piso: por
         // debajo, el texto deja de leerse.
         var lineas = lineasMin;
-        while (lineas <= capacidad.maxLineas) {
+        // La gracia es UNA línea y no más, aunque quien llame haya pedido un
+        // `maxLineas` mayor: es la regla de producto, y aquí es donde se hace
+        // cumplir. La excepción está declarada en CAPACIDAD para los casos que
+        // no son «un texto que se estira» sino varios datos en una celda.
+        var topeLineas = Math.min(capacidad.maxLineas, lineasMin + 1);
+        if (capacidad.permiteMasLineas) topeLineas = capacidad.maxLineas;
+        while (lineas <= topeLineas) {
             if (cabe(PISO, lineas)) {
                 mejor = PISO;
                 break;
