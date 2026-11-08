@@ -206,6 +206,23 @@
         } else {
             (window._pendientesDisponibilidad = window._pendientesDisponibilidad || []).push(1);
         }
+
+        // ── LOS TEXTOS DE LAS TARJETAS SE AJUSTAN A SU HUECO ──
+        //
+        // El título del plato es lo que más se rompe cuando el nombre es
+        // largo: se sale de la tarjeta o empuja el precio. Se ajusta DESPUÉS
+        // de escribir el HTML (los elementos viejos ya no existen) y en el
+        // siguiente turno del bucle, para que el navegador ya haya calculado el
+        // ancho de cada tarjeta.
+        //
+        // Una pasada por pintado, nunca en `resize` ni por cuadro.
+        if (typeof window.requestAnimationFrame === 'function') {
+            window.requestAnimationFrame(function () {
+                if (typeof window.ajustarPagina === 'function') window.ajustarPagina();
+            });
+        } else if (typeof window.ajustarPagina === 'function') {
+            window.ajustarPagina();
+        }
     }
 
     // Function to render the menu with given filters
@@ -342,6 +359,14 @@
             }
         });
         categoryList.innerHTML = html;
+
+        // Los nombres de las categorías también se ajustan a su celda: una
+        // categoría con nombre largo empujaba el icono de la flecha.
+        if (typeof window.requestAnimationFrame === 'function') {
+            window.requestAnimationFrame(function () {
+                if (typeof window.ajustarPagina === 'function') window.ajustarPagina();
+            });
+        }
 
         // Add event listeners to category items
         document.querySelectorAll('.category-item').forEach(item => {

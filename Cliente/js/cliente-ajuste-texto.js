@@ -120,16 +120,45 @@
         }
 
         // ¿Cabe en `lineas` líneas al tamaño `px`?
+        //
+        // ── CABE EN DOS DIMENSIONES, NO EN UNA ──
+        //
+        // La versión anterior solo miraba `scrollHeight`. Con `white-space:
+        // nowrap` —los rótulos de una tabla— el texto NUNCA crece de alto: si
+        // no cabe a lo ancho, se DESBORDA en horizontal y `scrollHeight` no se
+        // entera. El medidor decía «cabe» y el rótulo se montaba encima de la
+        // columna vecina. El dueño lo vio: «el contenido de una columna me
+        // puede chocar con el texto de otras columnas».
+        //
+        // Un texto cabe en su celda solo si no se sale ni por abajo ni por los
+        // lados:
+        //   alto  -> scrollHeight <= altoDeLinea * lineas
+        //   ancho -> scrollWidth  <= clientWidth
+        //
+        // Con `nowrap` la segunda es la que manda, porque la primera nunca
+        // falla.
         function cabe(px, lineas) {
             el.style.fontSize = px + 'px';
             // Forzar el cálculo de una vez: sin leer una propiedad geométrica,
             // el navegador puede agrupar los cambios y medir el valor viejo.
             var alto = el.scrollHeight;
+            var ancho = el.scrollWidth;
+            var anchoDisponible = el.clientWidth;
             var altoLinea = altoDeLinea(px);
+
             // El presupuesto se mide AL TAMAÑO ACTIVO, no al base: si se
             // midiera al base, al encoger la letra cabrían más líneas de las
             // declaradas y aparecería una de más.
-            return alto <= altoLinea * lineas + TOLERANCIA;
+            var cabeAlto = alto <= altoLinea * lineas + TOLERANCIA;
+
+            // `clientWidth` a 0 significa que el elemento no tiene ancho
+            // resuelto todavía (navegador sin maquetar, `display:none` a
+            // medias). Sin un ancho de referencia no se puede juzgar el
+            // desborde horizontal, así que solo se exige el alto. Rechazar el
+            // ajuste por esto dejaría el texto sin tocar en la primera pasada.
+            var cabeAncho = !anchoDisponible || ancho <= anchoDisponible + TOLERANCIA;
+
+            return cabeAlto && cabeAncho;
         }
 
         // El ajuste: se busca el MAYOR tamaño que cabe en `lineasMin`.
@@ -324,6 +353,77 @@
         }
     }
 
+    /**
+     * Ajusta los textos de TODA LA PÁGINA que deben adaptarse a su hueco.
+     *
+     * El dueño lo pidió así: «todos los textos de toda la página que
+     * correspondan a redimensionar automáticamente según dimensiones de la
+     * pantalla».
+     *
+     * QUÉ SE AJUSTA Y QUÉ NO.
+     *
+     * Solo los textos CORTOS que viven en una caja con ancho acotado: el título
+     * y el precio de una tarjeta del menú, el nombre de una categoría, el
+     * eslogan de la cabecera, el nombre de la marca en el pie. Son los que se
+     * rompen cuando el nombre del plato es largo.
+     *
+     * NO se ajustan: los párrafos largos (una descripción de tres líneas es
+     * prosa, ahí manda `clamp()`), el texto dentro de un `<input>` o `<textarea>`,
+     * ni nada con `contenteditable`. Encogerlos haría el texto ilegible sin
+     * ganar nada: el que lee un párrafo quiere poder ampliarlo.
+     *
+     * Se llama una vez al pintar la carta y cuando cambia el contenido. Nunca
+     * en `resize` ni por cuadro.
+     */
+    function ajustarPagina() {
+        // Cada entrada declara su techo y su capacidad en líneas. El techo por
+        // defecto es el de contenido (16 pt): nada de la página arranca más
+        // grande salvo el nombre de la marca.
+        var objetivos = [
+            // Tarjetas del menú: el nombre del plato es lo que más se rompe
+            // cuando el nombre es largo. Dos líneas.
+            { sel: '.menu-card-title', lineas: 2, maxLineas: 3 },
+            // El precio: una sola línea, es un dato.
+            { sel: '.menu-card-price', lineas: 1, maxLineas: 1 },
+            // Categorías de la barra lateral: una línea, y son cortas.
+            { sel: '.category-item span', lineas: 1, maxLineas: 2 },
+            // Eslogan de la cabecera.
+            { sel: '.header-slogan', lineas: 1, maxLineas: 2 },
+            // Categoría activa, en el título de la sección.
+            { sel: '#categoryTitle', lineas: 1, maxLineas: 2, techo: TECHO.titulo },
+            // Título del carrito y del panel de categorías.
+            { sel: '.cart-header h3', lineas: 1, maxLineas: 2 },
+            { sel: '.category-header span', lineas: 1, maxLineas: 2 }
+        ];
+
+        for (var i = 0; i < objetivos.length; i++) {
+            var o = objetivos[i];
+            var els = document.querySelectorAll(o.sel);
+            if (!els || !els.length) continue;
+            // Se ajustan como GRUPO: todas las tarjetas del menú comparten
+            // tamaño. Tres platos con tres tamaños distintos en la misma
+            // rejilla se leerían como un error de maquetación, que es la
+            // misma regla de consistencia que se aplica dentro del platillo.
+            ajustarGrupo(els, o.techo || TECHO.descripcion, {
+                lineas: o.lineas,
+                maxLineas: o.maxLineas
+            });
+        }
+    }
+
+    /** Devuelve los textos de la página a su tamaño de CSS. */
+    function limpiarPagina() {
+        var sels = ['.menu-card-title', '.menu-card-price', '.category-item span',
+                    '.header-slogan', '#categoryTitle', '.cart-header h3',
+                    '.category-header span'];
+        for (var i = 0; i < sels.length; i++) {
+            var els = document.querySelectorAll(sels[i]);
+            for (var j = 0; j < els.length; j++) {
+                if (els[j].style) els[j].style.fontSize = '';
+            }
+        }
+    }
+
     window.ajustarVentanaPlatillo = ajustarVentanaPlatillo;
     window.limpiarAjusteTexto = limpiarAjuste;
     // ── LA REGLA GENERAL, DISPONIBLE PARA CUALQUIER CAJA ──
@@ -331,6 +431,9 @@
     // `ajustarCaja(el, {techo, lineas, maxLineas})`, sin tocar este archivo.
     window.ajustarCaja = ajustarCaja;
     window.ajustarCajas = ajustarCajas;
+    // ── TODA LA PÁGINA ──
+    window.ajustarPagina = ajustarPagina;
+    window.limpiarPagina = limpiarPagina;
     window.ajusteTexto = {
         TECHO: TECHO,
         PISO: PISO,
