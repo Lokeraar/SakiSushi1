@@ -3856,7 +3856,16 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
 
                    El scroll lo lleva `.cust-layout`, así que la foto se va
                    con el contenido: es el precio de que llene el hueco, y el
-                   dueño eligió esto. */
+                   dueño eligió esto.
+
+                   EL ALTO SALE DE LA CELDA, NO DEL CONTENIDO. `height:100%`
+                   en la foto, con `align-self:stretch` en la celda, hace que
+                   llene el hueco disponible. Pero sin cota, dentro de una fila
+                   `1fr` sin alto resuelto, la celda crece con el contenido y
+                   la foto la acompaña: la ventana se estira y el marco la
+                   recorta. `min-height:0` es lo que corta esa realimentación.
+                   `overflow:hidden` recorta la imagen a la celda. */
+                min-height:0;
                 overflow:hidden;
             }
             /* LA FOTO TIENE ALTO PROPIO, PERO NUNCA MÁS QUE LA VENTANA.
@@ -4088,27 +4097,28 @@ deslizar; además la captura del dueño mostraba los modos cortados
                 grid-template-areas:"foto flujo";
             }
 
-            /* ── LA COLUMNA DEL FLUJO: UN SOLO SCROLL ──
+            /* ── LA COLUMNA DEL FLUJO: SIN SCROLL PROPIO ──
 
-               Aquí se deja de ser `display:contents` y se convierte en una
-               caja real, hija de la rejilla, que llena su celda y se
-               desplaza por dentro.
+               El scroll lo lleva `.cust-layout`, igual que en vertical. Aquí
+               vivía un SEGUNDO `overflow-y:auto`, dentro del de la rejilla: dos
+               cajas con tapa corrediza, una dentro de otra. El gesto llegaba a
+               la de adentro, que no tenía nada que desplazar, y la ventana se
+               veía cortada.
 
-               `min-height:0` es obligatorio: sin él un hijo de flex o de
-               rejilla nunca scrollea, porque su altura mínima es la del
-               contenido y jamás desborda. Ya nos pasó con el cuerpo y costó
-               una vuelta entera de diagnóstico.
+               `min-height:0` sigue siendo obligatorio: sin él un hijo de flex
+               o de rejilla nunca encoge por debajo de su contenido, y la caja
+               empujaría la ventana fuera de la pantalla.
 
-               `overscroll-behavior:contain` evita que, al llegar al final,
-               el gesto se contagie a la página de detrás. */
+               SIN `height:100%`. Era el otro culpable: dentro de una fila
+               `minmax(0,1fr)` de un contenedor sin alto resuelto, el 100% se
+               resuelve contra el CONTENIDO, así que el flujo crecía hasta
+               medir lo que midiera todo el texto. */
             .cust-flujo {
                 grid-area:flujo;
                 display:flex;
                 flex-direction:column;
                 min-height:0;
-                height:100%;
-                overflow-y:auto;
-                overscroll-behavior:contain;
+                overflow:visible;
             }
 
             /* El cuerpo y la banda dejan de tener scroll propio: ahora el
@@ -4862,10 +4872,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794150679"></script>
-    <script src="js/cliente-customize.js?v=1794150679"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794152442"></script>
+    <script src="js/cliente-customize.js?v=1794152442"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794150679"></script>
+    <script src="js/cliente-historial.js?v=1794152442"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>
