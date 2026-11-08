@@ -2999,6 +2999,22 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            Conviene tenerlo claro porque es lo que pedía el dueño: en el
            telefono la X va sobre la foto, en pantalla ancha va en la
            esquina de la tarjeta. */
+        /* LA X VIVE DENTRO DEL CUERPO Y VIAJA CON EL CONTENIDO.
+
+           Antes se anclaba a `.modal-container`, que NO scrollea, así que se
+           quedaba clavada en la esquina de la ventana mientras el texto
+           pasaba por debajo. El dueño lo describió exacto: «no quiero que me
+           persiga mientras scrolleo».
+
+           Ahora es hija de `.cust-cuerpo`, que es el bloque de arriba a la
+           derecha (y en horizontal, la cabeza de la columna que scrollea).
+           Aquí `absolute` se resuelve contra él, que ya lleva
+           `position:relative`: al deslizar, la X se va con el contenido.
+
+           En el TELÉFONO, donde no hay dos columnas, el cuerpo va debajo de
+           la foto y la X se ancla a él igual. Como la foto arranca en el
+           borde superior de la ventana, la X queda sobre la esquina de la
+           foto vista por el cliente, que es lo que importa. */
         .cust-cerrar {
             position:absolute;
             z-index:5;
@@ -3019,10 +3035,6 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             padding:0;
             box-shadow:0 2px 8px rgba(0,0,0,.25);
         }
-        /* En el telefono la X queda sobre la foto: la foto ocupa todo el
-           ancho y arranca en el borde superior, así que la esquina de la
-           tarjeta y la esquina de la foto son la misma coordenada. */
-        .cust-ventana .cust-cerrar { top:.7rem; right:.7rem; }
         /* En oscuro --superficie es translucido: se refuerza para que la X
            siempre tenga un fondo legible sobre la foto. */
         html:not(.tema-claro) .cust-cerrar {
@@ -3080,20 +3092,66 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             display:flex;
             flex-direction:column;
             gap:.85rem;
+            /* Relleno derecho: deja sitio a la X, que ahora vive DENTRO de
+               este bloque y viaja con el contenido al deslizar. Sin esto, la
+               X taparia el título del plato. */
             padding:1.05rem;
+            padding-right:3.4rem;
             min-width:0;
+            /* Ancla de la X. Antes lo era `.modal-container`, que no
+               scrollea: la X se quedaba clavada en la ventana y el texto
+               pasaba por debajo. Con el ancla aquí, la X se va con el
+               contenido al deslizar, que es lo que pidio el dueño. */
+            position:relative;
+        }
+
+        /* ── LAS MEDIDAS DE LA LETRA, EN PUNTOS ──
+
+           El dueño piensa en puntos, como en Word, y CSS usa la misma
+           unidad: 1 pt = 96/72 px = 1,3333 px. Se declaran aquí en `rem`
+           porque el navegador trabaja en px, pero cada una lleva su valor en
+           puntos al lado para que se pueda comprobar de un vistazo.
+
+             Word  8 pt = 0.667rem = 10,67 px   ← PISO absoluto
+             Word 12 pt = 1rem     = 16,00 px   ← dato denso (tabla)
+             Word 16 pt = 1.333rem = 21,33 px   ← contenido de lectura
+             Word 24 pt = 2rem     = 32,00 px   ← título
+
+           Estos son los valores DE REPOSO. El auto-ajuste
+           (cliente-ajuste-texto.js) los sube hacia el techo o los baja hacia
+           el piso según cuánto texto haya, y escribe el resultado en línea.
+           Aquí solo se declara el punto de partida: si el script no carga,
+           la ventana se ve con estos tamaños y sigue siendo legible.
+
+           LA CONFUSIÓN QUE ESTO EVITA: copiar «16» de Word como 16 px encoge
+           la letra un 25 %. Pasó dos veces en esta ventana. */
+        :root {
+            --letra-contenido: clamp(1rem, 0.95rem + 0.3vw, 1.333rem);
+            --letra-titulo: clamp(1.25rem, 1.1rem + 0.6vw, 2rem);
+            --letra-denso: 1rem;            /* 12 pt: renglones de la tabla */
+            --letra-apoyo: 0.9375rem;       /* 15 px: líneas de apoyo */
         }
 
         .cust-titulo {
             margin:0;
-            font-size:1.15rem;
-            line-height:1.25;
+            /* Arranca en el punto medio y el medidor lo lleva al techo de
+               24 pt si el texto es corto. */
+            font-size:var(--letra-titulo);
+            line-height:1.2;
             color:var(--customize-text);
+            /* Reparte las líneas en vez de dejar una palabra huérfana.
+               Soportado en Chrome 114+: si no está, el texto se envuelve
+               igual y no se rompe nada. */
+            text-wrap:balance;
+            padding-right:2.4rem;
+            /* El medidor mide con `scrollHeight`, así que el bloque no puede
+               recortar: si recortara, todo cabría siempre y nunca encogería. */
+            overflow:visible;
         }
         .cust-desc {
             margin:.2rem 0 0;
-            font-size:.85rem;
-            line-height:1.45;
+            font-size:var(--letra-contenido);
+            line-height:1.5;
             color:var(--customize-subtext);
         }
 
@@ -3106,7 +3164,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             flex-wrap:wrap;
         }
         .cust-precio-total {
-            font-size:1.3rem;
+            /* El precio es el dato de la venta: 20 px de suelo, 23 px de
+               techo. */
+            font-size:clamp(1.25rem, 1.1rem + 0.5vw, 1.4375rem);
             font-weight:700;
             color:var(--primary-text);
             font-variant-numeric:tabular-nums;
@@ -3115,7 +3175,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             display:inline-flex;
             align-items:center;
             gap:.35rem;
-            font-size:.78rem;
+            font-size:var(--letra-apoyo);
             color:var(--customize-subtext);
         }
 
@@ -3126,7 +3186,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             gap:.75rem;
         }
         .cust-etiqueta {
-            font-size:.87rem;
+            font-size:var(--letra-apoyo);
             color:var(--customize-subtext);
         }
 
@@ -3219,7 +3279,27 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            El +/− de los opcionales necesita más ancho que el ×2 de los
            principales, y la columna está dimensionada para el caso grande. */
         #ingredientesList {
-            --cust-ing-cols: 30px minmax(0,1fr) 32px 58px 74px;
+            /* ── COLUMNAS PROPORCIONALES, NO FIJAS ──
+
+               Antes: `30px 1fr 32px 58px 74px`. Con rótulos de 9 px cabía,
+               pero al subir la letra a 14 px «Actualmente» ya no entra en
+               58 px y la fila se desarma.
+
+               Ahora los controles se miden en `em`, o sea en función de la
+               letra: si un día la escala sube o baja, las columnas la
+               siguen solas. El `min` contra un valor en px es el tope: la
+               columna nunca se queda tan ancha que se coma el nombre del
+               ingrediente, que es el dato importante.
+
+               El nombre lleva `minmax(0,1fr)`: se queda con todo lo que
+               sobre, y `min-width:0` le permite encoger por debajo de su
+               contenido en vez de empujar la rejilla fuera de la ventana. */
+            --cust-ing-cols:
+                min(2.2em, 34px)
+                minmax(0, 1fr)
+                min(3.2em, 40px)
+                min(7.4em, 78px)
+                min(8.2em, 86px);
             /* EL AIRE VA AQUÍ, NO AL CUERPO.
 
                Antes la lista terminaba el cuerpo y el cuerpo reservaba
@@ -3253,12 +3333,24 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            (`body.tema-claro .modal-body span`, especificidad 0,2,2). Sin
            esto, el rótulo y el estado «Sin» salían del color equivocado. */
         #customizeModal .cust-ing-cab {
-            font-size:.58rem;
-            line-height:1.2;
+            /* 12 pt = 16 px.
+
+               Antes .58rem = 9,3 px: el dueño no podía leer los rótulos. La
+               tabla es DATO para escanear, no prosa, así que su techo es 12 pt
+               y no 16: a 16 pt el nombre del ingrediente no cabe en la
+               columna (medido: quedarían ~9 letras de 16).
+
+               El auto-ajuste puede bajarlos hasta 8 pt si el rótulo no cabe,
+               y la regla de consistencia hace que los tres compartan tamaño. */
+            font-size:var(--letra-denso);
+            line-height:1.25;
             font-weight:600;
             color:var(--customize-subtext);
             text-align:center;
             overflow-wrap:break-word;
+            /* `hyphens:auto` parte la palabra con guión en vez de dejarla
+               entera desbordando. Necesita `lang` en el <html>, y lo tiene. */
+            hyphens:auto;
         }
         #customizeModal .cust-ing-cab--nombre {
             text-align:left;
@@ -3294,15 +3386,24 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         }
         .cust-ing-info { min-width:0; }
         .cust-ing-nombre {
-            font-size:.88rem;
+            /* 12 pt = 16 px: el cuerpo estándar de Word, y el techo de esta
+               columna. El auto-ajuste baja hasta 8 pt si el nombre es largo. */
+            font-size:var(--letra-denso);
+            line-height:1.3;
             color:var(--customize-text);
+            /* Si ni al piso cabe (un nombre de 40 caracteres en un teléfono),
+               se corta con puntos suspensivos. El nombre completo queda en
+               el atributo `title`, que el navegador muestra al mantener
+               pulsado en Android. */
+            overflow:hidden;
+            text-overflow:ellipsis;
         }
         /* También con el id: es un span, y en el tema claro la regla del
            modal lo pintaba con la tinta principal, así que la línea de
            ayuda competía con el nombre en vez de apoyarlo. */
         #customizeModal .cust-ing-cant {
             display:block;
-            font-size:.72rem;
+            font-size:var(--letra-apoyo);
             color:var(--customize-subtext);
             margin-top:.1rem;
         }
@@ -3424,7 +3525,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         .cust-ing-paso {
             min-width:1.2ch;
             text-align:center;
-            font-size:.82rem;
+            font-size:var(--letra-denso);
             font-weight:700;
             color:var(--customize-text);
             font-variant-numeric:tabular-nums;
@@ -3434,7 +3535,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         #customizeModal .cust-ing-estado {
             width:100%;
             text-align:center;
-            font-size:.74rem;
+            font-size:var(--letra-apoyo);
             font-weight:600;
             color:var(--customize-text);
         }
@@ -3541,9 +3642,11 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            celda de datos, no con las filas de ingredientes. */
         .cust-inferior-nota {
             margin:0 0 .8rem;
-            font-size:1.05rem;
-            line-height:1.45;
+            /* La nota es una pregunta al cliente: contenido de lectura, 16 pt. */
+            font-size:var(--letra-contenido);
+            line-height:1.5;
             color:var(--customize-subtext);
+            text-wrap:pretty;
         }
 
         /* Tema claro: el negro al 20% del pie sobre papel deja el fondo en
@@ -3747,10 +3850,10 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             .cust-ing-btn { width:34px; height:34px; }
             .cust-ing-btn--paso { width:32px; height:32px; }
             .cust-ing-agrandar { gap:.3rem; }
-            /* En pantalla ancha la X se va a la esquina de la TARJETA, no a
-               la de la foto: la foto queda a la izquierda y su esquina
-               derecha cae a media ventana, lejos del puntero. La del visor
-               ampliado NO se toca; ahí sigue sobre la foto. */
+            /* En horizontal la X ya NO se ancla a la tarjeta: vive dentro
+               del cuerpo y viaja con el contenido. Aquí solo se ajusta para
+               que caiga en la esquina de su columna, que es la que se lee
+               primero. */
             #customizeModal .modal-container.cust-ventana .cust-cerrar {
                 top:.7rem;
                 right:.7rem;
@@ -4676,9 +4779,12 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794109652"></script>
+    <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
+         ese archivo lo invoca al abrir el platillo. -->
+    <script src="js/cliente-ajuste-texto.js?v=1794114937"></script>
+    <script src="js/cliente-customize.js?v=1794114937"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794109652"></script>
+    <script src="js/cliente-historial.js?v=1794114937"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>

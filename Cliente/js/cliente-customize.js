@@ -240,12 +240,27 @@
                 ? '<img id="customizeFoto" class="cust-foto" src="' + foto + '" ' +
                   'alt="' + item.nombre + '" title="Toca para ampliar">'
                 : '<div class="cust-foto" aria-hidden="true"></div>') +
-          '</div>' +
-          '<button type="button" class="cust-cerrar" id="custCerrar" ' +
-            'aria-label="Cerrar la ventana del plato">&times;</button>';
+          '</div>';
 
         html += '<div class="cust-flujo">' +
           '<div class="cust-cuerpo">' +
+
+            // ── LA X VA DENTRO DEL CONTENIDO, NO SOBRE LA VENTANA ──
+            //
+            // Antes era hermana de `.cust-layout` y se anclaba a
+            // `.modal-container`, que NO scrollea: la X se quedaba clavada
+            // en la esquina mientras el texto pasaba por debajo. El dueño lo
+            // describió exacto: «no quiero que me persiga mientras scrolleo».
+            //
+            // Aquí es la primera hija de `.cust-cuerpo`, que es el bloque de
+            // arriba a la derecha (y en horizontal, la cabeza de la columna
+            // que scrollea). Al deslizar, se va con el contenido; al volver
+            // arriba, reaparece en la esquina.
+            //
+            // El padding del cuerpo reserva su sitio para que no tape el
+            // título ni la tarjeta de los modos.
+            '<button type="button" class="cust-cerrar" id="custCerrar" ' +
+              'aria-label="Cerrar la ventana del plato">&times;</button>' +
 
             // Nombre, descripción y precio: lo primero que se lee.
             '<div>' +
@@ -480,6 +495,20 @@
         // la banda encendida y la lista apagada.
         _marcarConLista(false);
 
+        // ── AUTO-AJUSTE DE LETRA, UNA VEZ POR APERTURA ──
+        //
+        // El dueño quiere que cada texto llene sus líneas: si es corto, la
+        // letra crece hasta el techo; si es largo, encoge hasta el piso.
+        //
+        // Se pide aquí y se ejecuta al final de la apertura, cuando la
+        // ventana YA es visible: con `display:none` un elemento mide 0 y el
+        // ajuste daría un resultado falso.
+        //
+        // Se comprueba que el módulo exista: si el script no cargó (caché
+        // vieja, sin señal), la ventana se ve con los tamaños del CSS, que ya
+        // son legibles por sí solos.
+        _pedirAjusteTexto();
+
         // Cada fila arranca pintada desde el modelo, no solo desde el HTML.
         //
         // El marcado ya escribe «Normal», pero hay cosas que solo sabe el
@@ -502,6 +531,12 @@
         _medirAspectoFoto(contenedor);
 
         modal.classList.add('active');
+
+        // La ventana ya es visible: ahora sí se puede medir y ajustar. Se deja
+        // para el siguiente turno del bucle de eventos porque el navegador
+        // todavía no ha calculado la maquetación de lo que se acaba de
+        // mostrar, y `scrollHeight` devolvería 0.
+        _ejecutarAjusteTexto();
 
         // Event listeners for quantity
         document.getElementById('qtyMinus').addEventListener('click', function() {
@@ -966,9 +1001,42 @@
         // La banda inferior se enciende con la lista: la nota, la tabla y
         // el aire que las rodea no ocupan alto hasta que hacen falta.
         _marcarConLista(true);
+        // La nota y la tabla acaban de salir de `display:none`: hasta ahora
+        // medían 0 y no se podían ajustar. Se ajustan ahora que son visibles.
+        _pedirAjusteTexto();
     }
     window.selectPersonalizado = selectPersonalizado;
     S.modules.customize.selectPersonalizado = selectPersonalizado;
+
+    /** Pide un ajuste de letra para el siguiente turno del bucle de eventos.
+     *
+     * NO se ajusta en el acto al cambiar de modo: `selectPersonalizado`
+     * acaba de poner la banda en `display:block`, y el navegador todavía no
+     * ha calculado su maquetación. Medir en ese instante da 0 y el ajuste
+     * creería que todo cabe al tamaño máximo.
+     *
+     * `requestAnimationFrame` espera al siguiente repintado, que es el primer
+     * momento en que las medidas son reales.
+     *
+     * Se comprueba que las funciones existan porque este archivo corre en
+     * pruebas con un DOM de mentira que no las tiene: sin la comprobación, un
+     * doble incompleto rompería la apertura del platillo entera.
+     */
+    function _pedirAjusteTexto() {
+        if (typeof window.requestAnimationFrame !== 'function') return;
+        window.requestAnimationFrame(function () {
+            if (typeof window.ajustarVentanaPlatillo === 'function') {
+                window.ajustarVentanaPlatillo();
+            }
+        });
+    }
+
+    /** Ajusta la letra en el acto. Se usa cuando la ventana ya está pintada. */
+    function _ejecutarAjusteTexto() {
+        if (typeof window.ajustarVentanaPlatillo === 'function') {
+            window.ajustarVentanaPlatillo();
+        }
+    }
 
     /**
      * Máximo de unidades que se pueden pedir de este plato.
