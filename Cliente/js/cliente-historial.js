@@ -76,6 +76,22 @@
         });
 
         html += '</div>';
+
+        // ── EL PIE SE RESCATA ANTES DE REGENERAR ──
+        //
+        // La ventana del platillo TRASLADA el pie al final de su contenido
+        // (ver cliente-customize.js), o sea DENTRO del cuerpo. El historial
+        // comparte este mismo modal, así que si se regenerara el cuerpo con
+        // el pie dentro, el `innerHTML` lo destruiría y los botones de
+        // «Cancelar» y «Añadir» perderían sus oyentes para siempre.
+        //
+        // Se saca al overlay primero —que nunca se regenera— y se devuelve a
+        // su sitio al final, cuando el cuerpo nuevo ya existe.
+        var pie = document.getElementById('customizePie');
+        if (pie && modal && pie.parentNode !== modal) {
+            modal.appendChild(pie);
+        }
+
         body.innerHTML = html;
         document.getElementById('customizeModalHeader').textContent = 'Historial';
 
@@ -85,6 +101,18 @@
         // columnas, para que se vea como una lista normal.
         var contenedor = modal.querySelector('.modal-container');
         if (contenedor) contenedor.classList.remove('cust-ventana');
+
+        // ── EL PIE VUELVE AL FONDO DE LA VENTANA ──
+        //
+        // En el historial el pie NO va al final del contenido: es una lista
+        // larga de pedidos y los botones se quedan como barra del fondo, que
+        // es donde estaban antes. Se comprueba el padre antes de mover porque
+        // `appendChild` sobre un nodo que ya está en su sitio lo reinserta al
+        // final: sin la comprobación se tocaría el DOM en cada apertura sin
+        // necesidad.
+        if (pie && contenedor && pie.parentNode !== contenedor) {
+            contenedor.appendChild(pie);
+        }
 
         modal.classList.add('active');
 

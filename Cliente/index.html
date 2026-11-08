@@ -2915,7 +2915,13 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             flex:1;
             min-height:0;
         }
-        /* El pie queda fuera de la rejilla: fila propia, siempre visible.
+        /* EL PIE, EN SU ESTADO DE REPOSO.
+
+           Aquí nace como hijo del contenedor, pegado al fondo. Cuando se
+           abre un PLATILLO, cliente-customize.js lo traslada al final de la
+           banda, dentro del cuerpo, para que se llegue a él deslizando. En el
+           HISTORIAL se queda donde nace.
+
            Los botones llevan alto propio y no se estiran: dentro de una
            rejilla, `align-items` por defecto es `stretch`, y un boton con
            `flex:1` sin alto tomaba todo el alto de la celda. Fue lo que se
@@ -2955,17 +2961,26 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             grid-template-columns:1fr;
             /* TRES FILAS EN EL TELÉFONO: foto, datos, lista.
 
-               El dueño cerró el plano de la ventana en 2x2: la foto sola
-               en 1Y·1X, los datos en 1Y·2X, y nota + tabla + botones en 2Y
-               a todo el ancho.
+               La foto sola en la primera, los datos en la segunda, y nota +
+               tabla + botones en la tercera. En vertical la foto NO se
+               estira: ocupa su celda y la banda cruza el ancho entero
+               debajo.
 
                En el teléfono esa misma estructura se aplana en una sola
-               columna y la ventana entera scrollea, como siempre. La lista
-               tiene su propia área (`lista`) y NO vive dentro de `.cust-`
-               cuerpo: solo así puede ocupar las dos columnas en pantalla
-               ancha. */
+               columna y la ventana entera scrollea, como siempre. */
             grid-template-areas:"foto" "datos" "lista";
         }
+
+        /* ── EL FLUJO: TODO LO QUE VA A LA DERECHA DE LA FOTO ──
+
+           Envoltura de los datos y de la banda. Existe para que en
+           horizontal las dos zonas sean UNA SOLA caja con UN SOLO scroll,
+           en vez de dos celdas de rejilla con un scroll cada una.
+
+           En el teléfono y en vertical no hace nada: es un <div> más, sus
+           hijos se apilan en el orden del marcado y el scroll lo lleva la
+           ventana entera. */
+        .cust-flujo { display:contents; }
 
         /* Envoltura de la foto. En el telefono sostiene la X encima;
            en pantalla ancha la X se va a la esquina de la tarjeta. */
@@ -3468,6 +3483,20 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
 
            El borde de arriba lo cambia el bloque de horizontal, donde esta
            celda sube: con ella arriba, la raya tiene que quedar debajo. */
+        /* ── LA BANDA: NOTA + TABLA + PIE ──
+
+           Es la celda `lista` de la rejilla. En vertical cruza las dos
+           columnas por debajo de la foto y los datos; en horizontal pasa a
+           ser el último tramo de la columna única del flujo.
+
+           DENTRO VIVE TAMBIÉN EL PIE. Antes el pie era hermano de la banda,
+           pegado al borde de la ventana y siempre visible. Ahora
+           cliente-customize.js lo traslada aquí, para que sea el último
+           bloque del contenido y el cliente llegue a él deslizando.
+
+           En «Completo» se apaga su CONTENIDO (la nota y la tabla), no la
+           caja: el pie tiene que seguir ahí. Ver la regla de
+           `.cust-inferior-cuerpo` más abajo. */
         .cust-inferior {
             grid-area:lista;
             min-height:0;
@@ -3475,12 +3504,30 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             padding:.85rem 1.15rem;
             border-top:1px solid rgba(128,128,128,.2);
             background:rgba(0,0,0,.2);
-            /* Aquí y solo aquí se desplaza la fila inferior. El pie queda
-               fuera, así que los botones nunca se van con el scroll. */
+            /* Aquí y solo aquí se desplaza la banda: la nota, la tabla y los
+               botones viajan juntos. */
             overflow-y:auto;
             overscroll-behavior:contain;
         }
-        .cust-layout:not(.con-lista) .cust-inferior { display:none; }
+        .cust-layout:not(.con-lista) .cust-inferior-cuerpo { display:none; }
+
+        /* ── SIN LISTA, LA BANDA SOLO LLEVA EL PIE ──
+
+           En «Completo» no hay nota ni tabla, pero el pie sigue dentro de
+           `.cust-inferior` (ver cliente-customize.js, que lo traslada ahí).
+           Sin esta regla la celda se auto-colocaría, porque el área `lista`
+           no existe en el plano de «Completo» (`"foto datos"`), y el pie
+           saldría a media anchura, en la columna de la foto.
+
+           `grid-column:1 / -1` lo cruza de lado a lado y `grid-row:auto` deja
+           que la fila mida lo que mide el pie y nada más: si conservara la
+           fila implícita de la rejilla, quedaría un hueco del color de la
+           ventana debajo de los modos. */
+        .cust-layout:not(.con-lista) .cust-inferior {
+            grid-column:1 / -1;
+            grid-row:auto;
+            overflow-y:visible;
+        }
 
         /* LA NOTA, primera en la banda.
 
@@ -3535,32 +3582,30 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             #customizeModal .modal-container.cust-ventana {
                 max-width:720px;
             }
-            /* ── LA REJILLA DE 2x2: LA FOTO ABARCA LAS DOS FILAS ──
+            /* ── LA REJILLA EN VERTICAL: FOTO ARRIBA, BANDA ABAJO ──
 
-               La foto NO comparte alto con nada. Ocupa la columna izquierda
-               entera —`foto` aparece en las DOS filas de
-               `grid-template-areas`, y eso la convierte en una sola caja— y
-               a su derecha se apilan las otras dos zonas.
+               El plano que aprobó el dueño:
 
-               VERTICAL (este bloque, por defecto):
+                 Y2·X1  foto   |  Y2·X2  datos (modos, título, precio, cantidad)
+                 Y1·X1+ Y1·X2   nota + tabla + botones, a todo el ancho
 
-                 fila 1 →  foto | datos  (modos + título + precio + cantidad)
-                 fila 2 →  foto | lista  (nota + tabla + columnas)
+               La foto ocupa SOLO la celda de arriba a la izquierda: NO se
+               estira por las dos filas. Esto es lo que tenía `3272e73` y
+               el dueño lo confirmó como bueno; la versión que estiraba la
+               foto nació de un malentendido con el eje Y.
 
-               HORIZONTAL: se invierten las dos filas de la derecha, para
-               que la tabla quede arriba y los datos abajo. Eso vive en el
-               bloque de `orientation:landscape` más abajo; aquí no se
-               duplica.
-
-               EN «COMPLETO» HAY UNA SOLA FILA. La segunda se pinta solo con
-               `con-lista`; si se declarara siempre, quedaría reservada
-               aunque no hubiera nada dentro y los botones bajarían dejando
-               un bloque vacío debajo de los modos. El reparto de filas es
-               estado, no constante: una fila sin lista, dos con lista. */
+               EN «COMPLETO» NO HAY SEGUNDA FILA reservada: el pie vive
+               dentro de la banda, así que la fila se mide con `auto` y la
+               banda se queda con lo que mide el pie. Sin esto, el 50 % del
+               reparto dejaría un hueco vacío debajo de los modos — el
+               defecto que el dueño reclamó dos veces. */
             .cust-layout {
                 grid-template-columns:280px 1fr;
                 grid-template-rows:minmax(0,1fr);
                 grid-template-areas:"foto datos";
+            }
+            .cust-layout:not(.con-lista) {
+                grid-template-rows:minmax(0,1fr) auto;
             }
             /* El 50% y no `auto`: una fila `auto` crece con el contenido y,
                con muchos ingredientes, empuja el reparto fuera de la
@@ -3568,13 +3613,11 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                tabla sin poder scrollearla. Con el 50% las dos zonas se
                reparten el alto disponible y cada una scrollea por dentro.
 
-               `foto` repetida en las dos filas es lo que estira la imagen
-               de arriba abajo: no es un atajo, es la única forma de que una
-               celda cubra dos filas sin envolver nada en un contenedor
-               nuevo. */
+               `lista lista` cruza las DOS columnas: la banda no vive en la
+               columna derecha, ocupa el ancho entero debajo de la foto. */
             .cust-layout.con-lista {
                 grid-template-rows:minmax(0,1fr) minmax(0,50%);
-                grid-template-areas:"foto datos" "foto lista";
+                grid-template-areas:"foto datos" "lista lista";
             }
 
             /* ── LA FOTO SE QUEDA QUIETA, SCROLLEA SOLO LA LISTA ──
@@ -3628,8 +3671,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                    llene la columna izquierda entera —las dos filas—. Antes
                    se quedaba en `align-self:start` porque el alto de la foto
                    era fijo y estirarlo la hacía crecer como un chicle;
-                   ahora el alto sale de la celda, que abarca las dos filas
-                   de la rejilla.
+                   ahora el alto sale de su celda, que es la fila de arriba.
 
                    La estrella y la X están ancladas con `top`, no con
                    `bottom`: se quedan en la esquina de arriba, así que el
@@ -3637,7 +3679,7 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
 
                    `overflow:hidden` recorta la foto a la celda: si el alto
                    se queda corto, la imagen se recorta, nunca se desborda
-                   encima de la zona de al lado. */
+                   encima de la banda inferior. */
                 overflow:hidden;
             }
             /* LA FOTO TIENE ALTO PROPIO, PERO NUNCA MÁS QUE LA VENTANA.
@@ -3661,10 +3703,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                la foto se desbordaba sobre la banda inferior.
 
                `height:100%` se resuelve contra la celda, que tiene alto
-               definido por `minmax(0,1fr)`. Con la foto abarcando las DOS
-               filas, la celda es la columna izquierda entera: la imagen
-               llena el hueco de arriba abajo y el rincón inferior izquierdo
-               deja de aparecer vacío. */
+               definido por `minmax(0,1fr)`. La foto ocupa SOLO su celda: la
+               fila de arriba, junto a los datos. La banda del fondo cruza
+               el ancho entero por debajo de las dos. */
             .cust-foto {
                 height:100%;
                 align-self:stretch;
@@ -3814,44 +3855,111 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            sigue en una sola columna— heredaría el tope de 92vw y perdería
            unos píxeles de ancho sin ganar nada. */
         @media (orientation:landscape) and (min-width:600px) {
-            /* ── EN HORIZONTAL LA DERECHA SE INVIERTE: TABLA ARRIBA ──
+            /* ── EN HORIZONTAL TODO LO DE LA DERECHA ES UNA SOLA COLUMNA ──
 
-               Es el mismo plano de 2x2 que en vertical, con las dos filas
-               de la derecha cambiadas de sitio. La foto sigue abarcando la
-               columna izquierda entera; lo único que se mueve es qué zona
-               ocupa la fila de arriba.
+               No son dos celdas de rejilla con un scroll cada una. Son UNA
+               sola caja con UN solo scroll que recorre, de arriba abajo:
 
-                 fila 1 →  foto | lista  (nota + tabla + columnas)
-                 fila 2 →  foto | datos  (modos + título + precio + cantidad)
+                 1. los dos modos
+                 2. el título, la descripción, el precio y la cantidad
+                 3. la nota
+                 4. la tabla de ingredientes
+                 5. Cancelar y Añadir, al final
 
-               ARRIBA LA TABLA, y no los datos, por una razón de uso: en
-               horizontal el alto útil son ~297 px. La tabla es lo que el
-               cliente toca —quitar, agrandar, bajar porciones—, así que se
-               queda en la mitad que el pulgar alcanza sin estirarse, y los
-               datos del plato, que se leen una vez, van abajo.
+               A la izquierda, la foto queda quieta y ocupa todo el alto.
 
-               EL REPARTO. 55 % para la tabla y el resto para los datos. La
-               banda gasta ~13,6 px de relleno por lado, 62 de nota y 19 de
-               cabecera: con 163 px (el 55 % de los 297 disponibles) quedan
-               ~55 px de fila visible, o sea un renglón entero al abrir, y el
-               corte del borde inferior anuncia que hay más. Con menos, la
-               tabla nace mostrando media fila y el cliente no ve que existe.
+               POR QUÉ UNA SOLA CAJA. Con dos celdas, cada mitad tenía su
+               propio scroll y el cliente tenía que adivinar en cuál
+deslizar; además la captura del dueño mostraba los modos cortados
+               contra la tabla porque la mitad de arriba se quedaba sin alto.
+               Con una sola columna, un gesto recorre todo en el orden en que
+               se lee un plato: qué es, cuánto, y qué le quito o le pongo.
 
-               Los datos bajan a ~134 px con scroll propio: título, precio y
-               cantidad se ven, y los dos modos con un gesto. Antes de la
-               rejilla de 2x2 esa columna tenía exactamente el mismo
-               problema y se resolvía igual. */
-            .cust-layout.con-lista {
-                grid-template-rows:minmax(0,55%) minmax(0,1fr);
-                grid-template-areas:"foto lista" "foto datos";
+               EL ORDEN ES EL INVERSO DEL QUE HABÍA. El dueño lo dijo claro:
+               lo que antes salía arriba debía ir abajo y al revés. Manda el
+               orden del MARCADO, no la rejilla, porque los dos bloques van
+               dentro de `.cust-flujo`, que es la caja que scrollea. */
+            .cust-layout {
+                /* 280 px, igual que en vertical: la columna de la foto quedó
+                   bien y el dueño pidió no tocarla. La ensancha la regla de
+                   `.cust-foto-horizontal` de más abajo, y solo para fotos
+                   apaisadas. */
+                grid-template-columns:280px minmax(0,1fr);
+                grid-template-rows:minmax(0,1fr);
+                /* Una sola área: la foto a la izquierda y TODO el flujo a la
+                   derecha. No hay áreas para datos y lista por separado. */
+                grid-template-areas:"foto flujo";
             }
-            /* La raya separadora cambia de lado con el contenido: con la
-               tabla arriba, la línea tiene que quedar ENTRE la tabla y los
-               datos, o sea debajo. El fondo se queda: sigue siendo una zona
-               con su propio tono, solo que ahora no está pegada al pie. */
+
+            /* La rejilla ya no reparte alto entre dos zonas de la derecha:
+               la columna del flujo es la que scrollea.
+
+               HAY QUE REINICIAR LAS FILAS A UNA. El bloque de 600 px declara
+               dos filas para `con-lista` (`1fr` + `50%`) porque en vertical la
+               banda cruza el ancho abajo. En horizontal eso reservaría una
+               segunda fila VACÍA: el flujo se quedaría con la mitad del alto
+               y el fondo sería un hueco del color de la ventana. */
+            .cust-layout.con-lista {
+                grid-template-rows:minmax(0,1fr);
+                grid-template-areas:"foto flujo";
+            }
+
+            /* ── LA COLUMNA DEL FLUJO: UN SOLO SCROLL ──
+
+               Aquí se deja de ser `display:contents` y se convierte en una
+               caja real, hija de la rejilla, que llena su celda y se
+               desplaza por dentro.
+
+               `min-height:0` es obligatorio: sin él un hijo de flex o de
+               rejilla nunca scrollea, porque su altura mínima es la del
+               contenido y jamás desborda. Ya nos pasó con el cuerpo y costó
+               una vuelta entera de diagnóstico.
+
+               `overscroll-behavior:contain` evita que, al llegar al final,
+               el gesto se contagie a la página de detrás. */
+            .cust-flujo {
+                grid-area:flujo;
+                display:flex;
+                flex-direction:column;
+                min-height:0;
+                height:100%;
+                overflow-y:auto;
+                overscroll-behavior:contain;
+            }
+
+            /* El cuerpo y la banda dejan de tener scroll propio: ahora el
+               scroll es del flujo entero. Si conservaran `overflow-y:auto`,
+               aparecerían tres barras anidadas dentro de la misma columna. */
+            .cust-cuerpo {
+                overflow-y:visible;
+                flex:0 0 auto;
+            }
             .cust-inferior {
-                border-top:0;
-                border-bottom:1px solid rgba(128,128,128,.2);
+                overflow-y:visible;
+                flex:0 0 auto;
+            }
+
+            /* ── EL PIE ES UN BLOQUE MÁS, NO UNA BARRA ──
+
+               Va dentro de `.cust-inferior` (lo traslada
+               cliente-customize.js), que es el último bloque del flujo. Así
+               el cliente llega a los botones deslizando hasta el final y no
+               los tiene siempre pegados al borde.
+
+               `margin-top:0` porque NO es hijo del flujo sino de la banda:
+               un `auto` aquí no reparte nada y solo dejaría un aire suelto
+               encima. El fondo del pie y el de la banda ya coinciden, así que
+               se lee como una sola sección y no hacen falta dos rayas. */
+            #customizeModal .modal-container.cust-ventana .modal-footer {
+                margin-top:0;
+                border-top:1px solid rgba(128,128,128,.2);
+            }
+
+            /* La raya entre los datos y la banda: es la que separa las dos
+               secciones del contenido. La banda ya no está pegada al pie. */
+            .cust-inferior {
+                border-top:1px solid rgba(128,128,128,.2);
+                border-bottom:0;
             }
 
             /* La tarjeta y la foto crecen con el viewport real.
@@ -4221,24 +4329,25 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                 </div>
                 <div class="modal-body" id="customizeModalBody"></div>
 
-                <!-- EL PIE VA AQUÍ Y NO SE MUEVE A DENTRO DEL CUERPO.
+                <!-- EL PIE SE MUEVE AL CONTENIDO AL ABRIR EL PLATILLO.
 
-                     Por debajo del cuerpo, los botones cierran visualmente la
-                     banda de la fila inferior: el `.cust-inferior` generado
-                     dentro del cuerpo comparte con él fondo y borde, así que
-                     los dos se leen como una sola sección a todo el ancho.
+                     Aquí nace, como hijo del contenedor, porque tiene que
+                     existir siempre: los oyentes de «Cancelar» y «Añadir» se
+                     enganchan sobre ESTOS nodos, una sola vez (ver
+                     cliente-ui.js y cliente-historial.js). Si se escribieran
+                     dentro del HTML generado, cada apertura crearía botones
+                     nuevos sin oyente y dejarían de responder en silencio.
 
-                     En el teléfono, en «Completo», la fila inferior no existe
-                     y el pie queda pegado a los modos. Una sola banda, cero
-                     maqueta duplicada.
+                     Cuando se abre un PLATILLO, cliente-customize.js lo
+                     TRASLADA con `appendChild` al final de
+                     `.cust-inferior`, dentro del cuerpo, para que el cliente
+                     llegue a los botones deslizando y no los tenga pegados
+                     siempre al borde. `appendChild` conserva los nodos y sus
+                     oyentes: no se recrea nada.
 
-                     Este bloque es ESTÁTICO y los oyentes de «Cancelar» y
-                     «Añadir» se enganchan una sola vez sobre estos nodos
-                     (ver cliente-ui.js y cliente-historial.js). El cuerpo, en
-                     cambio, se regenera en cada apertura con `innerHTML`: si
-                     el pie viviera dentro, cada apertura crearía botones
-                     nuevos sin oyente y dejarían de responder en silencio. -->
-                <div class="modal-footer">
+                     El historial, en cambio, lo deja aquí: es una lista
+                     larga y sus botones no tienen por qué ir al final. -->
+                <div class="modal-footer" id="customizePie">
                     <button class="btn-secondary" id="cancelCustomize">Cancelar</button>
                     <button class="btn-primary" id="addToCartFromModal"><i class="fas fa-cart-plus"></i> Añadir</button>
                 </div>
@@ -4567,9 +4676,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
     <script src="js/cliente-carrito.js?v=1793933867"></script>
     <script src="js/cliente-carrito-timer.js?v=1793995653"></script>
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
-    <script src="js/cliente-customize.js?v=1794096833"></script>
+    <script src="js/cliente-customize.js?v=1794109652"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1793971149"></script>
+    <script src="js/cliente-historial.js?v=1794109652"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>

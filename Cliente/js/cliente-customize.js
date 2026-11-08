@@ -244,7 +244,8 @@
           '<button type="button" class="cust-cerrar" id="custCerrar" ' +
             'aria-label="Cerrar la ventana del plato">&times;</button>';
 
-        html += '<div class="cust-cuerpo">' +
+        html += '<div class="cust-flujo">' +
+          '<div class="cust-cuerpo">' +
 
             // Nombre, descripción y precio: lo primero que se lee.
             '<div>' +
@@ -319,11 +320,20 @@
             // «Completo», la ventana no reserva ni una fila para la banda.
             '</div>' +   // .cust-cuerpo
             '<div class="cust-inferior">' +
-              _htmlNotaPersonalizacion() +
 
-              // La tabla va DESPUÉS de la nota y sigue naciendo oculta: en
-              // modo «Completo» no hay nada que elegir.
-              '<div id="ingredientesList" style="display:none">';
+              // ── LO QUE SE APAGA EN «COMPLETO» ──
+              //
+              // La nota y la tabla van en su propia caja para poder
+              // esconderlas sin esconder el pie. Antes se ocultaba
+              // `.cust-inferior` entero, porque no tenía nada más dentro.
+              // Ahora el pie vive ahí abajo, y los botones tienen que
+              // seguir existiendo en «Completo».
+              '<div class="cust-inferior-cuerpo">' +
+                _htmlNotaPersonalizacion() +
+
+                // La tabla va DESPUÉS de la nota y sigue naciendo oculta:
+                // en modo «Completo» no hay nada que elegir.
+                '<div id="ingredientesList" style="display:none">';
 
         if (ingredientes.length > 0) {
             // ── CABECERA DE COLUMNAS ──
@@ -426,10 +436,40 @@
         }
 
         html += '</div>' +   // #ingredientesList
+                '</div>' +   // .cust-inferior-cuerpo
                 '</div>' +   // .cust-inferior
+                '</div>' +   // .cust-flujo
                 '</div>';    // .cust-layout
 
+        // ── EL PIE SE MUEVE, NO SE RECREA ──
+        //
+        // `appendChild` sobre un nodo que ya existe lo TRASLADA: no crea
+        // uno nuevo, así que los oyentes de «Cancelar» y «Añadir»
+        // enganchados en cliente-ui.js siguen vivos. Si en su lugar se
+        // escribiera el pie dentro del HTML generado, cada apertura crearía
+        // botones nuevos sin oyente y dejarían de responder en silencio a la
+        // segunda apertura — el defecto que ya costó una vuelta entera.
+        //
+        // El pie tiene que ir ANTES del innerHTML: está dentro del cuerpo
+        // viejo, y regenerarlo lo destruiría.
+        _rescatarPie();
         body.innerHTML = html;
+
+        // Y ahora al final del contenido, para que se llegue a él
+        // deslizando. Nunca a una barra pegada al borde.
+        //
+        // `querySelector` se comprueba antes de llamarlo porque esta función
+        // también corre en pruebas con un cuerpo de mentira, igual que
+        // `_limpiarAspectoFoto` comprueba `contenedor.style`. En un navegador
+        // siempre existe: la guarda no cuesta nada y evita que un doble sin
+        // esa función rompa la apertura del platillo entera.
+        var destinoPie = (typeof body.querySelector === 'function')
+            ? body.querySelector('.cust-inferior')
+            : null;
+        var pieVentana = document.getElementById('customizePie');
+        if (pieVentana && destinoPie && destinoPie.appendChild) {
+            destinoPie.appendChild(pieVentana);
+        }
 
         // La ventana arranca en «Completo», así que la banda inferior
         // también: el plato recién abierto no tiene nada que personalizar.
@@ -863,6 +903,32 @@
     function _htmlNotaPersonalizacion() {
         return '<p class="cust-inferior-nota">¿Quieres agrandar, quitarle a tu ' +
             'pedido o agregarle algún ingrediente o algo más? Tienes:</p>';
+    }
+
+    /** Saca el pie del cuerpo antes de regenerarlo, para no destruirlo.
+     *
+     * El pie de «Cancelar» y «Añadir» es ESTÁTICO: vive en el HTML y sus
+     * oyentes se enganchan una sola vez, en cliente-ui.js. Pero el cuerpo
+     * se regenera con `innerHTML` en cada apertura, y ahora el pie vive
+     * DENTRO de ese cuerpo porque el dueño lo quiere como último bloque del
+     * contenido, no como barra fija al borde.
+     *
+     * Sin este rescate, el `innerHTML` borraría el pie —y con él los
+     * oyentes— y a la segunda apertura los botones dejarían de responder sin
+     * ningún error visible. Ya nos costó una vuelta entera.
+     *
+     * El pie rescatado se deja en el overlay (`#customizeModal`), que está
+     * fuera del cuerpo y nunca se regenera. Ahí espera hasta que el cuerpo
+     * nuevo esté listo y se le vuelve a colgar al final.
+     *
+     * Si no hay pie (HTML viejo en caché), no pasa nada: se omite. */
+    function _rescatarPie() {
+        var modal = document.getElementById('customizeModal');
+        var pie = document.getElementById('customizePie');
+        if (!modal || !pie || !pie.parentNode) return;
+        // Si ya está suelto en el overlay no hay nada que rescatar.
+        if (pie.parentNode === modal) return;
+        modal.appendChild(pie);
     }
 
     /** Enciende o apaga la banda inferior de la ventana del platillo.
