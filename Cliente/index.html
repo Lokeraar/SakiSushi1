@@ -3347,9 +3347,27 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             grid-template-columns:
                 30px               /* miniatura */
                 minmax(0, 1fr)     /* nombre: se queda con lo que sobre */
-                46px               /* Quitar: solo el signo − */
-                84px               /* Actualmente: el rótulo más largo (59 px a 8 pt) */
-                64px;              /* Agrandar: ×2 o + */
+                38px               /* Quitar: solo el signo − (32 px a 8 pt) */
+                66px               /* Actualmente: el más largo (59 px a 8 pt) */
+                50px;              /* Agrandar: ×2 o + (43 px a 8 pt) */
+            /* LOS ANCHOS DE LOS CONTROLES SALEN DE SU RÓTULO, NO DEL GUSTO.
+
+               El dueño pidió estrecharlos para darle ese espacio al nombre.
+               El mínimo de cada columna es lo que mide su rótulo al PISO (8 pt,
+               donde el auto-ajuste lo deja si hace falta), más un pequeño
+               margen:
+
+                 Quitar       32 px -> 38
+                 Actualmente  59 px -> 66
+                 Agrandar     43 px -> 50
+
+               Así el rótulo entra entero sin encoger y sin pisar al vecino, y
+               el nombre gana 40 px: de 116 a 156, que a 16 pt son 42
+               caracteres en las tres líneas permitidas.
+
+               ESTOS NÚMEROS SON UN SUELO, NO UN GUSTO. Si se bajan más, el
+               auto-ajuste ya no tiene a dónde encoger y el texto se desborda
+               encima de la columna vecina. */
             align-items:center;
             column-gap:.25rem;
         }
@@ -3950,7 +3968,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                    clavada señalando filas que ya pasaron. */
                 padding-bottom:1.25rem;
             }
-            /* Las columnas crecen en pantalla ancha. Se declara AQUÍ y no en
+            /* Las columnas crecen en pantalla ancha, con la misma proporción
+               que en el teléfono: los controles se quedan estrechos y el
+               nombre se lleva el espacio. Se declara AQUÍ y no en
                `.cust-ing-cab`, que era lo que había antes: una regla con
                `font-size` fijo le ganaba al auto-ajuste y dejaba el rótulo
                clavado en un tamaño, ignorando si cabía o no. */
@@ -3959,9 +3979,9 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                 grid-template-columns:
                     38px
                     minmax(0, 1fr)
-                    68px
-                    116px
-                    92px;
+                    44px
+                    78px
+                    58px;
             }
             .cust-ing-mini-celda, .cust-ing-mini { width:38px; height:38px; }
             .cust-ing-btn { width:34px; height:34px; }
@@ -4908,7 +4928,7 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-mesonero.js?v=1794018411"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
-    <script src="js/cliente-menu.js?v=1794157892"></script>
+    <script src="js/cliente-menu.js?v=1794163495"></script>
     <script src="js/cliente-scroll.js?v=1793990592"></script>
     <script src="js/cliente-ui.js?v=1794001460"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
@@ -4919,10 +4939,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794157892"></script>
-    <script src="js/cliente-customize.js?v=1794157892"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794163495"></script>
+    <script src="js/cliente-customize.js?v=1794163495"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794157892"></script>
+    <script src="js/cliente-historial.js?v=1794163495"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>
