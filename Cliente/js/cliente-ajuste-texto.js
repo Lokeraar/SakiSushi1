@@ -142,6 +142,17 @@
         // tamaño definitivo escrito.
         var factor = el.__factorLinea > 0 ? el.__factorLinea : 1.3;
         recipiente.style.maxHeight = (px * factor * lineas).toFixed(2) + 'px';
+        // ── EL CORTE VA CON EL TECHO, NUNCA SOLO ──
+        //
+        // `overflow:hidden` sin `maxHeight` recorta el bloque a su altura
+        // mínima. Aquí eso se veía como el pie de la ventana (Cancelar /
+        // Añadir) subiendo y pintándose encima de la tabla: la banda se
+        // encogía y el pie, que vive dentro de ella, se montaba arriba.
+        //
+        // Los dos se ponen juntos y se quitan juntos. Así el recorte solo
+        // existe cuando hay un techo que lo justifica, y su valor es siempre
+        // el que acaba de calcular el medidor.
+        recipiente.style.overflow = 'hidden';
     }
 
     function ajustarElemento(el, techo, capacidad) {
@@ -785,7 +796,12 @@
             // medir, no del que viene. Si se quedara, un plato con nombre corto
             // heredaría el tope del anterior.
             var cont = todos[i].parentNode;
-            if (cont && cont.nodeType === 1 && cont.style) cont.style.maxHeight = '';
+            if (cont && cont.nodeType === 1 && cont.style) {
+                // Techo y corte se retiran juntos: dejar uno solo es lo que
+                // produjo el pie montado sobre la tabla.
+                cont.style.maxHeight = '';
+                cont.style.overflow = '';
+            }
         }
     }
 
