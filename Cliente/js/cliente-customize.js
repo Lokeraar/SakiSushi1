@@ -929,6 +929,26 @@
                 precEl.textContent = '';
             }
         }
+
+        // ── EL TEXTO NUEVO TAMBIÉN SE AJUSTA ──
+        //
+        // El dueño encontró el hueco exacto: «si fuera solamente el nombre del
+        // ingrediente sí está entrando correctamente, hay que arreglarlo para
+        // que se autoajuste también con contenido añadido».
+        //
+        // Al agrandar aparece « · +Bs. X en este plato» dentro de esta misma
+        // línea, y el texto se vuelve a partir de cero. El ajuste solo corría al
+        // ABRIR la ventana, así que todo lo que se añadía después —el recargo,
+        // el cambio de unidad al pasar a ×2— entraba sin medir y se recortaba.
+        //
+        // Se pide aquí, al final del repintado, y no en cada uno de los tres
+        // sitios que cambian el estado: cualquier cosa que repinte una fila pasa
+        // por esta función, así que el ajuste no puede quedarse atrás por olvido.
+        //
+        // `_pedirAjusteTexto` agrupa con `requestAnimationFrame`, así que pedirlo
+        // varias veces seguidas en el mismo cuadro se resuelve con una sola
+        // medición. No hay trabajo de más.
+        _pedirAjusteTexto();
     }
     // La lista de ingredientes del plato abierto, con su porción y precio.
     var _ingredientesActuales = [];
@@ -1057,9 +1077,25 @@
      * pruebas con un DOM de mentira que no las tiene: sin la comprobación, un
      * doble incompleto rompería la apertura del platillo entera.
      */
+    // ── UNA SOLA MEDICIÓN POR CUADRO ──
+    //
+    // `requestAnimationFrame` NO deduplica: agrupa la ejecución en el siguiente
+    // cuadro, pero corre TODOS los callbacks registrados. Agrupa el momento, no
+    // el trabajo. `_pintarEstadoIng` se llama una vez por ingrediente al abrir
+    // —ocho ingredientes, ocho peticiones— y cada ajuste recorre todos los
+    // textos con búsqueda binaria. Eran ocho mediciones completas para pintar
+    // una sola vez.
+    //
+    // Con la bandera, la primera petición del cuadro agenda la medición y las
+    // demás se descartan: se mide una vez, con el DOM ya en su estado final.
+    var _ajustePendiente = false;
+
     function _pedirAjusteTexto() {
         if (typeof window.requestAnimationFrame !== 'function') return;
+        if (_ajustePendiente) return;
+        _ajustePendiente = true;
         window.requestAnimationFrame(function () {
+            _ajustePendiente = false;
             if (typeof window.ajustarVentanaPlatillo === 'function') {
                 window.ajustarVentanaPlatillo();
             }
