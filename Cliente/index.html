@@ -3511,35 +3511,11 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                Cuatro renglones porque son cuatro DATOS: nombre, marca «(define
                el plato)», unidad de medida y precio. Tiene que coincidir con
                `CAPACIDAD.ingrediente.maxLineas` del medidor. */
-            /* SIN `line-clamp`: EL TECHO LO FIJA EL JS, EN PÍXELES.
-
-               `line-clamp` fue el error. Es un mecanismo del MOTOR, no una
-               medida: cuenta las cajas de línea del elemento al que se aplica,
-               y aquí el que tiene las líneas es el HIJO, no este padre. Con un
-               `display:-webkit-box` cuyo único contenido es un hijo en bloque,
-               cada motor cuenta distinto: unos ven las líneas del hijo y otros
-               solo una. Por eso a veces cortaba en tres y a veces en cuatro.
-               Comprobado en un navegador real: uno de los probados ni siquiera
-               implementa `-webkit-box` y lo reporta como `display:block`, así
-               que el tope no existía para él.
-
-               La alternativa robusta es una ALTURA MÁXIMA EN PÍXELES, calculada
-               por el medidor con el alto de línea real:
-                   maxHeight = altoDeLinea * 4
-               Eso no depende de qué motor esté mirando: cuatro renglones son
-               cuatro renglones. El JS la escribe en `estiloTechoRenglones()`.
-
-               `overflow:hidden` NO se pone aquí, y este fue el defecto que el
-               dueño vio como «se desubicaron los botones y la nota»: sin un
-               `maxHeight` ya escrito, `overflow:hidden` recorta el bloque a su
-               altura mínima, la banda se encoge y el pie —que vive dentro de
-               ella— sube y se pinta encima de la tabla.
-
-               El recorte va junto con el techo, y el techo lo escribe el JS. Si
-               el JS no corre, no hay recorte: se ve el texto completo y la fila
-               crece. Es preferible una fila alta a un pie montado sobre la
-               tabla. El `max-height` y el `overflow` se ponen y se quitan
-               juntos, desde el medidor. */
+            display:-webkit-box;
+            -webkit-box-orient:vertical;
+            -webkit-line-clamp:4;
+            line-clamp:4;
+            overflow:hidden;
         }
         .cust-ing-nombre {
             /* 16 pt de base. El auto-ajuste lo encoge hasta 8 pt si hace falta.
@@ -5056,7 +5032,7 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-mesonero.js?v=1794018411"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
-    <script src="js/cliente-menu.js?v=1794194202"></script>
+    <script src="js/cliente-menu.js?v=1794185279"></script>
     <script src="js/cliente-scroll.js?v=1793990592"></script>
     <script src="js/cliente-ui.js?v=1794001460"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
@@ -5067,10 +5043,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794194202"></script>
-    <script src="js/cliente-customize.js?v=1794194202"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794185279"></script>
+    <script src="js/cliente-customize.js?v=1794185279"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794194202"></script>
+    <script src="js/cliente-historial.js?v=1794185279"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>

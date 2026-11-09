@@ -123,38 +123,6 @@
      * 10,67 son 22 mediciones; bisecando el intervalo, unas 5. Con varios
      * campos por apertura, la diferencia se nota en el teléfono.
      */
-    /**
-     * Fija en el contenedor el alto máximo equivalente a `lineas` renglones.
-     *
-     * Es el techo REAL de la fila, y va en píxeles a propósito: `line-clamp`
-     * depende de cómo cada motor cuente las cajas de línea, y cuando el tope se
-     * aplica a un padre cuyo único contenido es un hijo en bloque, los motores
-     * no coinciden. Con una altura máxima calculada, cuatro renglones son cuatro
-     * renglones en cualquiera, y el número sale del MISMO alto de línea que usa
-     * la búsqueda binaria: el que decide y el que limita no pueden discrepar.
-     */
-    function fijarTechoRenglones(el, px, lineas) {
-        if (!el || !lineas || lineas < 1) return;
-        var recipiente = el.parentNode;
-        if (!recipiente || recipiente.nodeType !== 1 || !recipiente.style) return;
-        // El alto de línea al tamaño que acaba de quedar. Se mide aquí y no se
-        // reutiliza el de la última prueba del bucle porque `el` ya tiene el
-        // tamaño definitivo escrito.
-        var factor = el.__factorLinea > 0 ? el.__factorLinea : 1.3;
-        recipiente.style.maxHeight = (px * factor * lineas).toFixed(2) + 'px';
-        // ── EL CORTE VA CON EL TECHO, NUNCA SOLO ──
-        //
-        // `overflow:hidden` sin `maxHeight` recorta el bloque a su altura
-        // mínima. Aquí eso se veía como el pie de la ventana (Cancelar /
-        // Añadir) subiendo y pintándose encima de la tabla: la banda se
-        // encogía y el pie, que vive dentro de ella, se montaba arriba.
-        //
-        // Los dos se ponen juntos y se quitan juntos. Así el recorte solo
-        // existe cuando hay un techo que lo justifica, y su valor es siempre
-        // el que acaba de calcular el medidor.
-        recipiente.style.overflow = 'hidden';
-    }
-
     function ajustarElemento(el, techo, capacidad) {
         if (!el || !el.style) return null;
 
@@ -166,70 +134,12 @@
 
         // El alto de una línea al tamaño que se está probando. Se mide de
         // verdad en vez de suponerlo: depende de la familia y del interlineado.
-        // ── EL ALTO DE LÍNEA SE MIDE, NO SE SUPONE ──
-        //
-        // Antes se leía `lineHeight` computado y se hacía `parseFloat`. Eso
-        // falla en cuanto el navegador devuelve la palabra `normal` en vez de un
-        // número: `parseFloat('normal')` es NaN, caía al respaldo `px * 1.3`, y
-        // el CSS de esta tabla declara `1.25`. El medidor trabajaba con un alto
-        // de línea que no era el real, así que su cuenta de renglones estaba
-        // desplazada.
-        //
-        // Comprobado en un navegador real: uno de los probados devuelve
-        // `"normal"` y además ignora `-webkit-box`. Depender de cualquiera de
-        // las dos cosas era depender del motor.
-        //
-        // La sonda mide UNA línea de verdad al tamaño activo: un span oculto,
-        // fuera del flujo, con una sola letra. Su alto dividido por el tamaño de
-        // letra da el factor de interlineado que el navegador aplica de verdad.
-        // El resultado se guarda por elemento: la búsqueda binaria prueba cinco
-        // tamaños y no hace falta sondear cinco veces.
-        function factorDeLinea() {
-            if (el.__factorLinea > 0) return el.__factorLinea;
-            var factor = 0;
-            try {
-                var sonda = document.createElement('span');
-                sonda.textContent = 'X';
-                sonda.style.cssText =
-                    'display:block;position:absolute;visibility:hidden;' +
-                    'white-space:nowrap;padding:0;border:0;margin:0;';
-                el.appendChild(sonda);
-                var alto = sonda.getBoundingClientRect().height;
-                el.removeChild(sonda);
-                var tam = parseFloat(window.getComputedStyle(el).fontSize);
-                // ── LA SONDA TIENE QUE SER CREÍBLE ──
-                //
-                // No basta con que mida algo: tiene que medir una línea de
-                // verdad. Una sola «X» a 21 px no puede ocupar 5 px de alto; si
-                // el número sale así, el motor no está maquetando el texto (un
-                // navegador sin motor de fuentes devuelve un alto mínimo fijo) y
-                // creerle al pie de la letra daría un factor de 0,23: el medidor
-                // creería que en cada renglón cabe cuatro veces más texto del
-                // que cabe, y no encogería nunca.
-                //
-                // El rango razonable de interlineado va de 0,8 a 2,5 veces el
-                // tamaño de letra. Fuera de ahí, la sonda no sirve y se usa el
-                // valor declarado en el CSS.
-                if (alto > 0 && tam > 0) {
-                    var candidato = alto / tam;
-                    if (candidato >= 0.8 && candidato <= 2.5) factor = candidato;
-                }
-            } catch (e) {
-                factor = 0;
-            }
-            // Si la sonda no se pudo medir, se intenta el valor declarado y, en
-            // último caso, un factor conservador. Nunca se deja en NaN.
-            if (!(factor > 0)) {
-                var lh = parseFloat(window.getComputedStyle(el).lineHeight);
-                var tam2 = parseFloat(window.getComputedStyle(el).fontSize);
-                factor = (isFinite(lh) && isFinite(tam2) && tam2 > 0) ? lh / tam2 : 1.3;
-            }
-            el.__factorLinea = factor;
-            return factor;
-        }
-
         function altoDeLinea(px) {
-            return px * factorDeLinea();
+            // `line-height` se lee una vez por prueba; si el CSS no lo declara,
+            // el navegador devuelve el valor computado, que es lo que aplica.
+            var lh = parseFloat(window.getComputedStyle(el).lineHeight);
+            if (!isFinite(lh) || lh <= 0) lh = px * 1.3;
+            return lh;
         }
 
         // ¿Cabe en `lineas` líneas al tamaño `px`?
@@ -345,11 +255,6 @@
         // y no se toca nada más (el caso barato y el más común).
         if (cabe(techo, lineasMin)) {
             el.style.fontSize = techo + 'px';
-            // El techo se fija TAMBIÉN por este camino. Es la salida más común
-            // —el texto cabe al máximo— y era la única que se quedaba sin tope:
-            // al no escribirlo, la fila no quedaba limitada y cualquier cambio
-            // posterior de contenido crecía sin control hasta el reajuste.
-            fijarTechoRenglones(el, techo, lineasMin);
             return techo;
         }
 
@@ -388,10 +293,6 @@
             el.style.textOverflow = 'ellipsis';
             if (el.style.display !== 'block') el.style.display = 'block';
             el.setAttribute('data-ajuste', 'recortado');
-            // El techo también se fija al recortar: es el único caso en que se
-            // acepta que el texto no quepa, pero el número de renglones sigue
-            // siendo el declarado. Sin esto, al recortar no habría tope.
-            fijarTechoRenglones(el, PISO, topeLineas);
             return PISO;
         }
 
@@ -411,22 +312,6 @@
         // mismo nodo se reutiliza con contenido más corto.
         el.style.textOverflow = '';
         el.removeAttribute('data-ajuste');
-
-        // ── EL TECHO SE ESCRIBE EN PÍXELES, NO CON `line-clamp` ──
-        //
-        // Aquí es donde se cumple la regla del dueño: el número de renglones
-        // permitidos es `lineas`, y se hace cumplir con una altura máxima real.
-        //
-        // `line-clamp` no servía: cuenta las cajas de línea del elemento al que
-        // se aplica, y lo que había que limitar era el contenedor, cuyo único
-        // contenido es un hijo en bloque. Cada motor cuenta eso a su manera —uno
-        // de los probados ni implementa `-webkit-box`— así que el tope dependía
-        // del navegador. Con `maxHeight` en píxeles, cuatro renglones son cuatro
-        // renglones en cualquier motor, y es el MISMO número que acaba de usar la
-        // búsqueda binaria para decidir el tamaño: el que decide y el que limita
-        // no pueden discrepar.
-        fijarTechoRenglones(el, mejor, lineas);
-
         return mejor;
     }
 
@@ -787,21 +672,7 @@
             '.cust-titulo, .cust-desc, .cust-inferior-nota, .cust-ing-cab, .cust-ing-nombre'
         );
         for (var i = 0; i < todos.length; i++) {
-            if (!todos[i].style) continue;
-            todos[i].style.fontSize = '';
-            // El factor de interlineado se cachea por elemento: si cambia el
-            // platillo o el tema, la sonda tiene que volver a medir.
-            todos[i].__factorLinea = 0;
-            // Y el techo en píxeles se borra: es del texto que se acaba de
-            // medir, no del que viene. Si se quedara, un plato con nombre corto
-            // heredaría el tope del anterior.
-            var cont = todos[i].parentNode;
-            if (cont && cont.nodeType === 1 && cont.style) {
-                // Techo y corte se retiran juntos: dejar uno solo es lo que
-                // produjo el pie montado sobre la tabla.
-                cont.style.maxHeight = '';
-                cont.style.overflow = '';
-            }
+            if (todos[i].style) todos[i].style.fontSize = '';
         }
     }
 
