@@ -1,0 +1,27 @@
+{
+  "title": "Ventana del platillo · #customizeModal",
+  "brief": "Mapa de la ventana de personalización del platillo tal como está implementada hoy en Cliente/index.html: su estructura, sus estados, sus medidas reales y las reglas que la gobiernan. No es una exploración de direcciones nuevas —eso vive en design/ventana-platillo/— sino la documentación visual del estado actual, para revisar y detectar regresiones sin abrir el teléfono.",
+  "artboards": [
+    {
+      "file": "01-anatomia.html",
+      "title": "Anatomía · vertical",
+      "tradeoff": "Muestra la estructura completa con sus nombres técnicos y medidas; ocupa 3 pantallas de alto, así que no cabe en una sola vista como el modal real",
+      "width": 390,
+      "height": 1780
+    },
+    {
+      "file": "02-horizontal.html",
+      "title": "Horizontal · dos columnas",
+      "tradeoff": "Enseña el reparto foto/texto en apaisado y la foto que se queda fija; el ancho de 720 px deja poco sitio para texto explicativo al lado",
+      "width": 720,
+      "height": 620
+    },
+    {
+      "file": "03-estados-y-reglas.html",
+      "title": "Estados y reglas medidas",
+      "tradeoff": "Concentra los estados (Completo, Personalizar, Sin, ×1, ×2) y las cifras de auto-ajuste en una sola hoja de referencia; no muestra el modal completo, solo sus piezas",
+      "width": 390,
+      "height": 1500
+    }
+  ]
+}

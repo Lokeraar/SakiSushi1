@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · Header en dos filas, tamaños intactos</title>
+<style>
+  :root{
+    --papel:#FBF7F2; --superficie:#FFFFFF; --superficie-2:#F6F0E9;
+    --text-primary:#2A1C14; --text-secondary:#5F4E44; --text-muted:#7A6A60;
+    --primary:#A01828; --primary-text:#96121F;
+    --accent:#DD951F; --accent-text:#8A5A00;
+    --linea:#E8DDD3; --borde-control:#947F6D;
+    /* Tamaños ORIGINALES, sin tocar */
+    --ctrl:50px;
+    --logo:70px;
+    --fuente-ctrl:1.4rem;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--papel);color:var(--text-primary);min-height:100vh;
+    padding:.9rem;
+  }
+  .rotulo{font-size:.8rem;color:var(--text-muted);margin-bottom:.5rem}
+  .rotulo b{color:var(--primary-text)}
+
+  /* ── HEADER EN DOS FILAS ──
+     Fila 1: logo + nombre (protagonista, centrado)
+     Fila 2: los cinco controles repartidos a lo ancho
+     Ningún botón pierde tamaño. */
+  .cabecera{
+    background:linear-gradient(135deg,var(--primary),#b71c1c);
+    color:#fff;border-radius:14px;padding:.7rem .8rem;
+    display:flex;flex-direction:column;gap:.55rem;
+  }
+
+  .fila-logo{
+    display:flex;align-items:center;justify-content:center;gap:.7rem;
+    position:relative;
+  }
+  .logo{
+    width:var(--logo);height:var(--logo);border-radius:13px;
+    flex-shrink:0;transform:rotate(-5deg);
+    background:
+      radial-gradient(circle at 50% 42%,#f0a05a 0 20%,transparent 21%),
+      linear-gradient(140deg,#2b1a12,#0d0805);
+    border:1px solid rgba(255,255,255,.14);
+  }
+  .marca{min-width:0}
+  .marca h1{
+    font-size:1.3rem;font-weight:700;line-height:1.1;
+    white-space:nowrap;letter-spacing:-.01em;
+  }
+  .marca p{
+    font-size:.76rem;font-style:italic;opacity:.92;margin-top:.1rem;
+    white-space:nowrap;
+  }
+
+  .fila-controles{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:.4rem;
+  }
+
+  .btn{
+    width:var(--ctrl);height:var(--ctrl);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    border:none;border-radius:50%;
+    background:rgba(255,255,255,.16);color:#fff;
+    font-size:var(--fuente-ctrl);line-height:1;cursor:pointer;
+    position:relative;
+  }
+  .btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  .punto{
+    position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;
+    background:var(--accent);border:2px solid var(--primary);
+  }
+
+  /* Un separador tenue entre el grupo de la izquierda y él de la derecha,
+     para que no se lean como cinco botones sueltos. */
+  .separador{flex:1;height:1px;background:rgba(255,255,255,.18);margin:0 .3rem}
+  .grupo{display:flex;align-items:center;gap:.45rem}
+  .grupo.derecha{margin-left:auto}
+
+  /* ── CUENTA DEL ANCHO ── */
+  .medida{
+    margin-top:1rem;padding:.8rem .9rem;border:1px solid var(--linea);
+    border-radius:12px;background:var(--superficie);font-size:.8rem;
+    color:var(--text-secondary);line-height:1.6;
+  }
+  .medida b{color:var(--text-primary)}
+  .medida .ok{color:#2F6B3A;font-weight:700}
+  .medida .no{color:#A81E1E;font-weight:700}
+  .medida code{font-family:ui-monospace,Menlo,monospace;font-size:.76rem}
+  .medida hr{border:none;border-top:1px solid var(--linea);margin:.7rem 0}
+</style>
+</head>
+<body>
+  <p class="rotulo">Modelo <b>B</b> · Tamaños intactos, dos filas — 390 px</p>
+
+  <header class="cabecera">
+    <div class="fila-logo">
+      <div class="logo" aria-hidden="true"></div>
+      <div class="marca">
+        <h1>Saki Sushi</h1>
+        <p>"Adictos al universo saki"</p>
+      </div>
+    </div>
+
+    <div class="fila-controles">
+      <div class="grupo">
+        <button class="btn" type="button" aria-label="Abrir el menú">☰</button>
+        <button class="btn" type="button" aria-label="Cambiar de tema">☀</button>
+      </div>
+      <span class="separador" aria-hidden="true"></span>
+      <div class="grupo derecha">
+        <button class="btn" type="button" aria-label="Mi cuenta">👤</button>
+        <button class="btn" type="button" aria-label="Notificaciones">🔔</button>
+        <button class="btn" type="button" aria-label="Ver carrito">
+          🛒<span class="punto" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="medida">
+    <b>Qué cambia:</b> nada de tamaño. Los cinco controles siguen en
+    <b>50 px</b> y el logo en <b>70 px</b>. Lo único que cambia es
+    <b>dónde se colocan</b>: el logo sube a su propia fila y los botones
+    se reparten abajo.
+    <br><br>
+    <b>Cuenta de la fila de botones:</b> <code>5×50 + 4×7 + 28</code>
+    = <b>306 px</b> de 390.
+    <span class="ok">Sobran 84 px.</span> El carrito queda lejos del borde,
+    con sitio de sobra para el dedo.
+    <hr>
+    <b>Por qué no sirve «reducir el resto de la página»:</b>
+    el header mide en píxeles fijos (<code>width:50px</code>,
+    <code>width:70px</code>), no en <code>rem</code>. Encoger el texto de
+    la carta no le devuelve ni un píxel de ancho al header.
+    <span class="no">El carrito seguiría igual de inalcanzable.</span>
+  </div>
+</body>
+</html>

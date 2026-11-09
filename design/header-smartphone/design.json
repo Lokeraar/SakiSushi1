@@ -1,0 +1,20 @@
+{
+  "title": "Header del smartphone",
+  "brief": "Dos modelos para que los cinco controles del header del Cliente (menú, tema, cuenta, campana, carrito) quepan en un teléfono de 390 px, con la marca apilada en vertical como en la captura del dueño: logo arriba, nombre y eslogan debajo, controles repartidos a los lados. El carrito va al borde derecho. El header debe ocupar todo el ancho: hoy queda una franja oscura a la derecha porque el gradiente no se estira solo. El botón del mesonero se sustituye por el de iniciar sesión.",
+  "artboards": [
+    {
+      "file": "01-compacto-marca-apilada.html",
+      "title": "Compacto, marca apilada",
+      "tradeoff": "El header baja a ~100 px de alto y devuelve pantalla a la carta; los controles pasan de 50 a 44 px, que sigue siendo el mínimo táctil recomendado pero deja menos margen con dedos grandes",
+      "width": 390,
+      "height": 560
+    },
+    {
+      "file": "02-intactos-marca-apilada.html",
+      "title": "Tamaños intactos, marca apilada",
+      "tradeoff": "Ningún control pierde tamaño y sobran 108 px de ancho; el header sube a ~128 px de alto y ocupa más pantalla en un teléfono vertical",
+      "width": 390,
+      "height": 600
+    }
+  ]
+}

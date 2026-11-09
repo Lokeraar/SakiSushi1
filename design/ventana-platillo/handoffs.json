@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "chosen": "03-dos-columnas.html",
+  "handoffs": {
+    "01-foto-al-frente.html": {
+      "status": "implemented",
+      "queued": false,
+      "sentAt": "2026-11-06T13:11:25.026Z",
+      "startedAt": "2026-11-06T13:13:48.879Z",
+      "implementedAt": "2026-11-06T14:03:27.641Z",
+      "note": "Ventana única responsiva: 01 en móvil (una columna, foto al frente) y 03 en tablet/PC (dos columnas, foto fija a la izquierda). Corte en 600px. Estilo en clases .cust-* del <style>, X sobre la foto, precio y stock arriba. Publicado en b3d488b. Prueba test_ventana.js 24/24, sin regresiones.",
+      "previewUrl": "http://127.0.0.1:8899/Cliente/index.html"
+    },
+    "03-dos-columnas.html": {
+      "status": "implemented",
+      "queued": true,
+      "sentAt": "2026-11-06T13:13:50.097Z",
+      "startedAt": "2026-11-06T13:14:48.030Z",
+      "implementedAt": "2026-11-06T15:09:18.213Z",
+      "note": "Corregido: la rejilla de dos columnas estaba aplicada al .modal-container (3 hijos: header, body, footer), así que el pie caía como tercera columna y sus botones se estiraban a todo el alto. Ahora la rejilla vive en .cust-layout (2 hijos: foto y cuerpo), el contenedor es flex-column, y los botones del pie llevan alto fijo de 46px. Commits 2f8dfb9 y decc226, publicado y verificado.",
+      "previewUrl": "http://127.0.0.1:8899/Cliente/index.html"
+    }
+  }
+}

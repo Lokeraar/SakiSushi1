@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anatomía · ventana del platillo (#customizeModal)</title>
+<style>
+  /* ── TOKENS REALES DEL CLIENTE ──
+     Copiados de Cliente/index.html, no inventados. Ver design/system.md. */
+  :root {
+    --primary: #D32F2F;
+    --primary-dark: #B71C1C;
+    --accent: #FF9800;
+    --accent-text: #8A5A00;
+
+    --customize-text: #ffffff;
+    --customize-subtext: #adb5bd;
+    --customize-row-bg: rgba(0,0,0,0.2);
+    --customize-border: rgba(255,255,255,0.1);
+    --cust-tinta-quitar: #ff8a80;
+    --cust-tinta-agrandar: #86efac;
+    --cust-fondo-quitar: rgba(255,138,128,0.16);
+    --cust-fondo-agrandar: rgba(134,239,172,0.08);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+
+    --letra-denso: clamp(1rem, 0.95rem + 0.2vw, 1.333rem);
+    --letra-apoyo: clamp(0.9375rem, 0.9rem + 0.2vw, 1.125rem);
+    --letra-titulo: clamp(1.25rem, 1.1rem + 0.6vw, 2rem);
+
+    --superficie: #1a1a2e;
+    --superficie-2: #16213e;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { font-size: 16px; }
+
+  body {
+    margin: 0;
+    padding: 1.5rem 1rem 3rem;
+    background: #0b0b12;
+    color: #e8e8ef;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 1rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1 { font-size: 1.375rem; line-height: 1.25; margin: 0 0 .35rem; }
+  h2 { font-size: 1.0625rem; margin: 2rem 0 .6rem; color: #fff; }
+  p  { margin: 0 0 .8rem; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .875em;
+         background: rgba(255,255,255,.08); padding: .1em .35em; border-radius: 4px; }
+
+  .lienzo { max-width: 390px; margin: 0 auto; }
+
+  .lede { color: #a8a8bd; font-size: .9375rem; margin-bottom: 1.5rem; }
+
+  /* ── EL MODAL DIBUJADO ──
+     Es el mismo degradado y los mismos radios que el real. */
+  .ventana {
+    background: linear-gradient(135deg, var(--superficie) 0%, var(--superficie-2) 100%);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  }
+
+  /* Rejilla real: foto arriba, datos debajo, banda al final.
+     En vertical el layout es 1 columna; la banda cruza el ancho entero. */
+  .layout { display: grid; grid-template-columns: 1fr; grid-template-areas: "foto" "datos" "lista"; }
+
+  .foto-wrap {
+    grid-area: foto;
+    position: relative;
+    min-height: 210px;
+    background: #0d0d14;
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* Sin imagen remota: se representa con la silueta y una nota.
+     El artboard es autocontenido por regla de la skill. */
+  .foto-placeholder {
+    width: 100%; height: 210px;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(255,152,0,.18), transparent 62%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.03) 0 10px, transparent 10px 20px);
+    display: flex; align-items: center; justify-content: center;
+    color: #6b6b82; font-size: .8125rem; letter-spacing: .04em;
+  }
+  .cerrar {
+    position: absolute; top: .6rem; right: .6rem;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.18);
+    color: #fff; font-size: 1.1rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .datos { grid-area: datos; padding: 1.1rem 1.15rem .9rem; }
+
+  .titulo-plato {
+    font-size: var(--letra-titulo); font-weight: 700; line-height: 1.2;
+    margin: 0 0 .2rem; text-wrap: balance; padding-right: 2rem;
+  }
+  .desc-plato { font-size: var(--letra-apoyo); color: var(--customize-subtext); margin: 0 0 .8rem; }
+
+  .fila-precio {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: .75rem; margin-bottom: .9rem;
+  }
+  .precio { font-size: 1.25rem; font-weight: 700; }
+  .stock { font-size: .875rem; color: var(--customize-subtext); }
+
+  .fila-cantidad {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .etiqueta-cantidad { font-size: var(--letra-apoyo); color: var(--customize-subtext); }
+  .pasos { display: flex; align-items: center; gap: 1.1rem; }
+  .paso-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--customize-border); background: transparent;
+    color: #fff; font-size: 1rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .paso-num { font-size: 1.0625rem; font-weight: 600; min-width: 1.5ch; text-align: center; }
+
+  .modo {
+    display: flex; align-items: flex-start; gap: .7rem;
+    padding: .85rem .9rem; border-radius: var(--radius-md);
+    border: 1px solid var(--customize-border);
+    background: var(--customize-row-bg);
+    margin-bottom: .6rem;
+  }
+  .modo.activo { border-color: #4ade80; background: rgba(74,222,128,.06); }
+  .punto {
+    flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid #6b6b82; margin-top: 2px;
+  }
+  .modo.activo .punto { border-color: #4ade80; background: #4ade80; box-shadow: inset 0 0 0 4px var(--superficie); }
+  .modo-titulo { font-weight: 600; font-size: 1rem; margin: 0 0 .1rem; }
+  .modo-desc { font-size: .875rem; color: var(--customize-subtext); margin: 0; }
+
+  /* ── LA BANDA: nota + tabla + pie ── */
+  .inferior {
+    grid-area: lista;
+    padding: .85rem .375rem;
+    border-top: 1px solid rgba(128,128,128,.2);
+    background: rgba(0,0,0,.2);
+  }
+  .nota { font-size: var(--letra-contenido-fallback, 1rem); line-height: 1.45; margin: 0 0 .8rem; padding: 0 .75rem; }
+
+  /* La rejilla real de la tabla: 5 columnas, la del nombre flexible.
+     Los tres anchos de control los calcula medirColumnasTabla() en runtime
+     y los publica como variables; aquí van los respaldos. */
+  .cabecera, .fila-ing {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) var(--cust-col-q, 50px) var(--cust-col-a, 90px) var(--cust-col-ag, 64px);
+    align-items: center;
+    column-gap: .125rem;
+  }
+  .cabecera {
+    padding-bottom: .35rem; margin-bottom: .2rem;
+    border-bottom: 1px solid var(--customize-border);
+    align-items: center;
+  }
+  .cab {
+    font-size: var(--letra-denso); line-height: 1.2; font-weight: 600;
+    color: var(--customize-subtext); text-align: center; white-space: nowrap;
+  }
+  .cab.nombre { text-align: left; white-space: normal; padding-left: .1rem; }
+  .cab.nombre span { display: block; }
+
+  .fila-ing { padding: .5rem 0; border-bottom: 1px solid rgba(255,255,255,.05); align-items: center; }
+  .mini { width: 26px; height: 26px; border-radius: var(--radius-sm); background: rgba(255,255,255,.08);
+          border: 1px solid var(--customize-border); }
+  .info { min-width: 0; }
+  .nombre-ing {
+    font-size: var(--letra-denso); line-height: 1.25; color: var(--customize-text);
+    overflow-wrap: anywhere; display: block;
+  }
+  .cant {
+    /* La CANTIDAD va en línea, junto al nombre: es el mismo flujo de texto.
+       `nowrap` para que «0.24 Kg» no se parta entre el número y la unidad. */
+    display: inline; font-size: clamp(.8125rem, .82em, 1.0625rem);
+    color: var(--customize-subtext); white-space: nowrap;
+  }
+  .recargo {
+    /* ── EL RECARGO ES SU PROPIO SPAN, Y ESO ES LO QUE LO DEJA PARTIR ──
+
+       Si fuera dentro de `.cant` heredaría su `nowrap` y se volvería un
+       bloque de ~30 caracteres impartible: a 8 pt pide ~160 px en una
+       columna de ~88, así que no cabría a NINGÚN tamaño y forzaría el
+       recorte. Con `white-space: normal` parte entre palabras («… en este /
+       plato») y el auto-ajuste puede encogerlo hasta que entre.
+
+       Sin `break-all`: «1.935,62» no se rompe por la mitad. */
+    white-space: normal;
+  }
+  .controles { display: contents; }
+  .btn-control {
+    width: 30px; height: 30px; border-radius: 50%; justify-self: center;
+    border: 1px solid var(--customize-border); background: transparent;
+    color: #fff; font-size: .95rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-quitar.activo { background: var(--cust-fondo-quitar); color: var(--cust-tinta-quitar); border-color: var(--cust-tinta-quitar); }
+  .estado { font-size: var(--letra-apoyo); text-align: center; color: var(--customize-subtext); }
+  .estado.mas { color: var(--cust-tinta-agrandar); }
+  .agrandar { font-size: .9375rem; font-weight: 600; justify-self: center; color: #fff; }
+  .agrandar.activo { color: var(--cust-tinta-agrandar); }
+
+  .pie {
+    display: flex; justify-content: flex-end; gap: 1rem;
+    padding: .55rem .75rem; border-top: 1px solid rgba(128,128,128,.2);
+    background: rgba(0,0,0,.2);
+  }
+  .btn { border: 0; border-radius: var(--radius-sm); font: inherit; font-weight: 600;
+         height: 46px; padding: .7rem 1.6rem; cursor: pointer; }
+  .btn-sec { background: var(--accent); color: #1a1a1a; }
+  .btn-pri { background: var(--primary); color: #fff; }
+
+  /* ── ANOTACIONES ──
+     Etiquetas que nombran cada pieza con su selector real. */
+  .anot {
+    display: flex; gap: .55rem; align-items: flex-start;
+    margin: .1rem 0 .1rem; padding: .5rem .65rem;
+    background: rgba(255,152,0,.07);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: .8125rem; line-height: 1.45; color: #cfcfdc;
+  }
+  .anot code { color: #ffd08a; background: rgba(255,152,0,.12); }
+  .anot-cols { display: grid; grid-template-columns: 1fr; gap: .1rem; }
+
+  .medidas { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; margin: 1.5rem 0 0; }
+
+  /* ── LA DEMOSTRACIÓN DEL FLUJO CONTINUO ──
+     Un solo párrafo con tres spans EN LÍNEA. Si se vieran como cajas
+     apiladas, sería el defecto: significaría que algo perdió `display:inline`. */
+  .bloque-flujo {
+    background: linear-gradient(135deg, var(--superficie) 0%, var(--superficie-2) 100%);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: var(--radius-md);
+    padding: .7rem .75rem;
+    margin: .6rem 0 .6rem;
+  }
+  .flujo-lbl {
+    display: block; font-size: .6875rem; text-transform: uppercase;
+    letter-spacing: .07em; color: #8a8aa0; font-weight: 600; margin-bottom: .35rem;
+  }
+  .flujo-texto { margin: 0; font-size: 1rem; line-height: 1.25; color: var(--customize-text); }
+  .flujo-nombre { font-weight: 400; }
+  .flujo-cant, .flujo-recargo { font-size: .8125rem; color: var(--customize-subtext); }
+  .flujo-nota { margin: .45rem 0 0; font-size: .75rem; line-height: 1.45; color: #8a8aa0; }
+  .medida { background: rgba(255,255,255,.05); border-radius: var(--radius-sm); padding: .6rem .7rem; }
+  .medida-num { font-size: 1.125rem; font-weight: 700; color: #ffd08a; }
+  .medida-lbl { font-size: .8125rem; color: #a8a8bd; line-height: 1.3; }
+
+  .regla {
+    background: rgba(74,222,128,.06); border-left: 3px solid #4ade80;
+    padding: .7rem .8rem; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 0 0 .6rem; font-size: .875rem; line-height: 1.5;
+  }
+  .regla strong { color: #a7f3d0; }
+
+  .aviso {
+    background: rgba(255,138,128,.08); border-left: 3px solid var(--cust-tinta-quitar);
+    padding: .7rem .8rem; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 0 0 .6rem; font-size: .875rem; line-height: 1.5;
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="lienzo">
+
+  <h1>Anatomía de la ventana del platillo</h1>
+  <p class="lede">
+    <code>#customizeModal</code> · el estado tal como está implementado hoy.
+    Cada etiqueta naranja nombra la pieza con su selector real en el código.
+  </p>
+
+  <div class="ventana">
+    <div class="layout">
+
+      <div class="foto-wrap">
+        <div class="foto-placeholder">FOTO DEL PLATILLO · object-fit: cover</div>
+        <div class="cerrar" aria-hidden="true">&times;</div>
+      </div>
+
+      <div class="datos">
+        <h2 class="titulo-plato">Philadelphia Roll</h2>
+        <p class="desc-plato">Salmón y queso crema</p>
+
+        <div class="fila-precio">
+          <span class="precio">Bs. 8.952,24</span>
+          <span class="stock">200 disponibles</span>
+        </div>
+
+        <div class="fila-cantidad">
+          <span class="etiqueta-cantidad">Cantidad</span>
+          <div class="pasos">
+            <span class="paso-btn" aria-hidden="true">&minus;</span>
+            <span class="paso-num">1</span>
+            <span class="paso-btn" aria-hidden="true">+</span>
+          </div>
+        </div>
+
+        <div class="modo">
+          <span class="punto" aria-hidden="true"></span>
+          <div>
+            <p class="modo-titulo">Completo</p>
+            <p class="modo-desc">Incluye todos los ingredientes</p>
+          </div>
+        </div>
+
+        <div class="modo activo">
+          <span class="punto" aria-hidden="true"></span>
+          <div>
+            <p class="modo-titulo">Personalizar platillo</p>
+            <p class="modo-desc">Quitar alguno, o pedir extra</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="inferior">
+        <p class="nota">¿Quieres agrandar, quitarle a tu pedido o agregarle algún ingrediente o algo más? Tienes:</p>
+
+        <div class="cabecera" aria-hidden="true">
+          <span></span>
+          <span class="cab nombre"><span>Nombre del ingrediente</span></span>
+          <span class="controles">
+            <span class="cab">Quitar</span>
+            <span class="cab">Actualmente</span>
+            <span class="cab">Agrandar</span>
+          </span>
+        </div>
+
+        <div class="fila-ing">
+          <span class="mini"></span>
+          <div class="info">
+            <span class="nombre-ing">Salmón fresco (define el plato)
+              <span class="cant">0.24 Kg</span>
+              <span class="recargo"> · +Bs. 1.935,62 en este plato</span>
+            </span>
+          </div>
+          <span class="controles">
+            <button class="btn-control btn-quitar" type="button" aria-label="Quitar Salmón fresco">&minus;</button>
+            <span class="estado mas">×2</span>
+            <span class="agrandar activo" aria-hidden="true">×2</span>
+          </span>
+        </div>
+
+        <div class="fila-ing">
+          <span class="mini"></span>
+          <div class="info">
+            <span class="nombre-ing">Pepino
+              <span class="cant">0.1 unid</span>
+            </span>
+          </div>
+          <span class="controles">
+            <button class="btn-control btn-quitar activo" type="button" aria-label="Quitar Pepino">&minus;</button>
+            <span class="estado">Sin</span>
+            <span class="agrandar" aria-hidden="true">+</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pie">
+      <button class="btn btn-sec" type="button">Cancelar</button>
+      <button class="btn btn-pri" type="button">Añadir</button>
+    </div>
+  </div>
+
+  <div class="anot-cols" style="margin-top:1rem">
+    <p class="anot"><strong>Foto</strong> <code>.cust-foto-wrap</code></p>
+    <p class="anot"><strong>Datos</strong> <code>.cust-cuerpo</code></p>
+    <p class="anot"><strong>Banda</strong> <code>.cust-inferior</code> — cruza el ancho entero</p>
+    <p class="anot"><strong>Tabla</strong> <code>#ingredientesList</code> · filas <code>.cust-ing</code></p>
+    <p class="anot"><strong>Texto medido</strong> <code>.cust-ing-nombre</code> — un solo nodo: nombre + unidad + recargo fluyen juntos y se miden juntos</p>
+    <p class="anot"><strong>Pie</strong> <code>#customizePie</code> — se traslada dentro de la banda al abrir</p>
+  </div>
+
+  <h2>Medidas reales</h2>
+  <div class="medidas">
+    <div class="medida"><div class="medida-num">4</div><div class="medida-lbl">renglones máximos por ingrediente (3 + 1 de gracia)</div></div>
+    <div class="medida"><div class="medida-num">8→16 pt</div><div class="medida-lbl">rango del auto-ajuste de letra</div></div>
+    <div class="medida"><div class="medida-num">26 px</div><div class="medida-lbl">miniatura del ingrediente</div></div>
+    <div class="medida"><div class="medida-num">1.25</div><div class="medida-lbl">interlineado del nombre</div></div>
+  </div>
+
+  <h2>Un solo bloque de texto</h2>
+
+  <!-- ── LA PRUEBA VISUAL DE QUE SON UNO SOLO ──
+
+       Las tres piezas comparten una sola línea de base y fluyen como texto
+       corrido: el nombre, la unidad y el recargo no son cajas apiladas. La
+       línea de puntos marca el flujo continuo dentro de `.cust-ing-nombre`. -->
+  <div class="bloque-flujo">
+    <span class="flujo-lbl">una sola celda de texto</span>
+    <p class="flujo-texto">
+      <span class="flujo-nombre">Salmón fresco (define el plato)</span><span class="flujo-cant"> 0.24 Kg</span><span class="flujo-recargo"> · +Bs. 1.935,62 en este plato</span>
+    </p>
+    <p class="flujo-nota">Las tres partes comparten renglon, interlineado y flujo. El medidor lee el conjunto: cuatro renglones para todo, no cuatro para el nombre y otro espacio para el resto.</p>
+  </div>
+
+  <div class="regla">
+    <strong>Nombre, unidad y recargo son UN contenido, no tres.</strong>
+    Todo lo que aparece en la celda entra en el mismo flujo de texto y el
+    auto-ajuste mide el conjunto: el nombre, la marca «(define el plato)», la
+    unidad de medida y el recargo de «+Bs. X en este plato» que nace al
+    agrandar. No se miden por separado.
+  </div>
+  <div class="regla">
+    <strong>El recargo necesita su propio span.</strong> La unidad lleva
+    <code>white-space: nowrap</code> para que «0.24 Kg» no se parta. Si el
+    recargo heredara ese <code>nowrap</code>, sería un bloque de ~30 caracteres
+    impartible que no cabe a ningún tamaño y fuerza el recorte. Va en
+    <code>.cust-ing-recargo</code> con <code>white-space: normal</code> y sin
+    <code>break-all</code>: parte entre palabras, nunca dentro de «1.935,62».
+  </div>
+  <div class="aviso">
+    <strong>Los renglones se aprovechan antes de encoger la letra.</strong> Si el
+    contenido cabe a 12 pt en 4 renglones, el resultado son <strong>4 renglones a
+    12 pt</strong>, no 3 renglones a 8 pt. El medidor prueba todas las
+    capacidades y se queda con la que da mayor letra; a igualdad de tamaño,
+    menos renglones. Apretar el texto en 3 renglones cuando cabida había en 4
+    es el defecto que produce filas de 5 renglones con letra mínima.
+  </div>
+
+  <h2>Reglas que la gobiernan</h2>
+  <div class="regla">
+    <strong>Un solo scroll.</strong> <code>.cust-layout</code> es el único que desplaza.
+    Si una caja interior recupera su propio <code>overflow-y</code>, el gesto muere en ella
+    y la ventana se siente trabada.
+  </div>
+  <div class="regla">
+    <strong>El pie nunca se limita.</strong> El techo de renglones va sobre
+    <code>.cust-ing-info</code>, jamás sobre la banda: si la banda encoge, el pie
+    (Cancelar/Añadir) sube y se pinta sobre la tabla.
+  </div>
+  <div class="aviso">
+    <strong>La X viaja con el contenido.</strong> Vive dentro de <code>.cust-cuerpo</code>,
+    no anclada a la ventana: si se ancla, tapa el título al desplazar.
+  </div>
+</div>
+</body>
+</html>

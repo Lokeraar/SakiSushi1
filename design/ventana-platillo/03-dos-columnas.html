@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · Dos columnas</title>
+<style>
+  :root{
+    --papel:#FBF7F2; --superficie:#FFFFFF; --superficie-2:#F6F0E9;
+    --text-primary:#2A1C14; --text-secondary:#5F4E44; --text-muted:#7A6A60;
+    --primary:#A01828; --primary-text:#96121F;
+    --accent:#DD951F; --accent-text:#8A5A00;
+    --linea:#E8DDD3; --borde-control:#947F6D;
+    --velo:rgba(65,45,30,.05);
+    --sombra:0 10px 34px rgba(65,45,30,.14);
+  }
+  html.oscuro{
+    --papel:#12121c; --superficie:#1a1a2e; --superficie-2:#0e0e18;
+    --text-primary:#ffffff; --text-secondary:#ced4da; --text-muted:#adb5bd;
+    --primary:#D32F2F; --primary-text:#FF8A80;
+    --accent:#FF9800; --accent-text:#FFB74D;
+    --linea:rgba(255,255,255,.1); --borde-control:rgba(255,255,255,.3);
+    --velo:rgba(255,255,255,.05);
+    --sombra:0 10px 34px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:linear-gradient(160deg,var(--papel),var(--superficie-2));
+    color:var(--text-primary);min-height:100vh;padding:1rem;
+    display:flex;flex-direction:column;align-items:center;gap:.75rem;
+    transition:background .2s,color .2s;
+  }
+  .barra{width:100%;max-width:720px;display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--text-muted)}
+  .barra button{
+    font:inherit;font-size:.8rem;padding:.4rem .8rem;border-radius:20px;
+    border:1px solid var(--borde-control);background:transparent;color:var(--text-primary);
+    cursor:pointer;min-height:36px;
+  }
+  .barra button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  /* La foto ocupa la mitad izquierda y NO se desplaza: a la derecha va el
+     contenido que sí puede crecer. En un teléfono las dos columnas se
+     apilan; en tablet y escritorio quedan lado a lado. */
+  .ventana{
+    width:100%;max-width:720px;background:var(--superficie);
+    border:1px solid var(--linea);border-radius:20px;overflow:hidden;
+    box-shadow:var(--sombra);display:grid;grid-template-columns:1fr;
+  }
+  @media (min-width:600px){ .ventana{grid-template-columns:280px 1fr} }
+
+  .lado-foto{position:relative;min-height:220px;
+    background:
+      radial-gradient(circle at 62% 42%,#f0a05a 0 22%,transparent 23%),
+      radial-gradient(circle at 30% 55%,#c8442c 0 18%,transparent 19%),
+      linear-gradient(140deg,#2b1a12,#0d0805);
+    cursor:zoom-in;
+  }
+  .lado-foto::after{
+    content:"Toca para ampliar";position:absolute;left:.7rem;bottom:.7rem;
+    background:rgba(0,0,0,.62);color:#fff;font-size:.7rem;padding:.25rem .6rem;border-radius:20px;
+  }
+  .cerrar{
+    position:absolute;top:.6rem;right:.6rem;width:38px;height:38px;
+    display:flex;align-items:center;justify-content:center;border:none;border-radius:50%;
+    background:rgba(255,255,255,.92);color:#2A1C14;font-size:1.35rem;line-height:1;
+    cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .cerrar:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  .lado-datos{padding:1.1rem;display:flex;flex-direction:column;gap:.85rem;min-width:0}
+  h1{font-size:1.2rem;line-height:1.25}
+  .desc{font-size:.86rem;color:var(--text-secondary);line-height:1.45}
+  .precio{font-size:1.4rem;font-weight:700;color:var(--primary-text)}
+  .stock{display:inline-flex;align-items:center;gap:.35rem;font-size:.78rem;color:var(--text-secondary)}
+  .punto{width:7px;height:7px;border-radius:50%;background:#2F6B3A}
+
+  .fila{display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+  .etiqueta{font-size:.85rem;color:var(--text-secondary)}
+  .stepper{display:flex;align-items:center;gap:.7rem}
+  .stepper button{
+    width:38px;height:38px;border-radius:50%;border:1px solid var(--borde-control);
+    background:transparent;color:var(--text-primary);font-size:1rem;cursor:pointer;
+  }
+  .stepper button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .stepper output{font-size:1.05rem;font-weight:700;min-width:2ch;text-align:center}
+
+  .segmentado{display:flex;background:var(--velo);border-radius:12px;padding:3px;gap:3px}
+  .segmentado button{
+    flex:1;min-height:40px;border:none;border-radius:9px;background:transparent;
+    color:var(--text-secondary);font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;
+  }
+  .segmentado button[aria-pressed="true"]{background:var(--superficie);color:var(--primary-text);box-shadow:0 1px 4px rgba(65,45,30,.12)}
+  .segmentado button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  .ing{display:flex;align-items:center;gap:.55rem;padding:.5rem 0;border-bottom:1px solid var(--linea)}
+  .ing:last-child{border-bottom:none}
+  .ing .mini{width:30px;height:30px;border-radius:7px;flex-shrink:0;background:linear-gradient(140deg,#e8c9a0,#b98a55);border:1px solid var(--linea)}
+  .ing .nombre{flex:1;min-width:0;font-size:.83rem}
+  .ing .cant{font-size:.7rem;color:var(--text-muted);display:block}
+  .ing .ctrl{display:flex;align-items:center;gap:.25rem}
+  .ing .ctrl button{
+    width:28px;height:28px;border-radius:50%;border:1px solid var(--borde-control);
+    background:transparent;color:var(--text-primary);cursor:pointer;font-size:.85rem;
+  }
+  .ing .ctrl .estado{width:46px;text-align:center;font-size:.7rem;font-weight:600}
+  .ing .ctrl button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  .acciones{display:flex;gap:.6rem;margin-top:.2rem}
+  .btn{flex:1;min-height:46px;border-radius:50px;border:none;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer}
+  .btn.secundario{background:transparent;border:1px solid var(--borde-control);color:var(--text-primary)}
+  .btn.principal{background:var(--primary);color:#fff}
+  .btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+  <div class="barra">
+    <span>03 · Dos columnas</span>
+    <button type="button" id="tema">Cambiar tema</button>
+  </div>
+
+  <div class="ventana" role="dialog" aria-modal="true" aria-labelledby="titulo03">
+    <div class="lado-foto" role="button" tabindex="0" aria-label="Ampliar la foto del Nigiri de Atún">
+      <button class="cerrar" type="button" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div class="lado-datos">
+      <div>
+        <h1 id="titulo03">Nigiri de Atún (2 pcs)</h1>
+        <p class="desc">2 piezas de atún sobre arroz. Pescado fresco del día.</p>
+      </div>
+
+      <div class="fila">
+        <span class="precio">Bs. 5.816,79</span>
+        <span class="stock"><span class="punto"></span> 414</span>
+      </div>
+
+      <div class="fila">
+        <span class="etiqueta">Cantidad</span>
+        <div class="stepper">
+          <button type="button" aria-label="Quitar una unidad">&minus;</button>
+          <output>1</output>
+          <button type="button" aria-label="Agregar una unidad">+</button>
+        </div>
+      </div>
+
+      <div class="segmentado" role="group" aria-label="Cómo quieres el plato">
+        <button type="button" aria-pressed="true">Completo</button>
+        <button type="button" aria-pressed="false">Personalizar</button>
+      </div>
+
+      <div>
+        <div class="ing">
+          <span class="mini"></span>
+          <span class="nombre">Arroz para sushi <small class="cant">0,15 kg · fijo</small></span>
+          <span class="ctrl">
+            <button type="button" aria-label="Quitar arroz">&minus;</button>
+            <span class="estado">Normal</span>
+            <button type="button" aria-label="Duplicar arroz">&times;2</button>
+          </span>
+        </div>
+        <div class="ing">
+          <span class="mini"></span>
+          <span class="nombre">Atún fresco <small class="cant">0,1 kg · fijo</small></span>
+          <span class="ctrl">
+            <button type="button" aria-label="Quitar atún">&minus;</button>
+            <span class="estado">Normal</span>
+            <button type="button" aria-label="Duplicar atún">&times;2</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button class="btn secundario" type="button">Cancelar</button>
+        <button class="btn principal" type="button">Añadir</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  document.getElementById('tema').addEventListener('click', function () {
+    document.documentElement.classList.toggle('oscuro');
+  });
+</script>
+</body>
+</html>

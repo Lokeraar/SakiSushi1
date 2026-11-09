@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estados y reglas · ventana del platillo</title>
+<style>
+  /* ── TOKENS REALES DEL CLIENTE (Cliente/index.html) ── */
+  :root {
+    --primary: #D32F2F;
+    --accent: #FF9800;
+    --customize-text: #ffffff;
+    --customize-subtext: #adb5bd;
+    --customize-row-bg: rgba(0,0,0,0.2);
+    --customize-border: rgba(255,255,255,0.1);
+    --cust-tinta-quitar: #ff8a80;
+    --cust-tinta-agrandar: #86efac;
+    --cust-fondo-quitar: rgba(255,138,128,0.16);
+    --cust-fondo-agrandar: rgba(134,239,172,0.08);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --letra-denso: 1rem;
+    --letra-apoyo: .9375rem;
+    --superficie: #1a1a2e;
+    --superficie-2: #16213e;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 16px; }
+  body {
+    margin: 0; padding: 1.25rem 1rem 2.5rem;
+    background: #0b0b12; color: #e8e8ef;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 1rem; line-height: 1.55;
+  }
+  h1 { font-size: 1.375rem; margin: 0 0 .3rem; line-height: 1.25; }
+  h2 { font-size: 1.0625rem; margin: 1.8rem 0 .6rem; color: #fff;
+       padding-bottom: .3rem; border-bottom: 1px solid rgba(255,255,255,.1); }
+  p { margin: 0 0 .7rem; font-size: .9375rem; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: .875em;
+         background: rgba(255,255,255,.08); padding: .1em .35em; border-radius: 4px; }
+  .lede { color: #a8a8bd; font-size: .9375rem; margin-bottom: 1.4rem; }
+  .lienzo { max-width: 390px; margin: 0 auto; }
+
+  /* ── MUESTRAS DE ESTADO ── */
+  .muestra {
+    background: linear-gradient(135deg, var(--superficie) 0%, var(--superficie-2) 100%);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: var(--radius-md);
+    padding: .55rem .5rem;
+    margin-bottom: .5rem;
+  }
+  .muestra-lbl { font-size: .75rem; color: #8a8aa0; text-transform: uppercase;
+                 letter-spacing: .06em; font-weight: 600; margin: 0 0 .35rem .3rem; }
+
+  .fila-ing {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) var(--cust-col-q, 50px) var(--cust-col-a, 90px) var(--cust-col-ag, 64px);
+    align-items: center; column-gap: .125rem;
+    padding: .4rem 0;
+  }
+  .mini { width: 26px; height: 26px; border-radius: var(--radius-sm);
+          background: rgba(255,255,255,.08); border: 1px solid var(--customize-border); }
+  .info { min-width: 0; }
+  .nombre-ing { font-size: var(--letra-denso); line-height: 1.25; color: var(--customize-text);
+                overflow-wrap: anywhere; display: block; }
+  .cant { display: inline; font-size: .8125rem; color: var(--customize-subtext); white-space: nowrap; }
+  .controles { display: contents; }
+  .btn-control { width: 30px; height: 30px; border-radius: 50%; justify-self: center;
+                 border: 1px solid var(--customize-border); background: transparent; color: #fff;
+                 display: flex; align-items: center; justify-content: center; font-size: .95rem; }
+  .btn-quitar.activo { background: var(--cust-fondo-quitar); color: var(--cust-tinta-quitar);
+                       border-color: var(--cust-tinta-quitar); }
+  .btn-quitar.inerte { opacity: .45; }
+  .estado { font-size: var(--letra-apoyo); text-align: center; color: var(--customize-subtext); }
+  .estado.mas { color: var(--cust-tinta-agrandar); }
+  .agrandar { font-size: .9375rem; font-weight: 600; justify-self: center; color: #fff; }
+  .agrandar.activo { color: var(--cust-tinta-agrandar); }
+
+  /* ── TABLA DE REGLAS ── */
+  .regla { display: flex; gap: .6rem; align-items: flex-start;
+           background: rgba(74,222,128,.06); border-left: 3px solid #4ade80;
+           border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+           padding: .65rem .75rem; margin: 0 0 .5rem; font-size: .875rem; line-height: 1.5; }
+  .regla-n { flex: 0 0 auto; width: 1.4rem; height: 1.4rem; border-radius: 50%;
+             background: #4ade80; color: #06240f; font-weight: 700; font-size: .75rem;
+             display: flex; align-items: center; justify-content: center; margin-top: .1rem; }
+  .aviso { display: flex; gap: .6rem; align-items: flex-start;
+           background: rgba(255,138,128,.08); border-left: 3px solid var(--cust-tinta-quitar);
+           border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+           padding: .65rem .75rem; margin: 0 0 .5rem; font-size: .875rem; line-height: 1.5; }
+
+  /* La escalera de líneas, que es la regla central del ajuste. */
+  .escalera { display: grid; gap: .35rem; margin: .6rem 0 1rem; }
+  .escalon { display: grid; grid-template-columns: auto 1fr; gap: .6rem; align-items: center;
+             background: rgba(255,255,255,.04); border-radius: var(--radius-sm); padding: .5rem .65rem; }
+  .escalon-num { font-size: 1.0625rem; font-weight: 700; color: #ffd08a; min-width: 2.6rem; text-align: center; }
+  .escalon-txt { font-size: .875rem; line-height: 1.45; }
+  .escalon.final { background: rgba(255,138,128,.09); }
+  .escalon.final .escalon-num { color: var(--cust-tinta-quitar); }
+
+  .medidas { display: grid; grid-template-columns: repeat(2, 1fr); gap: .45rem; margin: .6rem 0 0; }
+  .medida { background: rgba(255,255,255,.05); border-radius: var(--radius-sm); padding: .55rem .65rem; }
+  .medida-num { font-size: 1.0625rem; font-weight: 700; color: #ffd08a; }
+  .medida-lbl { font-size: .75rem; color: #a8a8bd; line-height: 1.3; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="lienzo">
+
+  <h1>Estados y reglas medidas</h1>
+  <p class="lede">Las piezas sueltas de <code>#customizeModal</code>: qué cambia al tocar, y qué reglas no se pueden romper.</p>
+
+  <h2>Estados de un ingrediente</h2>
+
+  <div class="muestra">
+    <p class="muestra-lbl">Normal · ×1</p>
+    <div class="fila-ing">
+      <span class="mini"></span>
+      <div class="info"><span class="nombre-ing">Arroz para sushi <span class="cant">0.15 Kg</span></span></div>
+      <span class="controles">
+        <span class="btn-control">&minus;</span>
+        <span class="estado">1</span>
+        <span class="agrandar">+</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="muestra">
+    <p class="muestra-lbl">Sin · el cliente lo quita</p>
+    <div class="fila-ing">
+      <span class="mini"></span>
+      <div class="info"><span class="nombre-ing">Pepino <span class="cant">0 unid</span></span></div>
+      <span class="controles">
+        <span class="btn-control activo">&minus;</span>
+        <span class="estado">Sin</span>
+        <span class="agrandar">+</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="muestra">
+    <p class="muestra-lbl">Agrandado · ×2 · con recargo</p>
+    <div class="fila-ing">
+      <span class="mini"></span>
+      <div class="info"><span class="nombre-ing">Salmón fresco (define el plato) <span class="cant">0.24 Kg · +Bs. 1.935,62 en este plato</span></span></div>
+      <span class="controles">
+        <span class="btn-control">&minus;</span>
+        <span class="estado mas">×2</span>
+        <span class="agrandar activo">×2</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="muestra">
+    <p class="muestra-lbl">Principal en ×2 · el − baja, no avisa</p>
+    <div class="fila-ing">
+      <span class="mini"></span>
+      <div class="info"><span class="nombre-ing">Alga nori (define el plato) <span class="cant">2 unid · +Bs. 537,6 en este plato</span></span></div>
+      <span class="controles">
+        <span class="btn-control">&minus;</span>
+        <span class="estado mas">×2</span>
+        <span class="agrandar activo">×2</span>
+      </span>
+    </div>
+  </div>
+
+  <h2>La escalera de renglones</h2>
+  <p>La regla central del auto-ajuste, en orden. Se cumple dentro del medidor, no en cada llamada.</p>
+
+  <div class="escalera">
+    <div class="escalon">
+      <span class="escalon-num">N</span>
+      <span class="escalon-txt">Cabe en las líneas pedidas: se usan esas y nada más.</span>
+    </div>
+    <div class="escalon">
+      <span class="escalon-num">N+1</span>
+      <span class="escalon-txt">No cabe a 8 pt en N: se concede <strong>una</strong> línea de gracia. Nunca dos.</span>
+    </div>
+    <div class="escalon">
+      <span class="escalon-num">N+1</span>
+      <span class="escalon-txt">Si cabe en N+1: se usa N+1 y el texto se encoge hasta entrar. <strong>Sin puntos suspensivos.</strong></span>
+    </div>
+    <div class="escalon final">
+      <span class="escalon-num">3 puntos</span>
+      <span class="escalon-txt">Tampoco cabe en N+1 al piso: recién ahí se recorta. No significa «hay más texto»: significa que no entra en los parámetros.</span>
+    </div>
+  </div>
+
+  <div class="aviso">
+    <strong>El orden importa.</strong> El ajuste prueba <em>todas</em> las capacidades y se queda con la que da <strong>mayor letra</strong>; a igualdad de tamaño, menos renglones. Apretar el texto en 3 renglones a 8 pt cuando cabía a 12 pt en 4 es un defecto, no una optimización.
+  </div>
+
+  <h2>Cifras reales</h2>
+  <div class="medidas">
+    <div class="medida"><div class="medida-num">16 pt</div><div class="medida-lbl">techo de contenido (21,33 px)</div></div>
+    <div class="medida"><div class="medida-num">8 pt</div><div class="medida-lbl">piso, no un tamaño de reposo (10,67 px)</div></div>
+    <div class="medida"><div class="medida-num">3+1</div><div class="medida-lbl">renglones del ingrediente: pedidos + gracia</div></div>
+    <div class="medida"><div class="medida-num">26→32</div><div class="medida-lbl">miniatura, vertical → horizontal</div></div>
+    <div class="medida"><div class="medida-num">2 dim.</div><div class="medida-lbl">el medidor comprueba alto Y ancho</div></div>
+    <div class="medida"><div class="medida-num">1/cuadro</div><div class="medida-lbl">reajuste agrupado con bandera</div></div>
+  </div>
+
+  <h2>Lo que no se puede romper</h2>
+
+  <div class="regla">
+    <span class="regla-n">1</span>
+    <span>Un solo scroll: <code>.cust-layout</code>. Dos cajas con scroll anidadas matan el gesto.</span>
+  </div>
+  <div class="regla">
+    <span class="regla-n">2</span>
+    <span>El techo de renglones va sobre la fila, jamás sobre la banda: si la banda encoge, el pie sube y tapa la tabla.</span>
+  </div>
+  <div class="regla">
+    <span class="regla-n">3</span>
+    <span>El elemento que se mide no puede llevar recorte: recortado, su alto miente y el ajuste sube la letra.</span>
+  </div>
+  <div class="regla">
+    <span class="regla-n">4</span>
+    <span>Los anchos de columna se miden en el aparato (<code>medirColumnasTabla</code>); escritos a mano valen para un solo teléfono.</span>
+  </div>
+  <div class="regla">
+    <span class="regla-n">5</span>
+    <span>Todo texto que aparezca después de abrir —el recargo— necesita volver a medirse.</span>
+  </div>
+</div>
+</body>
+</html>

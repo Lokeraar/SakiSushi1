@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horizontal · ventana del platillo (#customizeModal)</title>
+<style>
+  /* ── TOKENS REALES DEL CLIENTE (Cliente/index.html) ── */
+  :root {
+    --primary: #D32F2F;
+    --accent: #FF9800;
+    --customize-text: #ffffff;
+    --customize-subtext: #adb5bd;
+    --customize-row-bg: rgba(0,0,0,0.2);
+    --customize-border: rgba(255,255,255,0.1);
+    --cust-tinta-quitar: #ff8a80;
+    --cust-tinta-agrandar: #86efac;
+    --cust-fondo-quitar: rgba(255,138,128,0.16);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --letra-denso: 1rem;
+    --letra-apoyo: .9375rem;
+    --superficie: #1a1a2e;
+    --superficie-2: #16213e;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 16px; }
+  body {
+    margin: 0; padding: 1.25rem 1rem 2rem;
+    background: #0b0b12; color: #e8e8ef;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 1rem; line-height: 1.55;
+  }
+  h1 { font-size: 1.25rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1rem; margin: 1.4rem 0 .5rem; color: #fff; }
+  p { margin: 0 0 .7rem; font-size: .9375rem; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: .875em;
+         background: rgba(255,255,255,.08); padding: .1em .35em; border-radius: 4px; }
+  .lede { color: #a8a8bd; font-size: .9375rem; margin-bottom: 1.2rem; }
+
+  .ventana {
+    background: linear-gradient(135deg, var(--superficie) 0%, var(--superficie-2) 100%);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    max-width: 720px;
+  }
+
+  /* ── LA REJILLA REAL EN HORIZONTAL ──
+     `grid-template-columns: 280px minmax(0,1fr)` con areas "foto flujo".
+     Una sola fila: el flujo es una columna con scroll propio. */
+  .layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "foto flujo";
+    height: 360px;
+  }
+
+  /* LA FOTO SE QUEDA QUIETA EN HORIZONTAL.
+     position:sticky + top:0, y la celda con stretch para que llene. */
+  .foto-wrap {
+    grid-area: foto;
+    position: relative;
+    background: #0d0d14;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .foto-placeholder {
+    width: 100%; height: 100%;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(255,152,0,.2), transparent 62%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.03) 0 10px, transparent 10px 20px);
+    display: flex; align-items: center; justify-content: center;
+    color: #6b6b82; font-size: .75rem; text-align: center; padding: 1rem;
+  }
+  .sticky-badge {
+    position: absolute; bottom: .5rem; left: .5rem;
+    background: rgba(74,222,128,.15); color: #a7f3d0;
+    border: 1px solid rgba(74,222,128,.4); border-radius: 999px;
+    font-size: .6875rem; padding: .15rem .5rem; font-weight: 600;
+  }
+
+  .flujo { grid-area: flujo; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+
+  .datos { padding: .9rem 1rem .6rem; }
+  .titulo-plato { font-size: 1.375rem; font-weight: 700; line-height: 1.2; margin: 0 0 .15rem; }
+  .desc-plato { font-size: var(--letra-apoyo); color: var(--customize-subtext); margin: 0 0 .6rem; }
+  .fila-precio { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .6rem; }
+  .precio { font-size: 1.0625rem; font-weight: 700; }
+  .stock { font-size: .8125rem; color: var(--customize-subtext); }
+  .fila-cantidad { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+  .etiqueta-cantidad { font-size: .875rem; color: var(--customize-subtext); }
+  .pasos { display: flex; align-items: center; gap: .9rem; }
+  .paso-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--customize-border);
+              background: transparent; color: #fff; display: flex; align-items: center; justify-content: center; }
+  .paso-num { font-weight: 600; min-width: 1.4ch; text-align: center; }
+
+  .modo { display: flex; align-items: flex-start; gap: .6rem; padding: .6rem .7rem;
+          border-radius: var(--radius-md); border: 1px solid var(--customize-border);
+          background: var(--customize-row-bg); margin-bottom: .45rem; }
+  .modo.activo { border-color: #4ade80; background: rgba(74,222,128,.06); }
+  .punto { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%;
+           border: 2px solid #6b6b82; margin-top: 2px; }
+  .modo.activo .punto { border-color: #4ade80; background: #4ade80; box-shadow: inset 0 0 0 3px var(--superficie); }
+  .modo-titulo { font-weight: 600; font-size: .9375rem; margin: 0; }
+  .modo-desc { font-size: .8125rem; color: var(--customize-subtext); margin: 0; }
+
+  .inferior { padding: .7rem .375rem; border-top: 1px solid rgba(128,128,128,.2); background: rgba(0,0,0,.2); flex: 1; }
+  .nota { font-size: .9375rem; line-height: 1.4; margin: 0 0 .6rem; padding: 0 .6rem; }
+
+  .cabecera, .fila-ing {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) var(--cust-col-q, 50px) var(--cust-col-a, 90px) var(--cust-col-ag, 64px);
+    align-items: center; column-gap: .125rem;
+  }
+  .cabecera { padding-bottom: .3rem; border-bottom: 1px solid var(--customize-border); }
+  .cab { font-size: var(--letra-denso); line-height: 1.2; font-weight: 600;
+         color: var(--customize-subtext); text-align: center; white-space: nowrap; }
+  .cab.nombre { text-align: left; white-space: normal; }
+  .fila-ing { padding: .4rem 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .mini { width: 26px; height: 26px; border-radius: var(--radius-sm); background: rgba(255,255,255,.08);
+          border: 1px solid var(--customize-border); }
+  .info { min-width: 0; }
+  .nombre-ing { font-size: var(--letra-denso); line-height: 1.25; color: var(--customize-text);
+                overflow-wrap: anywhere; display: block; }
+  .cant { display: inline; font-size: .8125rem; color: var(--customize-subtext); white-space: nowrap; }
+  .controles { display: contents; }
+  .btn-control { width: 30px; height: 30px; border-radius: 50%; justify-self: center;
+                 border: 1px solid var(--customize-border); background: transparent; color: #fff;
+                 display: flex; align-items: center; justify-content: center; }
+  .btn-quitar.activo { background: var(--cust-fondo-quitar); color: var(--cust-tinta-quitar); border-color: var(--cust-tinta-quitar); }
+  .estado { font-size: var(--letra-apoyo); text-align: center; color: var(--customize-subtext); }
+  .estado.mas { color: var(--cust-tinta-agrandar); }
+  .agrandar { font-size: .875rem; font-weight: 600; justify-self: center; }
+
+  .pie { display: flex; justify-content: flex-end; gap: .8rem; padding: .55rem .75rem;
+         border-top: 1px solid rgba(128,128,128,.2); background: rgba(0,0,0,.2); flex: 0 0 auto; }
+  .btn { border: 0; border-radius: var(--radius-sm); font: inherit; font-weight: 600;
+         height: 42px; padding: .6rem 1.3rem; }
+  .btn-sec { background: var(--accent); color: #1a1a1a; }
+  .btn-pri { background: var(--primary); color: #fff; }
+
+  .anot { display: flex; gap: .5rem; background: rgba(255,152,0,.07);
+          border-left: 3px solid var(--accent); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+          padding: .5rem .65rem; margin: .25rem 0; font-size: .8125rem; line-height: 1.45; color: #cfcfdc; }
+  .anot code { color: #ffd08a; background: rgba(255,152,0,.12); }
+  .aviso { background: rgba(255,138,128,.08); border-left: 3px solid var(--cust-tinta-quitar);
+           padding: .65rem .8rem; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+           margin: .5rem 0; font-size: .875rem; line-height: 1.5; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <h1>Horizontal · <code>#customizeModal</code></h1>
+  <p class="lede">La misma ventana girada. Aquí el reparto es de dos columnas y la foto <strong>sí</strong> sigue al usuario.</p>
+
+  <div class="ventana">
+    <div class="layout">
+      <div class="foto-wrap">
+        <div class="foto-placeholder">FOTO<br>object-fit: cover<br>llenando la celda</div>
+        <span class="sticky-badge">position: sticky · top: 0</span>
+      </div>
+
+      <div class="flujo">
+        <div class="datos">
+          <h2 class="titulo-plato">Philadelphia Roll</h2>
+          <p class="desc-plato">Salmón y queso crema</p>
+          <div class="fila-precio">
+            <span class="precio">Bs. 8.952,24</span>
+            <span class="stock">200 disponibles</span>
+          </div>
+          <div class="fila-cantidad">
+            <span class="etiqueta-cantidad">Cantidad</span>
+            <div class="pasos">
+              <span class="paso-btn">&minus;</span><span class="paso-num">1</span><span class="paso-btn">+</span>
+            </div>
+          </div>
+          <div class="modo">
+            <span class="punto"></span>
+            <div><p class="modo-titulo">Completo</p><p class="modo-desc">Incluye todos los ingredientes</p></div>
+          </div>
+          <div class="modo activo">
+            <span class="punto"></span>
+            <div><p class="modo-titulo">Personalizar platillo</p><p class="modo-desc">Quitar alguno, o pedir extra</p></div>
+          </div>
+        </div>
+
+        <div class="inferior">
+          <p class="nota">¿Quieres agrandar, quitarle a tu pedido o agregarle algún ingrediente o algo más? Tienes:</p>
+          <div class="cabecera">
+            <span></span>
+            <span class="cab nombre">Nombre del ingrediente</span>
+            <span class="controles">
+              <span class="cab">Quitar</span><span class="cab">Actualmente</span><span class="cab">Agrandar</span>
+            </span>
+          </div>
+          <div class="fila-ing">
+            <span class="mini"></span>
+            <div class="info"><span class="nombre-ing">Salmón fresco (define el plato) <span class="cant">0.24 Kg · +Bs. 1.935,62 en este plato</span></span></div>
+            <span class="controles">
+              <span class="btn-control">&minus;</span>
+              <span class="estado mas">×2</span>
+              <span class="agrandar" style="color:#86efac">×2</span>
+            </span>
+          </div>
+          <div class="fila-ing">
+            <span class="mini"></span>
+            <div class="info"><span class="nombre-ing">Pepino <span class="cant">0.1 unid</span></span></div>
+            <span class="controles">
+              <span class="btn-control activo">−</span>
+              <span class="estado">Sin</span>
+              <span class="agrandar">+</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="pie">
+          <button class="btn btn-sec" type="button">Cancelar</button>
+          <button class="btn btn-pri" type="button">Añadir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Cómo se reparte</h2>
+  <p class="anot"><strong>280 px</strong> fijos para la foto · el resto para el flujo con scroll.</p>
+  <p class="anot"><strong>La foto pega aquí y no en vertical.</strong> En apaisado la ventana mide ~360 px de alto: si la foto se fuera con el scroll, el lado izquierdo quedaría vacío al primer gesto.</p>
+  <p class="anot"><strong>El pie vive dentro del flujo</strong>, no al pie de la ventana: así el cliente lo alcanza deslizando el contenido, y nunca roba alto a la tabla.</p>
+
+  <div class="aviso">
+    <strong>Trampa documentada:</strong> los tres anchos de control (<code>--cust-col-q/a/ag</code>) los calcula <code>medirColumnasTabla()</code>. Si se escriben a mano, valen para un solo teléfono. Aquí la columna del nombre queda con ~88 px en un móvil de 412 px: por eso el texto usa 4 renglones y encoge la letra.
+  </div>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "title": "Ventana del platillo",
+  "brief": "Cinco distribuciones para la ventana única del platillo del Cliente (Saki Sushi). Es la misma ventana que se abre tocando la foto de la tarjeta y tocando «Personalizar»: foto ampliable, nombre, descripción, stock, cantidad, modo Completo o Personalizar, lista de ingredientes con −/Normal/×2, precio y acciones Cancelar/Añadir. Paleta del logo, coherente con el tema claro y el oscuro.",
+  "artboards": [
+    {
+      "file": "01-foto-al-frente.html",
+      "title": "Foto al frente",
+      "tradeoff": "La foto manda y ancla la decisión; el precio y el stock quedan a media altura y la lista de ingredientes empuja los botones hacia abajo en platos con muchos ingredientes",
+      "width": 390,
+      "height": 900
+    },
+    {
+      "file": "02-hoja-inferior.html",
+      "title": "Hoja inferior",
+      "tradeoff": "Se siente como una app nativa y deja ver la carta detrás; la foto se reduce a miniatura y el alto disponible obliga a desplazar la lista dentro de la hoja",
+      "width": 390,
+      "height": 900
+    },
+    {
+      "file": "03-dos-columnas.html",
+      "title": "Dos columnas",
+      "tradeoff": "Aprovecha pantallas anchas con la foto fija a un lado; en un teléfono vertical las columnas se apilan y se parece a la opción 01",
+      "width": 720,
+      "height": 620
+    },
+    {
+      "file": "04-barra-fija-de-total.html",
+      "title": "Barra fija de total",
+      "tradeoff": "El total y el botón Añadir nunca se pierden al desplazar; la barra ocupa alto permanente y el interruptor de personalizar esconde la lista hasta activarlo",
+      "width": 390,
+      "height": 900
+    },
+    {
+      "file": "05-pasos.html",
+      "title": "Pasos",
+      "tradeoff": "Guía al cliente y reduce la carga de una pantalla larga; añade un toque extra para quien ya sabe lo que quiere y la foto pierde protagonismo",
+      "width": 390,
+      "height": 850
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · Header compacto</title>
+<style>
+  :root{
+    --papel:#FBF7F2; --superficie:#FFFFFF; --superficie-2:#F6F0E9;
+    --text-primary:#2A1C14; --text-secondary:#5F4E44; --text-muted:#7A6A60;
+    --primary:#A01828; --primary-text:#96121F;
+    --accent:#DD951F; --accent-text:#8A5A00;
+    --linea:#E8DDD3; --borde-control:#947F6D;
+    /* Tamaños del header: ESTE es el cambio del modelo A */
+    --ctrl:44px;
+    --logo:56px;
+    --gap-cabecera:6px;
+    --gap-iconos:11px;
+    --fuente-ctrl:1.22rem;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--papel);color:var(--text-primary);min-height:100vh;
+    padding:.9rem;
+  }
+  .rotulo{font-size:.8rem;color:var(--text-muted);margin-bottom:.5rem}
+  .rotulo b{color:var(--primary-text)}
+
+  /* ── HEADER ── */
+  .cabecera{
+    background:linear-gradient(135deg,var(--primary),#b71c1c);
+    color:#fff;border-radius:14px;padding:.6rem .7rem;
+    display:flex;align-items:center;gap:var(--gap-cabecera);
+    flex-wrap:nowrap;
+  }
+  .lado{display:flex;align-items:center;gap:var(--gap-cabecera);flex:0 0 auto}
+  .lado-iconos{display:flex;align-items:center;gap:var(--gap-iconos);flex:0 0 auto;margin-left:auto}
+
+  .btn{
+    width:var(--ctrl);height:var(--ctrl);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    border:none;border-radius:50%;
+    background:rgba(255,255,255,.16);color:#fff;
+    font-size:var(--fuente-ctrl);line-height:1;cursor:pointer;
+    position:relative;
+  }
+  .btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  .logo-area{
+    flex:1 1 auto;min-width:0;display:flex;align-items:center;
+    justify-content:center;gap:.5rem;
+  }
+  .logo{
+    width:var(--logo);height:var(--logo);border-radius:11px;
+    flex-shrink:0;transform:rotate(-5deg);
+    background:
+      radial-gradient(circle at 50% 42%,#f0a05a 0 20%,transparent 21%),
+      linear-gradient(140deg,#2b1a12,#0d0805);
+    border:1px solid rgba(255,255,255,.14);
+  }
+  .marca{min-width:0}
+  .marca h1{
+    font-size:1.15rem;font-weight:700;line-height:1.1;
+    white-space:nowrap;letter-spacing:-.01em;
+  }
+  .marca p{
+    font-size:.72rem;font-style:italic;opacity:.92;margin-top:.1rem;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+
+  .punto{
+    position:absolute;top:1px;right:1px;width:9px;height:9px;border-radius:50%;
+    background:var(--accent);border:2px solid var(--primary);
+  }
+
+  /* ── CUENTA DEL ANCHO ── */
+  .medida{
+    margin-top:1rem;padding:.8rem .9rem;border:1px solid var(--linea);
+    border-radius:12px;background:var(--superficie);font-size:.8rem;
+    color:var(--text-secondary);line-height:1.6;
+  }
+  .medida b{color:var(--text-primary)}
+  .medida .ok{color:#2F6B3A;font-weight:700}
+  .medida code{font-family:ui-monospace,Menlo,monospace;font-size:.76rem}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+  <p class="rotulo">Modelo <b>A</b> · Header compacto — 390 px</p>
+
+  <header class="cabecera">
+    <div class="lado">
+      <button class="btn" type="button" aria-label="Abrir el menú">☰</button>
+      <button class="btn" type="button" aria-label="Cambiar de tema">☀</button>
+    </div>
+
+    <div class="logo-area">
+      <div class="logo" aria-hidden="true"></div>
+      <div class="marca">
+        <h1>Saki Sushi</h1>
+        <p>"Adictos al universo saki"</p>
+      </div>
+    </div>
+
+    <div class="lado-iconos">
+      <button class="btn" type="button" aria-label="Mi cuenta">👤</button>
+      <button class="btn" type="button" aria-label="Notificaciones">🔔</button>
+      <button class="btn" type="button" aria-label="Ver carrito">
+        🛒<span class="punto" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="medida">
+    <b>Qué cambia:</b> solo el header. Los controles bajan de 50 a
+    <b>44 px</b>, el logo de 70 a <b>56 px</b> y las separaciones se
+    aprietan un poco. La carta queda exactamente igual.
+    <br><br>
+    <b>Cuenta:</b> <code>2×44 + 6 + 56 + 6 + 3×44 + 2×11 + 28</code>
+    = <b>352 px</b> de 390.
+    <span class="ok">Sobran 38 px.</span>
+  </div>
+</body>
+</html>

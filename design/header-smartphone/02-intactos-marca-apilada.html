@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · Tamaños intactos, marca apilada</title>
+<style>
+  :root{
+    --papel:#FBF7F2; --superficie:#FFFFFF; --superficie-2:#F6F0E9;
+    --text-primary:#2A1C14; --text-secondary:#5F4E44; --text-muted:#7A6A60;
+    --primary:#A01828; --primary-text:#96121F;
+    --accent:#DD951F; --accent-text:#8A5A00;
+    --linea:#E8DDD3; --borde-control:#947F6D;
+    /* MODELO B: NADA cambia de tamaño. */
+    --ctrl:50px;
+    --logo:70px;
+    --gap:4px;
+    --fuente-ctrl:1.4rem;
+    --marca:1.12rem;
+    --eslogan:.7rem;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--papel);color:var(--text-primary);min-height:100vh;
+    display:flex;flex-direction:column;width:100%;overflow-x:hidden;
+  }
+
+  /* ── EL HEADER LLENA TODO EL ANCHO ──
+     El gradiente no se estira solo. Con width:100% el rojo llega hasta
+     el borde y desaparece la franja oscura. */
+  .cabecera{
+    width:100%;
+    background:linear-gradient(135deg,var(--primary),#b71c1c);
+    color:#fff;
+    padding:.5rem .5rem;
+    display:flex;align-items:center;gap:var(--gap);
+    flex-wrap:nowrap;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);
+  }
+
+  .lado{display:flex;align-items:center;gap:var(--gap);flex:0 0 auto}
+
+  .btn{
+    width:var(--ctrl);height:var(--ctrl);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    border:none;border-radius:50%;
+    background:rgba(255,255,255,.16);color:#fff;
+    font-size:var(--fuente-ctrl);line-height:1;cursor:pointer;
+    position:relative;
+  }
+  .btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  .marca{
+    flex:1 1 auto;min-width:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:0;cursor:pointer;
+  }
+  .logo{
+    width:var(--logo);height:var(--logo);border-radius:13px;
+    background:
+      radial-gradient(circle at 50% 40%,#f0a05a 0 20%,transparent 21%),
+      linear-gradient(140deg,#2b1a12,#0d0805);
+    border:1px solid rgba(255,255,255,.16);
+    flex-shrink:0;
+  }
+  .marca h1{
+    font-size:var(--marca);font-weight:700;line-height:1.05;
+    white-space:nowrap;letter-spacing:-.01em;margin-top:.1rem;
+  }
+  .marca p{
+    font-size:var(--eslogan);font-style:italic;opacity:.9;
+    white-space:nowrap;line-height:1.15;
+  }
+
+  .punto{
+    position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;
+    background:var(--accent);border:2px solid var(--primary);
+  }
+
+  .muestra{flex:1;padding:.85rem;display:flex;flex-direction:column;gap:.6rem}
+  .ficha{background:var(--superficie);border:1px solid var(--linea);border-radius:12px;padding:.8rem;font-size:.82rem;color:var(--text-secondary)}
+
+  .rotulo{
+    width:100%;padding:.5rem .85rem;font-size:.78rem;
+    color:var(--text-muted);background:var(--superficie-2);
+    border-bottom:1px solid var(--linea);
+  }
+  .rotulo b{color:var(--primary-text)}
+  .medida{margin:0 .85rem .85rem;padding:.7rem .8rem;border:1px solid var(--linea);border-radius:12px;background:var(--superficie);font-size:.78rem;color:var(--text-secondary);line-height:1.6}
+  .medida b{color:var(--text-primary)}
+  .medida .ok{color:#2F6B3A;font-weight:700}
+  .medida code{font-family:ui-monospace,Menlo,monospace;font-size:.74rem}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+  <div class="rotulo">Modelo <b>B</b> · Tamaños intactos, marca apilada — 390 px</div>
+
+  <header class="cabecera">
+    <div class="lado">
+      <button class="btn" type="button" aria-label="Abrir el menú">☰</button>
+      <button class="btn" type="button" aria-label="Cambiar de tema">☾</button>
+    </div>
+
+    <div class="marca">
+      <div class="logo" aria-hidden="true"></div>
+      <h1>Saki Sushi</h1>
+      <p>"Adictos al universo saki"</p>
+    </div>
+
+    <div class="lado">
+      <button class="btn" type="button" aria-label="Iniciar sesión">◯</button>
+      <button class="btn" type="button" aria-label="Notificaciones">🔔</button>
+      <button class="btn" type="button" aria-label="Ver carrito">
+        🛒<span class="punto" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="muestra" aria-hidden="true">
+    <div class="ficha">Aquí sigue la carta, sin cambios.</div>
+    <div class="ficha">El header ocupa todo el ancho: sin franja oscura.</div>
+  </div>
+
+  <div class="medida">
+    <b>Qué cambia:</b> <b>nada de tamaño</b>. Controles en <b>50 px</b>, logo
+    en <b>70 px</b>. Solo la colocación: marca apilada.
+    <b>Carrito al borde derecho.</b>
+    <br><br>
+    <b>Controles:</b> <code>5×50 + 4×4 + 16</code> = <b>282 px</b> de 390.
+    <span class="ok">Sobran 108 px</span> para la marca.
+    <br><br>
+    <b>Alto del header:</b> ~<b>128 px</b>. Es el costo del modelo: se come
+    más pantalla, pero ningún botón pierde tamaño.
+  </div>
+</body>
+</html>

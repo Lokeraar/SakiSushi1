@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "chosen": "01-compacto-marca-apilada.html",
+  "handoffs": {
+    "01-compacto-marca-apilada.html": {
+      "status": "implemented",
+      "queued": false,
+      "sentAt": "2026-11-06T17:21:02.836Z",
+      "startedAt": "2026-11-06T17:21:02.836Z",
+      "implementedAt": "2026-11-06T18:22:37.329Z",
+      "note": "Header compacto implementado: marca apilada (logo 52px, nombre y eslogan debajo), controles a 44px, una sola fila sin wrap, header a width:100% (la franja oscura era el gradiente sin ancho), carrito al borde derecho y botón de iniciar sesión como icon-button en el primer lugar del grupo derecho. Eslogan en blanco: ningún dorado llega a AA sobre el carmesí. Commits 82feb6c y 60dfdcd, publicado y verificado.",
+      "previewUrl": "http://127.0.0.1:8899/Cliente/index.html"
+    }
+  }
+}
