@@ -3511,10 +3511,26 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                Cuatro renglones porque son cuatro DATOS: nombre, marca «(define
                el plato)», unidad de medida y precio. Tiene que coincidir con
                `CAPACIDAD.ingrediente.maxLineas` del medidor. */
-            display:-webkit-box;
-            -webkit-box-orient:vertical;
-            -webkit-line-clamp:4;
-            line-clamp:4;
+            /* SIN `line-clamp`: EL TECHO LO FIJA EL JS, EN PÍXELES.
+
+               `line-clamp` fue el error. Es un mecanismo del MOTOR, no una
+               medida: cuenta las cajas de línea del elemento al que se aplica,
+               y aquí el que tiene las líneas es el HIJO, no este padre. Con un
+               `display:-webkit-box` cuyo único contenido es un hijo en bloque,
+               cada motor cuenta distinto: unos ven las líneas del hijo y otros
+               solo una. Por eso a veces cortaba en tres y a veces en cuatro.
+               Comprobado en un navegador real: uno de los probados ni siquiera
+               implementa `-webkit-box` y lo reporta como `display:block`, así
+               que el tope no existía para él.
+
+               La alternativa robusta es una ALTURA MÁXIMA EN PÍXELES, calculada
+               por el medidor con el alto de línea real:
+                   maxHeight = altoDeLinea * 4
+               Eso no depende de qué motor esté mirando: cuatro renglones son
+               cuatro renglones. El JS la escribe en `estiloTechoRenglones()`.
+
+               `overflow:hidden` se queda: es quien hace cumplir el techo una vez
+               que el JS lo fijó, y sin él el texto se saldría de la fila. */
             overflow:hidden;
         }
         .cust-ing-nombre {
@@ -5032,7 +5048,7 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-mesonero.js?v=1794018411"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
-    <script src="js/cliente-menu.js?v=1794185279"></script>
+    <script src="js/cliente-menu.js?v=1794193134"></script>
     <script src="js/cliente-scroll.js?v=1793990592"></script>
     <script src="js/cliente-ui.js?v=1794001460"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
@@ -5043,10 +5059,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794185279"></script>
-    <script src="js/cliente-customize.js?v=1794185279"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794193134"></script>
+    <script src="js/cliente-customize.js?v=1794193134"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794185279"></script>
+    <script src="js/cliente-historial.js?v=1794193134"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>
