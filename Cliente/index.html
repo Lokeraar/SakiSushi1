@@ -3589,7 +3589,31 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                medidas del resto de la página. */
             font-size:clamp(.8125rem, .82em, 1.0625rem);
             color:var(--customize-subtext);
+            /* `nowrap` SOLO cubre la unidad de medida («0,24 Kg»): es un dato y
+               no debe partirse. El recargo tiene su propia regla abajo. */
             white-space:nowrap;
+        }
+
+        /* ── EL RECARGO SÍ PUEDE PARTIR ──
+
+           «· +Bs. 1.935,62 en este plato» son 30 caracteres. Heredaba el
+           `nowrap` de `.cust-ing-cant`, así que era un trozo imposible de
+           partir: a 8 pt pide ~160 px y la columna del nombre mide ~88 px en un
+           teléfono de 412. No cabía a NINGÚN tamaño del rango, el medidor lo
+           leía como desborde horizontal a cualquier precio y la fila caía al
+           piso con recorte.
+
+           Ese es el «con más contenido usa 3 renglones con letra pequeña y el
+           precio queda recortado» que reportó el dueño. Con el recargo
+           partible, el presupuesto de cuatro renglones absorbe el texto de más
+           y la letra deja de desplomarse.
+
+           `normal` y no `break-all` ni `overflow-wrap:anywhere`: las palabras
+           del recargo («este», «plato», «1.935,62») se parten donde el texto
+           normal parte, entre palabras. Partir «1.935,62» por la mitad sería
+           cambiar un dato por otro. */
+        .cust-ing-recargo {
+            white-space:normal;
         }
 
         /* Columna «Agrandar»: un solo botón ×2 en los principales, y
@@ -5032,7 +5056,7 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-mesonero.js?v=1794018411"></script>
     <script src="js/cliente-wifi.js?v=1792781521"></script>
     <script src="js/cliente-imagenes.js?v=1792843217"></script>
-    <script src="js/cliente-menu.js?v=1794185279"></script>
+    <script src="js/cliente-menu.js?v=1794226622"></script>
     <script src="js/cliente-scroll.js?v=1793990592"></script>
     <script src="js/cliente-ui.js?v=1794001460"></script>
     <script src="js/cliente-identidad.js?v=1793890514"></script>
@@ -5043,10 +5067,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794185279"></script>
-    <script src="js/cliente-customize.js?v=1794185279"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794226622"></script>
+    <script src="js/cliente-customize.js?v=1794226622"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794185279"></script>
+    <script src="js/cliente-historial.js?v=1794226622"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>

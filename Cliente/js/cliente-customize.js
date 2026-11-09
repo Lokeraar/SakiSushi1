@@ -464,9 +464,32 @@
                           : '') +
                         // El espacio duro de delante separa nombre y unidad sin
                         // que puedan quedar pegados al partir el renglón.
+                        //
+                        // ── EL RECARGO NO VA DENTRO DEL `nowrap` DE LA UNIDAD ──
+                        //
+                        // `.cust-ing-cant` lleva `white-space:nowrap` para que
+                        // «0,24 Kg» no se parta nunca: es un dato, no texto
+                        // corrido. Pero el recargo «· +Bs. 1.935,62 en este
+                        // plato» vive en ese mismo contenedor, así que heredaba
+                        // el `nowrap` y se volvía un trozo imposible de partir.
+                        //
+                        // Son 30 caracteres: a 8 pt piden ~160 px y la columna
+                        // del nombre mide ~88 px en un teléfono de 412. Ese
+                        // trozo NO cabía a ningún tamaño del rango, así que el
+                        // medidor lo veía como desborde a cualquier precio y la
+                        // fila caía al piso con recorte. El dueño lo describió
+                        // exacto: «con más contenido usa 3 renglones con letra
+                        // pequeña y el precio queda recortado».
+                        //
+                        // Sacar el recargo a su propio span, con `nowrap` solo
+                        // en la unidad, le devuelve al presupuesto de cuatro
+                        // renglones la tarea que le toca: absorber el texto de
+                        // más, no empujar la letra al piso.
                         ' <span class="cust-ing-cant">' +
                           '<span id="cantidad_ing_' + idx + '">' + cantTxt + '</span>' +
-                          '<span id="precio_ing_' + idx + '">' + precioTxt + '</span>' +
+                          '<span class="cust-ing-recargo" id="precio_ing_' + idx + '">' +
+                            precioTxt +
+                          '</span>' +
                         '</span>' +
                       '</div>' +
                     '</div>' +

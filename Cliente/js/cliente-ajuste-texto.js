@@ -132,14 +132,110 @@
 
         var lineasMin = capacidad.lineas;
 
-        // El alto de una línea al tamaño que se está probando. Se mide de
-        // verdad en vez de suponerlo: depende de la familia y del interlineado.
+        // ── CUÁNTOS RENGLONES SE PUEDEN USAR ──
+        //
+        // La gracia es UNA línea y no más, aunque quien llame haya pedido un
+        // `maxLineas` mayor: es la regla de producto, y aquí es donde se hace
+        // cumplir. La excepción está declarada en CAPACIDAD para los casos que
+        // no son «un texto que se estira» sino varios datos en una celda.
+        var topeLineas = capacidad.permiteMasLineas
+            ? capacidad.maxLineas
+            : Math.min(capacidad.maxLineas, lineasMin + 1);
+        // Un techo por debajo del mínimo dejaría el bucle sin recorrer y el
+        // texto sin ajustar. Se corrige en vez de fallar en silencio.
+        if (!(topeLineas >= lineasMin)) topeLineas = lineasMin;
+
+        // ── EL RECORTE SE SUELTA ANTES DE MEDIR, Y NO SE HEREDA ──
+        //
+        // El elemento medido NO debe recortar nunca: su `scrollHeight` es lo
+        // único que dice cuánto texto hay. Si una pasada anterior lo dejó en
+        // `recortado` —y la rama de recorte escribe `overflow:hidden` y
+        // `textOverflow:ellipsis` en este mismo nodo—, la medición siguiente
+        // arranca con un estado que no es el de reposo. El dueño lo vio como
+        // «cuatro renglones con poco contenido y tres con más contenido» en la
+        // misma fila: el mismo texto, dos geometrías, según lo que hubiera
+        // pasado antes.
+        //
+        // El recorte es una marca DE ESTA FUNCIÓN, no un estilo del diseño, así
+        // que se suelta al entrar y se vuelve a poner solo si hace falta al
+        // salir. Ningún otro sitio escribe estas tres propiedades en el nodo
+        // medido.
+        function soltarRecorte() {
+            el.style.overflow = 'visible';
+            el.style.textOverflow = '';
+            if (el.style.webkitLineClamp) el.style.webkitLineClamp = 'unset';
+            if (el.style.lineClamp) el.style.lineClamp = 'unset';
+        }
+        soltarRecorte();
+
+        // ── EL ALTO DE UNA LÍNEA, SIN SUPONER QUE SIGUE AL NOMBRE ──
+        //
+        // `line-height` en `el` da el interlineado DEL NOMBRE. Pero dentro del
+        // nombre viven spans con su propio `font-size`, y hay uno que NO sigue
+        // al nombre hacia abajo:
+        //
+        //     #customizeModal .cust-ing-cant {
+        //         font-size: clamp(.8125rem, .82em, 1.0625rem);
+        //     }
+        //
+        // El término central (`.82em`) sigue al nombre, pero el PISO del clamp
+        // son 13 px (0,8125rem). Cuando el nombre baja de 13 px —o sea, en todo
+        // el tramo de 8 a 9,75 pt, que es justo donde vive la fila del dueño—
+        // la unidad deja de encoger y se queda en 13. Como `line-height:1.25`
+        // es un número y se resuelve POR ELEMENTO, la caja de línea de ese span
+        // mide 1,25 × 13 = 16,3 px y la manda ella, no el nombre.
+        //
+        // QUÉ ROMPÍA SUPONERLO. El medidor creía que cuatro renglones a 8 pt
+        // medían 4 × 13,3 = 53 px cuando en realidad miden 4 × 16,3 = 65 px.
+        // Decía «cabe» y el padre recortaba con su `line-clamp`: el precio
+        // desaparecía aunque el medidor jurara que sobraba sitio. Es la otra
+        // mitad del defecto que el dueño vio como «el precio queda recortado».
+        //
+        // ── CÓMO SE MIDE BIEN ──
+        //
+        // Se recorre el contenido en línea del elemento y se toma el interlineado
+        // REAL más alto: el de cada hijo con su tamaño ya resuelto por el
+        // navegador. La línea mide lo que mide el contenido más alto que la
+        // comparte, que es como funciona la caja de línea en CSS.
+        //
+        // Se leen los estilos computados y no se deduce la herencia a mano: el
+        // `clamp()` de la unidad lo resuelve el navegador, y repetir esa cuenta
+        // aquí sería tener dos fuentes de verdad para el mismo número.
+        //
+        // SE RECUERDA POR TAMAÑO. Cada lectura de `getComputedStyle` fuerza un
+        // recálculo de estilo, y la búsqueda prueba el mismo tamaño más de una
+        // vez (la rama del techo y la bisección coinciden). Con ocho
+        // ingredientes en pantalla, repetir esa lectura por prueba se nota en
+        // el teléfono. El resultado solo depende del tamaño del nombre, así
+        // que un mapa pequeño lo resuelve sin volver a preguntar.
+        var memoAltoLinea = {};
         function altoDeLinea(px) {
-            // `line-height` se lee una vez por prueba; si el CSS no lo declara,
-            // el navegador devuelve el valor computado, que es lo que aplica.
-            var lh = parseFloat(window.getComputedStyle(el).lineHeight);
+            var clave = String(px);
+            if (memoAltoLinea[clave] !== undefined) return memoAltoLinea[clave];
+
+            var estiloEl = window.getComputedStyle(el);
+            var lh = parseFloat(estiloEl && estiloEl.lineHeight);
             if (!isFinite(lh) || lh <= 0) lh = px * 1.3;
-            return lh;
+
+            var mayor = lh;
+            // Solo los hijos del primer nivel: son los spans en línea que
+            // comparten caja de línea con el texto del nombre. Bajar más hondo
+            // mediría spans que ya no aportan alto propio.
+            var hijos = el.children;
+            for (var i = 0; hijos && i < hijos.length; i++) {
+                var ec = window.getComputedStyle(hijos[i]);
+                if (!ec) continue;
+                var fsH = parseFloat(ec.fontSize);
+                var lhH = parseFloat(ec.lineHeight);
+                // `line-height:normal` no da número: se aproxima con el factor
+                // habitual de la tipografía, que es lo que aplica el motor.
+                if (!isFinite(lhH) || lhH <= 0) {
+                    lhH = (isFinite(fsH) && fsH > 0) ? fsH * 1.3 : 0;
+                }
+                if (lhH > mayor + TOLERANCIA) mayor = lhH;
+            }
+            memoAltoLinea[clave] = mayor;
+            return mayor;
         }
 
         // ¿Cabe en `lineas` líneas al tamaño `px`?
@@ -205,6 +301,11 @@
             var ancho = el.scrollWidth;
             var anchoDisponible = el.clientWidth;
 
+            // El alto de UNA línea al tamaño que se está probando. Se mide de
+            // verdad en vez de suponerlo: depende de la familia y del
+            // interlineado, y la comparación contra el padre lo necesita.
+            var altoLinea = altoDeLinea(px);
+
             if (tieneRecorte) {
                 el.style.webkitLineClamp = recortePrevio.clamp || '';
                 el.style.lineClamp = recortePrevio.clamp || '';
@@ -214,26 +315,50 @@
             // ── Y NO PUEDE SALIRSE DE SU RECIPIENTE ──
             //
             // El recorte de la tabla vive en el PADRE (`.cust-ing-info`), que
-            // es quien limita la fila a cuatro renglones. Ese padre recorta y
-            // esconde lo que sobra, así que un texto puede «caber» en sí mismo y
-            // aun así quedar cortado para quien lo lee.
+            // es quien limita la fila. Ese padre recorta y esconde lo que
+            // sobra, así que un texto puede «caber» en sí mismo y aun así
+            // quedar cortado para quien lo lee. Sin esta comprobación, el
+            // recorte del contenedor es invisible para el ajuste.
             //
-            // Se compara el alto del elemento con el de su padre: si el padre
-            // tiene un tope y el hijo lo excede, el texto se está perdiendo, y
-            // eso cuenta como no caber. Sin esta comprobación, el recorte del
-            // contenedor es invisible para el ajuste.
+            // ── SE COMPARA CONTRA LA CAPACIDAD DECLARADA, NO CONTRA UNA ALTURA MEDIDA ──
+            //
+            // Antes se comparaba contra `padre.clientHeight`. Ese número no
+            // sirve cuando el padre limita con `display:-webkit-box` y
+            // `line-clamp`: depende de cómo cada motor cuente las cajas de
+            // línea, y hay motores que ven UNA sola línea donde hay cuatro.
+            // Con ese valor, cualquier texto «excedía su recipiente» a
+            // CUALQUIER tamaño, ninguna prueba cabía, y la fila caía al piso
+            // con recorte. Es exactamente el «tres renglones a letra mínima y
+            // el precio cortado» que reportó el dueño.
+            //
+            // Lo que de verdad limita al hijo es el NÚMERO de renglones que el
+            // padre declara. Ese número está en el CSS y no depende del motor:
+            // si el padre permite N renglones y el candidato cabe en N o menos,
+            // el padre no puede estar cortando nada.
             var excedeRecipiente = false;
             var padre = el.parentNode;
-            if (padre && padre.nodeType === 1 && padre.clientHeight > 0) {
+            if (padre && padre.nodeType === 1) {
                 var estiloPadre = window.getComputedStyle(padre);
                 var recortaPadre = estiloPadre &&
                     (estiloPadre.overflow === 'hidden' || estiloPadre.overflowY === 'hidden');
-                if (recortaPadre && alto > padre.clientHeight + TOLERANCIA) {
-                    excedeRecipiente = true;
+                if (recortaPadre) {
+                    var clampPadre = parseInt(
+                        estiloPadre.webkitLineClamp || estiloPadre.lineClamp, 10
+                    );
+                    if (isFinite(clampPadre) && clampPadre > 0) {
+                        // El padre declara cuántos renglones admite: se compara
+                        // contra esos, al tamaño que se está probando.
+                        if (alto > altoLinea * clampPadre + TOLERANCIA) {
+                            excedeRecipiente = true;
+                        }
+                    } else if (padre.clientHeight > 0 &&
+                               alto > padre.clientHeight + TOLERANCIA) {
+                        // Sin `line-clamp` el padre solo puede recortar por
+                        // altura, y ahí `clientHeight` sí es la medida válida.
+                        excedeRecipiente = true;
+                    }
                 }
             }
-
-            var altoLinea = altoDeLinea(px);
 
             // El presupuesto se mide AL TAMAÑO ACTIVO, no al base: si se
             // midiera al base, al encoger la letra cabrían más líneas de las
@@ -255,30 +380,82 @@
         // y no se toca nada más (el caso barato y el más común).
         if (cabe(techo, lineasMin)) {
             el.style.fontSize = techo + 'px';
+            // El nodo queda limpio: sin recorte inline y sin marcas. Es lo que
+            // permite que la siguiente medición parta del estado de reposo.
+            el.style.overflow = '';
+            el.style.textOverflow = '';
+            el.style.display = '';
+            el.removeAttribute('data-ajuste');
+            el.setAttribute('data-ajuste-lineas', String(lineasMin));
             return techo;
         }
 
-        // No cabe al techo: se biseca entre el piso y el techo.
-        var bajo = PISO;
-        var alto = techo;
-        var mejor = null;
-
-        // Si ni al piso cabe en las líneas declaradas, se gana una línea y se
-        // vuelve a intentar, hasta `maxLineas`. Nunca se baja del piso: por
-        // debajo, el texto deja de leerse.
-        var lineas = lineasMin;
-        // La gracia es UNA línea y no más, aunque quien llame haya pedido un
-        // `maxLineas` mayor: es la regla de producto, y aquí es donde se hace
-        // cumplir. La excepción está declarada en CAPACIDAD para los casos que
-        // no son «un texto que se estira» sino varios datos en una celda.
-        var topeLineas = Math.min(capacidad.maxLineas, lineasMin + 1);
-        if (capacidad.permiteMasLineas) topeLineas = capacidad.maxLineas;
-        while (lineas <= topeLineas) {
-            if (cabe(PISO, lineas)) {
-                mejor = PISO;
-                break;
+        /** El MAYOR tamaño que cabe en `n` renglones, o `null` si ni el piso cabe. */
+        function mayorQueCabe(n) {
+            // El caso barato va primero: si ya cabe al TECHO, el mayor tamaño
+            // posible es el techo y no hay nada que bisecar. Es el caso más
+            // común y el que se ahorra las seis mediciones de la búsqueda.
+            if (cabe(techo, n)) return techo;
+            if (!cabe(PISO, n)) return null;
+            // Bisección entre el piso y el techo, con el número de renglones
+            // ya fijado. Seis pasos dejan el resultado a menos de 0,2 px: por
+            // debajo de eso no hay diferencia legible, y cada paso cuesta una
+            // medición de maquetación.
+            var bajo = PISO;
+            var alto = techo;
+            var mejor = PISO;
+            for (var i = 0; i < 6; i++) {
+                var medio = (bajo + alto) / 2;
+                if (cabe(medio, n)) {
+                    mejor = medio;
+                    bajo = medio;
+                } else {
+                    alto = medio;
+                }
             }
-            lineas++;
+            return mejor;
+        }
+
+        // ── EL PRESUPUESTO DE RENGLONES SE GASTA ANTES DE ENCOGER LA LETRA ──
+        //
+        // LA REGLA DEL DUEÑO, tal cual: «si el texto cabe a 10 pt en 4
+        // renglones, el resultado correcto son 4 renglones a 10 pt, no 3
+        // renglones a 8 pt». Primero se aprovecha el presupuesto de renglones,
+        // después se encoge la letra.
+        //
+        // ── POR QUÉ SE PROBABA AL REVÉS, Y QUÉ ROMPÍA ──
+        //
+        // Antes había un bucle que preguntaba «¿cabe al PISO en 3 renglones?» y,
+        // si la respuesta era sí, CONGELABA el número de renglones en 3 y
+        // buscaba el mayor tamaño dentro de esos 3:
+        //
+        //     while (lineas <= topeLineas) {
+        //         if (cabe(PISO, lineas)) { mejor = PISO; break; }
+        //         lineas++;
+        //     }
+        //
+        // Esa condición regala la línea de gracia SOLO cuando el texto ya no
+        // cabe ni a 8 pt en 3 renglones. O sea: la cuarta línea no era
+        // presupuesto, era el último recurso del peor caso. Un texto que a 4
+        // renglones llega a 18 px se quedaba en 3 renglones a 12,8 px, y ese es
+        // el resultado que el dueño describió como «tres renglones con letra
+        // mínima».
+        //
+        // Ahora se prueba CADA capacidad y se queda la combinación con la letra
+        // más grande; a igualdad de tamaño, la de menos renglones. Encoger la
+        // letra pasa a ser el último recurso, no el primero.
+        var mejorTamano = null;
+        var mejorLineas = lineasMin;
+        for (var n = lineasMin; n <= topeLineas; n++) {
+            var tam = mayorQueCabe(n);
+            if (tam === null) continue;
+            // Estrictamente mayor: si dos capacidades dan el mismo tamaño, gana
+            // la que se encontró primero, y el recorrido va de menos a más
+            // renglones. Así el empate se queda con la fila más corta.
+            if (mejorTamano === null || tam > mejorTamano + 0.01) {
+                mejorTamano = tam;
+                mejorLineas = n;
+            }
         }
 
         // Si ni con todas las líneas permitidas cabe al piso, se queda en el
@@ -287,7 +464,7 @@
         // visible con puntos suspensivos que una letra de 6 px. El navegador
         // recorta con `ellipsis`; aquí solo se marca el elemento para que el
         // CSS lo sepa.
-        if (mejor === null) {
+        if (mejorTamano === null) {
             el.style.fontSize = PISO + 'px';
             el.style.overflow = 'hidden';
             el.style.textOverflow = 'ellipsis';
@@ -296,23 +473,20 @@
             return PISO;
         }
 
-        // Bisección entre `bajo` y `alto`, con el número de líneas ya fijado.
-        for (var i = 0; i < 6; i++) {
-            var medio = (bajo + alto) / 2;
-            if (cabe(medio, lineas)) {
-                mejor = medio;
-                bajo = medio;
-            } else {
-                alto = medio;
-            }
-        }
-
-        el.style.fontSize = mejor.toFixed(2) + 'px';
-        // Un texto que sí cabía no se recorta: se limpia la marca por si el
-        // mismo nodo se reutiliza con contenido más corto.
+        el.style.fontSize = mejorTamano.toFixed(2) + 'px';
+        // Un texto que sí cabía no se recorta: se limpia el nodo para que la
+        // próxima medición no herede esta pasada. Antes solo se borraba
+        // `textOverflow`, y un `overflow:hidden` de una pasada anterior se
+        // quedaba pegado al elemento medido para siempre: la fila que había
+        // sido recortada seguía recortando aunque el texto nuevo cupiera.
+        el.style.overflow = '';
         el.style.textOverflow = '';
+        el.style.display = '';
         el.removeAttribute('data-ajuste');
-        return mejor;
+        // `mejorLineas` es la capacidad elegida. Se deja anotada porque es el
+        // dato que explica el resultado cuando alguien audita una fila.
+        el.setAttribute('data-ajuste-lineas', String(mejorLineas));
+        return mejorTamano;
     }
 
     /**
