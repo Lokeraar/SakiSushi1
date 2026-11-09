@@ -91,20 +91,45 @@
     // valor por defecto otras dos (1 -> 3). Eso no es una concesión: es una
     // capacidad que nunca se declaró.
     var CAPACIDAD = {
-        titulo:      { lineas: 2, maxLineas: 3 },
-        descripcion: { lineas: 3, maxLineas: 4 },
-        nota:        { lineas: 2, maxLineas: 3 },
+        // Los tres primeros van por LETRA: cuando el texto cabe con la letra
+        // más grande gastando un renglón de gracia, se le concede. Un título de
+        // 24 pt no debe caer a 16 pt solo por ahorrarse un renglón.
+        titulo:      { lineas: 2, maxLineas: 3, estrategia: 'letra' },
+        descripcion: { lineas: 3, maxLineas: 4, estrategia: 'letra' },
+        nota:        { lineas: 2, maxLineas: 3, estrategia: 'letra' },
+        // ── EL INGREDIENTE VA POR RENGLONES, Y ES EL ÚNICO ──
+        //
         // El nombre del ingrediente lleva el nombre, la marca «(define el
         // plato)», la unidad de medida y el precio: cuatro datos en un hueco
         // estrecho. Con tres renglones se recortaba («+Bs. 1,...») y el dueño
         // pidió cuatro. Cuatro es además `lineas + 2`, así que aquí la
         // capacidad declarada es mayor a propósito: son cuatro datos, no un
         // texto que se estira.
-        ingrediente: { lineas: 3, maxLineas: 4, permiteMasLineas: true },
+        //
+        // ── POR QUÉ ESTE SÍ VA POR RENGLONES ──
+        //
+        // Es la regla que el dueño fijó y eligió entre dos opciones explícitas:
+        //
+        //     «Bajar la letra hasta 8 pt antes de pasar a 4 renglones»
+        //
+        // O sea: se agota el presupuesto de TRES renglones bajando la letra por
+        // todo el rango (16 → 8 pt). El cuarto renglón se usa solo si ni al piso
+        // cabe en tres.
+        //
+        // ── Y POR QUÉ NO SE APLICA AL RESTO ──
+        //
+        // Aplicada a un título produce un despropósito medible: «Combinado
+        // Especial del Chef con Salmón, Atún y Anguila Glaseada» cabe a 32 px en
+        // tres renglones, pero por ahorrarse el tercero caería a 21 px. El dueño
+        // fijó los títulos en 24 pt: encogerlos un tercio para que la fila mida
+        // menos contradice esa decisión. En la tabla, en cambio, la altura de la
+        // fila es el recurso escaso —hay ocho ingredientes uno debajo de otro— y
+        // ahí sí manda el renglón.
+        ingrediente: { lineas: 3, maxLineas: 4, permiteMasLineas: true, estrategia: 'renglones' },
         // Los tres controles ocupan UN renglón siempre. No pueden partir: son
-        // botones de una sola línea por diseño, y si el texto no cabe se
-        // encoge hasta el piso en vez de crecer de alto.
-        rotulo:      { lineas: 1, maxLineas: 1 }
+        // botones de una sola línea por diseño, y si el texto no cabe se encoge
+        // hasta el piso en vez de crecer de alto.
+        rotulo:      { lineas: 1, maxLineas: 1, estrategia: 'letra' }
     };
 
     // Tolerancia en píxeles para dar por bueno un ajuste. Sin ella, el
@@ -160,9 +185,21 @@
         // que se suelta al entrar y se vuelve a poner solo si hace falta al
         // salir. Ningún otro sitio escribe estas tres propiedades en el nodo
         // medido.
+        // ── TAMBIÉN SE SUELTA EL `max-height` DEL CSS ──
+        //
+        // `.cust-ing-nombre` lleva ahora su propio tope de cuatro renglones en
+        // `em`, que es el que sí manda en el motor. Ese tope NO puede estar
+        // puesto mientras se mide: si recorta el bloque, el alto que se lee deja
+        // de ser el del texto y el medidor vuelve a estar ciego —el mismo
+        // defecto que causaba `line-clamp`.
+        //
+        // Se neutraliza con un valor en línea y se retira al salir de la
+        // función, dejando que el CSS vuelva a aplicar el suyo. El tope y la
+        // medición no se pisan porque nunca están activos a la vez.
         function soltarRecorte() {
             el.style.overflow = 'visible';
             el.style.textOverflow = '';
+            el.style.maxHeight = 'none';
             if (el.style.webkitLineClamp) el.style.webkitLineClamp = 'unset';
             if (el.style.lineClamp) el.style.lineClamp = 'unset';
         }
@@ -382,9 +419,13 @@
             el.style.fontSize = techo + 'px';
             // El nodo queda limpio: sin recorte inline y sin marcas. Es lo que
             // permite que la siguiente medición parta del estado de reposo.
+            //
+            // `maxHeight` incluido: se neutralizó para medir y aquí se devuelve
+            // al CSS, que es quien pone el tope de cuatro renglones.
             el.style.overflow = '';
             el.style.textOverflow = '';
             el.style.display = '';
+            el.style.maxHeight = '';
             el.removeAttribute('data-ajuste');
             el.setAttribute('data-ajuste-lineas', String(lineasMin));
             return techo;
@@ -441,17 +482,47 @@
         // el resultado que el dueño describió como «tres renglones con letra
         // mínima».
         //
-        // Ahora se prueba CADA capacidad y se queda la combinación con la letra
-        // más grande; a igualdad de tamaño, la de menos renglones. Encoger la
-        // letra pasa a ser el último recurso, no el primero.
+        // ── DOS ESTRATEGIAS, DECLARADAS POR CAPACIDAD ──
+        //
+        // Todo esto se probó al revés y las dos formas tienen su caso. Cuál
+        // manda no lo decide el medidor: lo decide la capacidad, porque depende
+        // de qué recurso es el escaso en esa parte de la pantalla.
+        //
+        //   'letra'      -> gana la letra MÁS GRANDE. Si el texto cabe a 32 px
+        //                   gastando un renglón de gracia, se le concede:
+        //                   ahorrarse ese renglón costaría 11 px de letra. Es lo
+        //                   correcto para títulos y descripciones, donde el alto
+        //                   de la caja no es un recurso escaso.
+        //
+        //   'renglones'  -> gana la capacidad MÁS CORTA en la que algo cabe,
+        //                   agotando la letra antes de crecer. Es lo correcto
+        //                   para la tabla de ingredientes, donde ocho filas van
+        //                   una debajo de otra y cada renglón de más empuja el
+        //                   pie fuera de la pantalla. Es la regla que el dueño
+        //                   eligió: «bajar la letra hasta 8 pt antes de pasar a
+        //                   4 renglones».
+        //
+        // Sin esta distinción, una de las dos partes sale mal siempre: con
+        // «letra» para todo, el ingrediente gasta el cuarto renglón por medio
+        // punto y la fila crece sin que el texto lo pida; con «renglones» para
+        // todo, un título de 24 pt cae a 16 pt por ahorrarse un renglón.
+        var porRenglones = capacidad.estrategia === 'renglones';
+
         var mejorTamano = null;
         var mejorLineas = lineasMin;
         for (var n = lineasMin; n <= topeLineas; n++) {
             var tam = mayorQueCabe(n);
             if (tam === null) continue;
-            // Estrictamente mayor: si dos capacidades dan el mismo tamaño, gana
-            // la que se encontró primero, y el recorrido va de menos a más
-            // renglones. Así el empate se queda con la fila más corta.
+            if (porRenglones) {
+                // La primera capacidad en la que cabe, de la más corta a la más
+                // larga. Dentro de ella, `mayorQueCabe` ya devolvió la letra más
+                // grande posible.
+                mejorTamano = tam;
+                mejorLineas = n;
+                break;
+            }
+            // Estrictamente mayor: a igualdad de tamaño gana la capacidad que se
+            // encontró primero, y el recorrido va de menos a más renglones.
             if (mejorTamano === null || tam > mejorTamano + 0.01) {
                 mejorTamano = tam;
                 mejorLineas = n;
@@ -482,6 +553,7 @@
         el.style.overflow = '';
         el.style.textOverflow = '';
         el.style.display = '';
+        el.style.maxHeight = '';
         el.removeAttribute('data-ajuste');
         // `mejorLineas` es la capacidad elegida. Se deja anotada porque es el
         // dato que explica el resultado cuando alguien audita una fila.

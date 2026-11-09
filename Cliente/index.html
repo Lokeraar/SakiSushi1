@@ -3554,13 +3554,78 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                reparte como una sola tirada. El tope de cuatro renglones lo pone
                el padre, que no se mide. */
             display:block;
+            /* ── EL TOPE DE VERDAD: CUATRO RENGLONES, EN `em` ──
+
+               `line-clamp` en el PADRE no limita nada: el padre es un
+               `-webkit-box` cuyo único hijo es un bloque, y un bloque no genera
+               cajas de línea para el padre. Por eso el texto crecía hasta cinco
+               y seis renglones mientras el CSS decía «cuatro»: el tope existía
+               en el papel y no en el motor.
+
+               Aquí sí manda, porque aquí vive el texto. La cuenta va escrita
+               entera: CUATRO renglones por el interlineado declarado arriba
+               (`line-height:1.25`). Si mañana cambia el interlineado, cambia
+               esta línea y no queda un número mágico desincronizado.
+
+               ── POR QUÉ EN `em` Y NO EN PÍXELES ──
+
+               El auto-ajuste escribe `font-size` en línea sobre este mismo
+               nodo. Con `em`, el tope se recalcula solo en cada tamaño: no hay
+               una segunda cuenta que pueda desincronizarse de la primera. Un
+               tope en píxeles habría que reescribirlo en cada pasada, y ese
+               camino ya se intentó y se revirtió.
+
+               ── POR QUÉ ESTO NO ENGARÁN̵A AL MEDIDOR ──
+
+               `overflow:hidden` NO recorta `scrollHeight`: lo que hace es dejar
+               que el contenido se salga del cuadro. El alto real del texto se
+               sigue leyendo entero, que es lo que la búsqueda binaria necesita.
+               Lo que mentía era `line-clamp`, porque ese sí destruye el
+               contenido. Por eso el tope va por altura y no por `clamp`.
+
+               El medidor neutraliza este `max-height` mientras mide y lo
+               devuelve al terminar: el tope y la medición nunca están activos a
+               la vez. */
+            max-height:calc(4 * 1.25em);
+            overflow:hidden;
         }
-        /* La marca «(define el plato)» va en su propio tamaño, fija: es una
-           anotación, no parte del nombre, y no debe encogerlo. */
+        /* ── LA MARCA NO CAMBIA DE TAMAÑO: CAMBIA DE COLOR ──
+
+           Aquí vivía `font-size:.8em`, y era UNO de los tres tamaños que se
+           veían dentro de la misma celda. El dueño lo midió en su teléfono:
+           «no mantienen el mismo tamaño de letra en todo su contenido pudiendo
+           hacerlo».
+
+           La anotación se distingue por COLOR, no por tamaño. Un `em` menor
+           dentro de un bloque que ya se está encogiendo multiplica el efecto: a
+           8 pt la marca queda en 6,4 pt, ilegible, y encima gasta renglones
+           porque su caja de línea no encoge al mismo ritmo que el nombre.
+
+           ── Y `nowrap` SE VA TAMBIÉN: ERA EL QUINTO RENGLÓN ──
+
+           Medido con la captura del dueño: la columna del nombre mide ~105 px
+           CSS en un teléfono de 412. A 8 pt (10,67 px) caben ~19 caracteres por
+           renglón. «Salmón fresco» ocupa 13 y deja 6 libres; con `nowrap`,
+           «(define el plato)» —18 caracteres— NO puede empezar ahí y se va
+           entero al renglón siguiente, dejando el primero casi vacío.
+
+           El reparto real, con `nowrap`:
+
+               renglón 1  Salmón fresco
+               renglón 2  (define el plato)      <- 18 de 19: no cabe nada más
+               renglón 3  0.24 Kg · +Bs.
+               renglón 4  1.938,69 en este
+               renglón 5  plato
+
+           Cinco renglones con una cuota de cuatro. El desperdicio no lo causaba
+           el texto largo: lo causaba una frase corta que se negaba a partir.
+           Partiendo entre palabras —«(define el / plato)»— el renglón 1 acepta
+           «Salmón fresco (define» y todo entra en cuatro. Sin `break-all` ni
+           nada raro: parte donde parte el habla. */
         .cust-ing-principal {
             color:var(--accent-text);
-            font-size:.8em;
-            white-space:nowrap;
+            font-size:inherit;
+            white-space:normal;
         }
         /* También con el id: es un span, y en el tema claro la regla del
            modal lo pintaba con la tinta principal, así que la línea de
@@ -3581,13 +3646,28 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                nombre cuando el auto-ajuste lo baja, y siempre queda un poco por
                debajo de él, como corresponde a un dato secundario. */
             display:inline;
-            /* El tamaño mínimo es 0,8125rem (13 px, 9,75 pt) y el máximo
-               1,0625rem (17 px): la unidad es un dato, y un dato ilegible no
-               sirve. Dentro de ese rango sigue al nombre, porque el término
-               central es un `em` que se mide contra el tamaño heredado. Se
-               usan `rem` en los extremos para no salirse del sistema de
-               medidas del resto de la página. */
-            font-size:clamp(.8125rem, .82em, 1.0625rem);
+            /* ── SIN TAMAÑO PROPIO: EL DE LA CELDA Y NINGUNO MÁS ──
+
+               Aquí vivía `font-size:clamp(.8125rem, .82em, 1.0625rem)`, y ese
+               `clamp` era el defecto principal. Medido en la captura del dueño:
+               el nombre había bajado a 8 pt (10,67 px) y la unidad seguía
+               clavada en su PISO de 13 px, porque 0,82 × 10,67 = 8,75 queda por
+               debajo del mínimo del clamp y gana el mínimo.
+
+               Resultado: la unidad y el recargo se pintaban un 22 % MÁS GRANDES
+               que el nombre que acompañan, y ocupaban más renglones de los que
+               su cuota permitía. Ese es el quinto renglón que el dueño vio: no
+               lo gastaba el texto, lo gastaba el desajuste.
+
+               Y había un segundo efecto, peor: el `clamp` en `rem` se resolvía
+               POR ELEMENTO, así que la caja de línea de la unidad medía
+               1,25 × 13 = 16,3 px mientras el medidor creía que medía 13,3. El
+               medidor decía «cabe» y el padre recortaba el precio.
+
+               Ahora hereda el tamaño del nombre —que es quien lo recibe del
+               medidor— y todo el contenido de la celda se encoge junto. La
+               jerarquía la dan el COLOR y el PESO, no el tamaño. */
+            font-size:inherit;
             color:var(--customize-subtext);
             /* `nowrap` SOLO cubre la unidad de medida («0,24 Kg»): es un dato y
                no debe partirse. El recargo tiene su propia regla abajo. */
@@ -5067,10 +5147,10 @@ deslizar; además la captura del dueño mostraba los modos cortados
     <script src="js/cliente-carrito-dialogo.js?v=1793995653"></script>
     <!-- El auto-ajuste de letra va ANTES de cliente-customize.js, porque
          ese archivo lo invoca al abrir el platillo. -->
-    <script src="js/cliente-ajuste-texto.js?v=1794226622"></script>
-    <script src="js/cliente-customize.js?v=1794226622"></script>
+    <script src="js/cliente-ajuste-texto.js?v=1794234340"></script>
+    <script src="js/cliente-customize.js?v=1794234340"></script>
     <script src="js/cliente-preview.js?v=1793935830"></script>
-    <script src="js/cliente-historial.js?v=1794226622"></script>
+    <script src="js/cliente-historial.js?v=1794234340"></script>
     <script src="js/cliente-pedidos.js?v=1793582360"></script>
     <script src="js/cliente-delivery.js?v=1793995653"></script>
     <script src="js/cliente-reservas.js?v=1793990592"></script>
