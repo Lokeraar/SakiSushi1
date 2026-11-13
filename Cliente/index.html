@@ -4857,7 +4857,14 @@ deslizar; además la captura del dueño mostraba los modos cortados
                     <i class="fas fa-moon"></i>
                 </button>
             </div>
-            <div class="logo-area" onclick="resetToAllCategories()">
+            <!-- SIN `onclick` AQUÍ, A PROPÓSITO.
+                 Había un `onclick="resetToAllCategories()"` y además un
+                 `addEventListener` en cliente-ui.js: DOS manejadores para el
+                 mismo clic. El de aquí no pasaba por la comprobación de
+                 arrastre, así que deslizar con fuerza sobre el logo seguía
+                 reiniciando la carta y saltando al tope. El manejador bueno es
+                 el de cliente-ui.js, que distingue un toque de un arrastre. -->
+            <div class="logo-area">
                 <!-- Logo del header. Se muestra a 70 px (60 en móvil), pero se
                      pedía a 1439x1439: 400 KB para un cuadro de 70.
                      Medido con esta misma dirección:

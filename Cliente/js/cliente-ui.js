@@ -222,11 +222,63 @@
             });
         }
 
-        // Logo click → reset to all categories
+        // ── EL LOGO REINICIA EL CATÁLOGO, PERO SOLO CON UN TOQUE DE VERDAD ──
+        //
+        // DEFECTO REPORTADO: «cuando en modo desktop de smartphone (equivalente
+        // a tablet) deslizo con fuerza, se devuelve a la parte superior».
+        //
+        // CAUSA. El logo vive en la cabecera, centrado, y su clic reinicia el
+        // catálogo llamando a `resetToAllCategories(true)`, que hace
+        // `window.scrollTo({ top: 0 })`. Al deslizar con fuerza, el dedo puede
+        // terminar el gesto SOBRE el logo, y el navegador emite un `click`
+        // igual: no distingue un toque intencional del final de un arrastre.
+        // Resultado: la carta se reinicia y salta al tope sola.
+        //
+        // En el teléfono no se notaba porque la cabecera es más baja y el dedo
+        // suele salir de ella al arrastrar; en tablet el logo queda más a mano.
+        //
+        // EL ARREGLO. Se registra dónde empezó el toque y cuánto se movió. Si
+        // el dedo se desplazó más de un umbral, el `click` se descarta: fue un
+        // deslizamiento, no un toque. El umbral de 10 px es el que usan los
+        // navegadores para distinguir un toque de un arrastre.
+        //
+        // Se registran los eventos en `document` y no en el logo a propósito:
+        // si el dedo EMPIEZA en el logo y termina fuera, el `click` no llega al
+        // logo; y si empieza fuera y termina dentro, sí llega. Mirar el punto
+        // de partida es la única forma de saber si el gesto fue un arrastre.
+        var _toqueInicio = null;
+        var UMBRAL_ARRASTRE = 10;
+
+        document.addEventListener('touchstart', function (e) {
+            _toqueInicio = e.touches.length === 1
+                ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
+                : null;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function (e) {
+            if (!_toqueInicio || e.touches.length !== 1) return;
+            var dx = e.touches[0].clientX - _toqueInicio.x;
+            var dy = e.touches[0].clientY - _toqueInicio.y;
+            // Se marca el gesto como arrastre en cuanto pasa el umbral; no se
+            // borra hasta el siguiente `touchstart`, para que el `click` que
+            // llega después lo vea.
+            if (Math.sqrt(dx * dx + dy * dy) > UMBRAL_ARRASTRE) {
+                _toqueInicio.arrastro = true;
+            }
+        }, { passive: true });
+
         var logoArea = document.querySelector('.logo-area');
-        if (logoArea) logoArea.addEventListener('click', function() {
-            if (window.resetToAllCategories) window.resetToAllCategories(true);
-        });
+        if (logoArea) {
+            logoArea.addEventListener('click', function (e) {
+                // Un arrastre que acaba encima del logo NO es un toque.
+                if (_toqueInicio && _toqueInicio.arrastro) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                if (window.resetToAllCategories) window.resetToAllCategories(true);
+            });
+        }
 
         // Category list — EVENT DELEGATION (single listener)
         var categoryList = document.getElementById('categoryList');
