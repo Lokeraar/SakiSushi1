@@ -3372,20 +3372,70 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             grid-template-columns:
                 var(--cust-col-mini, 26px)      /* miniatura: del CSS, no se mide */
                 minmax(0, 1fr)                  /* nombre: se queda con lo que sobre */
-                var(--cust-col-q, 50px)         /* Quitar: medido por su rótulo */
-                var(--cust-col-a, 90px)         /* Actualmente: el más largo */
-                var(--cust-col-ag, 64px);       /* Agrandar: medido por su rótulo */
+                /* ── LOS RESPALDOS SON MÁS ANGOSTOS A PROPÓSITO ──
+
+                   Estos valores solo se usan cuando el JS todavía no midió (o
+                   no puede). Antes eran 50 / 90 / 64 px: entre los tres se
+                   llevaban 204 px del ancho útil y al nombre le dejaban ~90,
+                   que es lo que se veía como «Nombre del ingre…» y nombres
+                   partidos en cuatro renglones.
+
+                   Ahora son 40 / 72 / 56 px: los rótulos entran con el
+                   auto-ajuste (que los encoge hasta 8 pt si hace falta) y el
+                   nombre conserva ~44 px más incluso en el peor caso, cuando
+                   el JS no ha llegado. El estado con JS sigue siendo el bueno;
+                   esto es solo la red. */
+                var(--cust-col-q, 40px)         /* Quitar: medido por su rótulo */
+                var(--cust-col-a, 72px)         /* Actualmente: el más largo */
+                var(--cust-col-ag, 56px);       /* Agrandar: medido por su rótulo */
             /* El aire entre columnas se lee en el medidor (`columnGap`): son
                cuatro huecos los que se descuentan del ancho útil, no cinco.
                Se mantiene corto a propósito —es una tabla, y cada píxel que se
                lleva el aire se lo quita al nombre del ingrediente—, y por eso
                está en `rem`: con letra del sistema grande crece con ella. */
             align-items:center;
-            /* Relleno MUY corto entre columnas: es una tabla, y cada píxel que
-               se lleva el aire se lo quita al nombre del ingrediente. Con
-               4 px en cinco columnas se iban 16; con 2 px se van 8, y esos 8
-               vuelven al nombre. */
-            column-gap:.125rem;
+            /* ── EL AIRE VA EN LAS CELDAS, NO SOLO ENTRE ELLAS ──
+
+               El dueño lo pidió así: «deja siempre al terminar una columna de
+               tabla un espacio al finalizar esa columna, y un espacio antes de
+               introducir la primera letra en la siguiente».
+
+               Antes había un `column-gap` de 2 px y nada más. El resultado se
+               veía apretado: la letra tocaba el borde de su columna y el hueco
+               entre dos rótulos era solo el del gap, así que «Actualmente» y
+               «Agrandar» parecían una sola palabra cortada.
+
+               El aire ahora es RELLENO A LOS DOS LADOS de cada celda (media
+               unidad por lado, ver la regla de las celdas). El `column-gap` se
+               queda como separación adicional mínima entre cajas que ya llevan
+               su propio relleno: entre dos celdas contiguas el aire total es
+               relleno + gap + relleno, que es lo que se lee como columna.
+               El medidor lo descuenta todo, así que el nombre no pierde píxeles
+               de más. */
+            column-gap:.25rem;
+        }
+
+        /* ── CADA CELDA DEJA AIRE A SUS DOS LADOS ──
+
+           Es una tabla, y una tabla se lee si las columnas respiran. El
+           relleno es simétrico a propósito: sin él, el borde izquierdo de un
+           rótulo queda pegado al derecho del anterior y la fila se lee como un
+           bloque continuo de palabras.
+
+           Va en `em` para que crezca con la letra del sistema: con letra grande
+           el aire tiene que ser proporcionalmente grande, o las columnas vuelven
+           a pegarse justo cuando más falta hace.
+
+           El nombre del ingrediente NO lleva este relleno a la izquierda: su
+           columna empieza en el borde de la miniatura y ese borde ya hace de
+           separación. Se le deja solo el de la derecha. */
+        .cust-ing-cabecera > .cust-ing-cab,
+        .cust-ing > .cust-ing-cant,
+        .cust-ing > .cust-ing-estado,
+        .cust-ing > .cust-ing-btn {
+            padding-left:.35em;
+            padding-right:.35em;
+            box-sizing:border-box;
         }
         /* ── EL BLOQUE DE CONTROLES NO EXISTE PARA LA REJILLA ──
 
@@ -3417,24 +3467,56 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
                torcida. Es lo que pidió el dueño. */
             align-items:center;
         }
-        /* El rótulo «Nombre del ingrediente» ocupa hasta DOS renglones.
- 
-           Iba en uno solo con `nowrap` y se recortaba a «Nombre del
-           ingredi...», que es justo el caso que la regla prohíbe: se corta
-           cuando NO cabía ni con su línea de gracia. Aquí sí cabe en dos, así
-           que se le da la segunda y se lee entero. */
-        #customizeModal .cust-ing-cab--nombre {
-            white-space:normal;
-            -webkit-line-clamp:2;
-            line-clamp:2;
-            display:-webkit-box;
-            -webkit-box-orient:vertical;
-            overflow:hidden;
-        }
+        /* El rótulo «Nombre del ingrediente» necesita DOS renglones.
+
+           La regla vive más abajo, junto al resto del rótulo (buscar
+           «EL RÓTULO «Nombre del ingrediente» OCUPA DOS RENGLONES»). Estaba
+           aquí, y aquí NO funcionaba: una regla posterior con la misma
+           especificidad le ganaba el `white-space`. Se dejó esta nota para que
+           nadie la vuelva a subir. */
         /* Se apunta con el id del modal para ganarle a la regla del tema
            claro que fuerza TODOS los span del modal a la tinta principal
            (`body.tema-claro .modal-body span`, especificidad 0,2,2). Sin
            esto, el rótulo y el estado «Sin» salían del color equivocado. */
+        /* ── EL RÓTULO «Nombre del ingrediente» OCUPA DOS RENGLONES ──
+
+           Iba en uno solo con `nowrap` y se recortaba a «Nombre del
+           ingredi...», que es justo el caso que la regla prohíbe: se corta
+           cuando NO cabía ni con su línea de gracia. Aquí sí cabe en dos, así
+           que se le da la segunda y se lee entero.
+
+           ── POR QUÉ ESTA REGLA VIVE AQUÍ Y NO ARRIBA ──
+
+           Antes estaba escrita arriba, junto a la cabecera, y no tenía efecto:
+           más abajo hay una regla `#customizeModal .cust-ing-cab` con
+           `white-space:nowrap`, la MISMA especificidad, y al venir después
+           ganaba. El `white-space:normal` de arriba nunca se aplicaba, así que
+           el rótulo seguía sin poder partirse y se recortaba con puntos
+           suspensivos. El dueño lo vio en su teléfono.
+
+           De ahí la posición: esta regla va DESPUÉS de la general, para que el
+           rótulo del nombre gane el `white-space` por orden y no por guerra de
+           especificidad. Las propiedades de las dos reglas son las mismas en
+           todo lo demás. */
+        /* ── EL RÓTULO «Nombre del ingrediente» PUEDE PARTIRSE ──
+
+           Iba con `nowrap` y se recortaba a «Nombre del ingredi...».
+
+           ── AQUÍ NO SE DECLARA CUÁNTOS RENGLONES SON ──
+
+           La regla anterior llevaba `-webkit-line-clamp:2`. Estaba mal: el
+           número de renglones es una DECISIÓN que se toma antes, no algo que
+           el CSS fije por su cuenta. Este archivo ya tiene su sistema
+           declarativo — `CAPACIDAD` en `cliente-ajuste-texto.js`, con `lineas`
+           y `maxLineas` por campo, y la regla de la línea de gracia única — y
+           una capacidad escrita en el CSS lo bypassea: si mañana se decide que
+           el rótulo use tres, el `2` de aquí lo impediría en silencio.
+
+           Lo que el CSS sí decide es el COMPORTAMIENTO, no el cupo: que el
+           texto pueda partirse entre palabras (`white-space:normal`) y que, si
+           se agota el cupo, el recorte ocurra en vez de desbordar. El número de
+           renglones lo pone el auto-ajuste, que ya escribe `data-ajuste-lineas`
+           y ajusta la letra al hueco que ese cupo deja. */
         #customizeModal .cust-ing-cab {
             /* ── UNA SOLA LÍNEA, Y SIEMPRE LEGIBLE ──
 
@@ -3457,6 +3539,24 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         #customizeModal .cust-ing-cab--nombre {
             text-align:left;
             padding-left:.1rem;
+            /* Va AQUÍ, después de la regla general, porque es la única forma de
+               que gane el `white-space`: misma especificidad, y el orden manda.
+
+               Solo se declara que el texto puede partirse entre palabras.
+
+               ── EL CUPO DE RENGLONES NO SE ESCRIBE AQUÍ ──
+               Una versión anterior llevaba `-webkit-line-clamp:2`. Estaba mal:
+               el número de renglones es una DECISIÓN que se toma antes, y este
+               archivo ya tiene su sistema declarativo —`CAPACIDAD` en
+               `cliente-ajuste-texto.js`, con `lineas` y `maxLineas`, más la
+               regla de la línea de gracia única—. Un `2` fijo aquí lo bypassea
+               y, si mañana se decide que use tres, lo impediría en silencio.
+
+               Tampoco `display:-webkit-box`: es lo que hace funcionar a
+               `line-clamp`, pero el auto-ajuste necesita `display:block` para
+               recortar con `text-overflow:ellipsis` cuando el texto no cabe ni
+               con la línea de gracia. Puestos los dos, el recorte no se ve. */
+            white-space:normal;
         }
 
         /* Renglón de ingrediente. */

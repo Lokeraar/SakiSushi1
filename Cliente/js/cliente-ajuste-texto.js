@@ -129,7 +129,21 @@
         // Los tres controles ocupan UN renglón siempre. No pueden partir: son
         // botones de una sola línea por diseño, y si el texto no cabe se encoge
         // hasta el piso en vez de crecer de alto.
-        rotulo:      { lineas: 1, maxLineas: 1, estrategia: 'letra' }
+        rotulo:      { lineas: 1, maxLineas: 1, estrategia: 'letra' },
+        // ── EL RÓTULO DE LA COLUMNA DEL NOMBRE ES OTRA DECISIÓN ──
+        //
+        // «Nombre del ingrediente» son TRES palabras y 22 caracteres: metido en
+        // el grupo de los controles —que son «Quitar», «Actualmente» y
+        // «Agrandar», de una sola palabra— heredaba un cupo de UNA línea. Con
+        // una línea no cabe, así que se recortaba a «Nombre del ingre...». El
+        // dueño lo reportó y el diagnóstico fácil era el CSS, pero el cupo
+        // estaba aquí.
+        //
+        // Su cupo propio es DOS renglones, sin línea de gracia: en la cabecera
+        // no hay contenido dinámico que pueda estirarse, y dos renglones ya
+        // dejan el rótulo completo. La cabecera es de altura libre, así que
+        // gastar el segundo no le quita espacio a nadie.
+        rotuloNombre: { lineas: 2, maxLineas: 2, estrategia: 'letra' }
     };
 
     // Tolerancia en píxeles para dar por bueno un ajuste. Sin ella, el
@@ -690,6 +704,10 @@
      * Devuelve `true` si llegó a publicar los anchos, `false` si no había nada
      * que medir.
      */
+    // Cuenta los reintentos de medición de columnas mientras la ventana aún no
+    // tiene ancho. Vive fuera de la función para no reiniciarse en cada cuadro.
+    var _reintentosColumnas = {};
+
     function medirColumnasTabla(modal) {
         if (!modal) modal = document.getElementById('customizeModal');
         if (!modal || !modal.querySelector) return false;
@@ -712,7 +730,33 @@
         var util = cabecera.clientWidth
             - (parseFloat(estiloCab.paddingLeft) || 0)
             - (parseFloat(estiloCab.paddingRight) || 0);
-        if (!(util > 0)) return false;
+
+        // ── SI AÚN NO HAY ANCHO, SE REINTENTA; NO SE RINDE ──
+        //
+        // La ventana se abre con una transición y el DOM se pinta en varios
+        // pasos, así que la primera llamada puede llegar cuando la cabecera
+        // todavía mide 0. Antes se devolvía `false` y ahí se acababa todo: las
+        // columnas se quedaban con los valores de RESPALDO del CSS
+        // (`50px 90px 64px`), que son justo los que recortaban «Nombre del
+        // ingre…» y dejaban al nombre sin espacio. El síntoma se veía como un
+        // problema de reparto cuando en realidad era una medición que nunca
+        // llegó a ocurrir.
+        //
+        // Se reintenta en los siguientes cuadros de animación, con un tope de
+        // intentos para no dejar un bucle vivo si la ventana se cerró.
+        if (!(util > 0)) {
+            if (typeof window.requestAnimationFrame !== 'function') return false;
+            if (!_reintentosColumnas) _reintentosColumnas = {};
+            var clave = 'v';
+            var intentos = _reintentosColumnas[clave] || 0;
+            if (intentos >= 40) { _reintentosColumnas[clave] = 0; return false; }
+            _reintentosColumnas[clave] = intentos + 1;
+            window.requestAnimationFrame(function () {
+                medirColumnasTabla(modal);
+            });
+            return false;
+        }
+        if (_reintentosColumnas) _reintentosColumnas['v'] = 0;
 
         // ── LO QUE VIENE DEL DISEÑO, NO DEL APARATO ──
         //
@@ -747,6 +791,26 @@
             rotulo.style.fontSize = PISO + 'px';
             naturalPiso.push(anchoTexto(rotulo));
             rotulo.style.fontSize = previo;
+        }
+
+        // ── EL AIRE DE CADA CELDA SE SUMA AL ANCHO DEL TEXTO ──
+        //
+        // `anchoTexto` mide el TEXTO, no la caja. Ahora cada celda lleva relleno
+        // a sus dos lados para que las columnas respiren; si no se sumara aquí,
+        // la columna se publicaría del ancho justo del texto y el relleno se
+        // comería las últimas letras: el rótulo volvería a recortarse, ahora por
+        // una causa distinta y más difícil de ver.
+        //
+        // Se mide del propio rótulo en vez de escribir el número otra vez: el
+        // día que el relleno cambie en el CSS, esta cuenta se entera sola.
+        var aire = 0;
+        if (rotulos[0]) {
+            var csRot = window.getComputedStyle(rotulos[0]);
+            aire = (parseFloat(csRot.paddingLeft) || 0) + (parseFloat(csRot.paddingRight) || 0);
+        }
+        for (i = 0; i < 3; i++) {
+            naturalTecho[i] += aire;
+            naturalPiso[i] += aire;
         }
 
         // Se redondea hacia arriba ANTES de comparar: son los píxeles que se
@@ -804,12 +868,46 @@
         //
         // Por eso los controles no reparten contra el ancho útil completo, sino
         // contra lo que queda DESPUÉS de reservar al nombre un mínimo legible.
-        // Es una reserva en píxeles y no un porcentaje a propósito: al nombre
-        // se le mide en caracteres que puede mostrar, y eso no escala con la
-        // pantalla.
-        var NOMBRE_MINIMO = 90; // ~8 letras por línea a 16 pt
-        var presupuesto = Math.floor(util - fijo - NOMBRE_MINIMO);
+        //
+        // ── EL NOMBRE SE LLEVA LA MAYOR PARTE DEL ANCHO ──
+        //
+        // Antes era `NOMBRE_MINIMO = 90` px fijos, y se quedaba corto en el
+        // teléfono: con 377 px útiles los tres rótulos se llevaban 287 y al
+        // nombre le dejaban 90. Resultado, el que reportó el dueño:
+        // «Nombre del ingre…» recortado en la cabecera y nombres reales
+        // partidos en cuatro renglones, mientras «Quitar», «Actualmente» y
+        // «Agrandar» —cinco a nueve letras— nadaban en columnas de 90 y 64 px.
+        //
+        // La reserva ahora es PROPORCIONAL: el nombre es la columna que se lee,
+        // así que se lleva más de la mitad. Los controles se reparten el resto,
+        // y el auto-ajuste encoge sus rótulos lo justo para entrar ahí. Se
+        // mantiene un piso de 90 px para pantallas muy angostas, donde un
+        // 55 % todavía podría dejar el nombre sin letras.
+        // Cuánto se le QUIERE dar al nombre, y cuánto se le GARANTIZA. No son
+        // lo mismo: el primero es el reparto deseable, el segundo es lo que no
+        // se le quita pase lo que pase. Sin la garantía, unos rótulos que no
+        // caben ni a 8 pt se comen el nombre entero y la columna queda en cero.
+        var NOMBRE_DESEADO = Math.max(90, Math.round(util * 0.55));
+        var NOMBRE_GARANTIZADO = 90;
+
+        // ── LAS COLUMNAS DE CONTROL NO ACAPARAN ──
+        //
+        // Su rótulo son cinco a nueve letras: no necesitan media tabla. Tope
+        // del 45 % del ancho útil. No es un número fijo, así que en una
+        // pantalla ancha los rótulos conservan su tamaño cómodo y solo se
+        // aprietan cuando de verdad falta sitio.
+        var TOPE_CONTROLES = Math.floor(util * 0.45);
+        if (TOPE_CONTROLES < 0) TOPE_CONTROLES = 0;
+
+        // Y nunca por encima de lo que deja libre el mínimo garantizado del
+        // nombre: eso es lo que impide que la columna del nombre se apague.
+        var MAX_CONTROLES = util - fijo - NOMBRE_GARANTIZADO;
+        if (MAX_CONTROLES < 0) MAX_CONTROLES = 0;
+
+        var presupuesto = Math.floor(util - fijo - NOMBRE_DESEADO);
         if (presupuesto < 0) presupuesto = 0;
+        if (presupuesto > TOPE_CONTROLES) presupuesto = TOPE_CONTROLES;
+        if (presupuesto > MAX_CONTROLES) presupuesto = MAX_CONTROLES;
 
         if (necesTecho <= presupuesto) {
             // Caso bueno: los rótulos entran a 16 pt y al nombre le sobra su
@@ -836,6 +934,48 @@
         }
 
         ajustarAlPresupuesto(anchos, necesPisoPorColumna, presupuesto);
+
+        // ── ÚLTIMA RED: EL NOMBRE NO SE QUEDA SIN ANCHO ──
+        //
+        // `ajustarAlPresupuesto` no baja ninguna columna de su piso a 8 pt, así
+        // que si los tres pisos juntos no entran, la suma se pasa del
+        // presupuesto. El nombre es `minmax(0, 1fr)` y en ese caso absorbería
+        // el descuadre hasta quedar en cero: desaparecería. Aquí se recorta el
+        // exceso hasta `MAX_CONTROLES`, que es justo lo que deja libre el
+        // mínimo garantizado. Se recorta a la columna más ancha primero, por la
+        // misma razón de siempre.
+        var sumaFinal = anchos[0] + anchos[1] + anchos[2];
+        if (sumaFinal > MAX_CONTROLES && MAX_CONTROLES > 0) {
+            var exceso = sumaFinal - MAX_CONTROLES;
+            var orden3 = [0, 1, 2].sort(function (x, y) { return anchos[y] - anchos[x]; });
+            for (var o3 = 0; o3 < orden3.length && exceso > 0; o3++) {
+                var idx3 = orden3[o3];
+                var quitar3 = Math.min(anchos[idx3], exceso);
+                anchos[idx3] -= quitar3;
+                exceso -= quitar3;
+            }
+        }
+
+        // ── EL EXCEDENTE DE LOS CONTROLES VUELVE AL NOMBRE ──
+        //
+        // Si los tres rótulos suman más que su techo, se reparten ese techo en
+        // la misma proporción. Lo que se ahorra aquí no se pierde: la columna
+        // del nombre es `1fr` y absorbe el hueco libre, así que pasa a ser
+        // espacio para el nombre del ingrediente.
+        var sumaControles = anchos[0] + anchos[1] + anchos[2];
+        if (TOPE_CONTROLES > 0 && sumaControles > TOPE_CONTROLES) {
+            var sobra = sumaControles - TOPE_CONTROLES;
+            // Se recorta primero a la columna más ancha, que es la que tiene
+            // margen: es la misma idea que `ajustarAlPresupuesto`.
+            var orden2 = [0, 1, 2].sort(function (x, y) { return anchos[y] - anchos[x]; });
+            for (var o2 = 0; o2 < orden2.length && sobra > 0; o2++) {
+                var idx2 = orden2[o2];
+                var puede = Math.max(0, anchos[idx2] - necesPisoPorColumna[idx2]);
+                var quitar2 = Math.min(puede, sobra);
+                anchos[idx2] -= quitar2;
+                sobra -= quitar2;
+            }
+        }
 
         publicarColumnas(modal, cabecera, anchos);
         return true;
@@ -890,9 +1030,27 @@
 
         // El nombre de cada ingrediente y los rótulos de columna comparten
         // renglón por diseño: cada fila se ajusta como grupo.
-        var cabecera = modal.querySelectorAll('.cust-ing-cab');
-        if (cabecera && cabecera.length) {
-            ajustarGrupo(cabecera, TECHO.ingrediente, CAPACIDAD.rotulo);
+        // ── LOS RÓTULOS SE AJUSTAN EN DOS GRUPOS, NO EN UNO ──
+        //
+        // Los tres controles comparten una decisión: una línea, sin partirse.
+        // El rótulo del nombre tiene otra: dos líneas, porque son tres palabras
+        // y no cabe en una. Antes iban los cuatro en el mismo `ajustarGrupo` y
+        // el cupo de los controles se le aplicaba al nombre, que salía
+        // recortado.
+        // ── DOS GRUPOS, PORQUE SON DOS DECISIONES ──
+        //
+        // El rótulo del nombre va PRIMERO y aparte: su cupo son dos renglones,
+        // no uno. Si se ajustara junto con los controles heredaría su cupo de
+        // una línea y se recortaría a «Nombre del ingre...», que es el fallo
+        // que reportó el dueño.
+        var rotuloNombre = modal.querySelectorAll('.cust-ing-cab--nombre');
+        if (rotuloNombre && rotuloNombre.length) {
+            ajustarGrupo(rotuloNombre, TECHO.ingrediente, CAPACIDAD.rotuloNombre);
+        }
+        // Los tres controles: una línea, sin partirse, encogiendo hasta el piso.
+        var rotulosControl = modal.querySelectorAll('.cust-ing-cab--ctrl');
+        if (rotulosControl && rotulosControl.length) {
+            ajustarGrupo(rotulosControl, TECHO.ingrediente, CAPACIDAD.rotulo);
         }
         var nombres = modal.querySelectorAll('.cust-ing-nombre');
         if (nombres && nombres.length) {
