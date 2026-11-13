@@ -425,13 +425,33 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             background-repeat:no-repeat;
             pointer-events:none;
             z-index:-2;
-            /* ── CAPA PROPIA PARA EL COMPOSITOR ──
-               `translateZ(0)` promueve la capa de una vez. Sin esto, Chrome
-               para Android puede mostrarla un instante tarde al desplazar y
-               deja ver lo que hay debajo. Es una mitigación: con el respaldo
-               ya del color del papel, aunque llegue tarde no se nota. */
-            transform:translateZ(0);
-            will-change:transform;
+        }
+        /* ── AQUÍ NO VA `will-change`, Y ES LA CAUSA DEL FONDO DUPLICADO ──
+
+           Se añadió `transform:translateZ(0)` + `will-change:transform` a
+           `body::after` para que el compositor tuviera la capa lista antes.
+           Salía caro: en Chrome, `will-change:transform` CREA UN CONTENEDOR DE
+           CONTENCIÓN, y un `position:fixed` dentro de él deja de anclarse a la
+           ventana y se ancla a ese contenedor. Como el pseudo-elemento es hijo
+           de `body`, el fondo pasó a desplazarse CON el scroll.
+
+           El dueño lo describió exacto: «cuando deslizo desde el tope superior
+           hacia abajo y regreso, el fondo se mueve como si fueran 2 instancias
+           de la misma imagen».
+
+           Medido sobre su video (480x986), desplazamiento del fondo entre
+           fotogramas consecutivos: +60 px, -12 px, -13 px, -11 px, -13 px,
+           -23 px, -56 px. El fondo se mueve; el contenido también. Dos cosas
+           moviéndose a distinta velocidad es la «segunda instancia».
+
+           La mitigación no compensaba: un fondo que se mueve se ve siempre,
+           mientras que la captura tardía del compositor solo se nota a veces.
+           Se retira, y el fondo vuelve a ser una capa fija de verdad. */
+        body::after, body::before {
+            /* Sin promoción de capa: `position:fixed` se basta solo, y
+               cualquier `transform` o `will-change` lo rompería. */
+            transform: none;
+            will-change: auto;
         }
         body::before {
             content:'';
@@ -1318,6 +1338,28 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             max-width:100%;
             background:transparent;
             overflow-y:auto;
+
+            /* ── EL REBOTE ELÁSTICO ERA LA «SEGUNDA INSTANCIA» DEL FONDO ──
+           
+               El dueño lo describió exacto: «cuando deslizo desde el tope
+               superior hacia abajo y regreso, el fondo se mueve como si fueran
+               2 instancias de la misma imagen».
+
+               La carta no scrollea en el documento: scrollea AQUÍ, en un
+               contenedor con `overflow-y:auto`. Android le da a todo
+               contenedor con scroll su rebote elástico: al llegar arriba del
+               todo y seguir tirando, el CONTENIDO se estira y deja ver el
+               fondo de detrás desplazado. Eso se lee como una segunda copia.
+
+               `overscroll-behavior:contain` corta la cadena hacia la página de
+               detrás (el rebote no se contagia al documento). Y como el fondo
+               es una capa `fixed` de `body`, al no haber rebote del contenedor
+               ya no hay nada que lo arrastre fuera de su sitio.
+
+               `overscroll-behavior-y` se declara aparte porque el eje
+               horizontal no debe bloquearse: los paneles laterales se esconden
+               con `translateX` y algunos gestos horizontales los necesitan. */
+            overscroll-behavior-y:contain;
         }
         @media (min-width:993px) {
             .main-content{margin-left:280px;
