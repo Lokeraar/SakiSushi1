@@ -126,24 +126,37 @@
         // fila es el recurso escaso —hay ocho ingredientes uno debajo de otro— y
         // ahí sí manda el renglón.
         ingrediente: { lineas: 3, maxLineas: 4, permiteMasLineas: true, estrategia: 'renglones' },
-        // Los tres controles ocupan UN renglón siempre. No pueden partir: son
-        // botones de una sola línea por diseño, y si el texto no cabe se encoge
-        // hasta el piso en vez de crecer de alto.
-        rotulo:      { lineas: 1, maxLineas: 1, estrategia: 'letra' },
-        // ── EL RÓTULO DE LA COLUMNA DEL NOMBRE ES OTRA DECISIÓN ──
+        // ── LA CABECERA DE LA TABLA: UN SOLO CUPO PARA LOS CUATRO RÓTULOS ──
         //
-        // «Nombre del ingrediente» son TRES palabras y 22 caracteres: metido en
-        // el grupo de los controles —que son «Quitar», «Actualmente» y
-        // «Agrandar», de una sola palabra— heredaba un cupo de UNA línea. Con
-        // una línea no cabe, así que se recortaba a «Nombre del ingre...». El
-        // dueño lo reportó y el diagnóstico fácil era el CSS, pero el cupo
-        // estaba aquí.
+        // «Nombre del ingrediente», «Quitar», «Actualmente» y «Agrandar»
+        // comparten el renglón de la cabecera, así que son UNA decisión, no
+        // cuatro: un cupo solo, y el auto-ajuste les da a los cuatro el tamaño
+        // del más restrictivo (la regla de consistencia).
         //
-        // Su cupo propio es DOS renglones, sin línea de gracia: en la cabecera
-        // no hay contenido dinámico que pueda estirarse, y dos renglones ya
-        // dejan el rótulo completo. La cabecera es de altura libre, así que
-        // gastar el segundo no le quita espacio a nadie.
-        rotuloNombre: { lineas: 2, maxLineas: 2, estrategia: 'letra' }
+        // ── POR QUÉ DOS RENGLONES Y NO UNO ──
+        //
+        // «Nombre del ingrediente» son tres palabras y 22 caracteres. Los otros
+        // tres son palabras sueltas y entran en un renglón, pero el grupo se
+        // dimensiona por el más largo: con cupo de una línea el nombre se
+        // recortaba a «Nombre del ingre...».
+        //
+        // ── POR QUÉ NO SE SEPARAN EN DOS GRUPOS ──
+        //
+        // Se intentó, y salió peor: al ajustarse solo, el rótulo del nombre
+        // crecía hasta el techo de 16 pt mientras los controles se encogían para
+        // caber. Cuatro rótulos en el mismo renglón con dos tamaños distintos, y
+        // el dueño lo vio al instante: «quedó desproporcionado con el resto de
+        // la fila». Un grupo, un tamaño.
+        //
+        // La cabecera tiene altura libre, así que gastar el segundo renglón no
+        // le quita espacio a nadie. Sin línea de gracia: no hay contenido
+        // dinámico que pueda estirarse.
+        //
+        // (Antes había además una entrada `rotulo` con una línea, para los tres
+        // controles. Quedó sin uso al unificar el grupo, y dos entradas para un
+        // mismo renglón son dos sitios donde el número puede desincronizarse.
+        // Se eliminó: este es el único cupo de la cabecera.)
+        rotuloCabecera: { lineas: 2, maxLineas: 2, estrategia: 'letra' }
     };
 
     // Tolerancia en píxeles para dar por bueno un ajuste. Sin ella, el
@@ -1037,20 +1050,38 @@
         // y no cabe en una. Antes iban los cuatro en el mismo `ajustarGrupo` y
         // el cupo de los controles se le aplicaba al nombre, que salía
         // recortado.
-        // ── DOS GRUPOS, PORQUE SON DOS DECISIONES ──
+        // ── LOS CUATRO RÓTULOS SE AJUSTAN COMO UN SOLO GRUPO ──
         //
-        // El rótulo del nombre va PRIMERO y aparte: su cupo son dos renglones,
-        // no uno. Si se ajustara junto con los controles heredaría su cupo de
-        // una línea y se recortaría a «Nombre del ingre...», que es el fallo
-        // que reportó el dueño.
-        var rotuloNombre = modal.querySelectorAll('.cust-ing-cab--nombre');
-        if (rotuloNombre && rotuloNombre.length) {
-            ajustarGrupo(rotuloNombre, TECHO.ingrediente, CAPACIDAD.rotuloNombre);
-        }
-        // Los tres controles: una línea, sin partirse, encogiendo hasta el piso.
-        var rotulosControl = modal.querySelectorAll('.cust-ing-cab--ctrl');
-        if (rotulosControl && rotulosControl.length) {
-            ajustarGrupo(rotulosControl, TECHO.ingrediente, CAPACIDAD.rotulo);
+        // Es la regla de consistencia, y aquí muerde fuerte: comparten el
+        // renglón de la cabecera por diseño, así que un tamaño distinto se lee
+        // como un error de maquetación.
+        //
+        // ── LO QUE ESTUVO MAL, Y POR QUÉ ──
+        //
+        // Hubo un tiempo en que los cuatro iban juntos pero con un cupo de UNA
+        // línea. «Nombre del ingrediente» son tres palabras y no cabía en una,
+        // así que se recortaba a «Nombre del ingre...». El diagnóstico fácil
+        // fue culpar al reparto y darle al rótulo un grupo y un cupo propios.
+        //
+        // El dueño lo vio en su teléfono y lo describió exacto: «el texto de
+        // nombre del ingrediente quedó desproporcionado con el resto de la
+        // fila». Al sacarlo del grupo, el rótulo se ajustó SOLO contra su
+        // columna: creció hasta el techo de 16 pt mientras los tres controles
+        // se encogían para caber. Cuatro rótulos en un renglón, dos tamaños
+        // distintos. Se cambió un recorte por un descuadre.
+        //
+        // ── CÓMO SE RESUELVE DE VERDAD ──
+        //
+        // Volviendo a UN grupo, que es lo que la regla pide, y arreglando el
+        // reparto en vez del tamaño: la columna del nombre es ancha (más de la
+        // mitad de la tabla), así que a 16 pt el rótulo entra en dos renglones
+        // sin recortarse. El cupo de dos líneas se declara en el grupo, y ese
+        // es el único número; los controles siguen entrando en su renglón.
+        //
+        // El techo se mantiene en 16 pt: los rótulos no son títulos.
+        var rotulosCab = modal.querySelectorAll('.cust-ing-cab');
+        if (rotulosCab && rotulosCab.length) {
+            ajustarGrupo(rotulosCab, TECHO.ingrediente, CAPACIDAD.rotuloCabecera);
         }
         var nombres = modal.querySelectorAll('.cust-ing-nombre');
         if (nombres && nombres.length) {

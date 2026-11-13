@@ -234,7 +234,30 @@
         //
         // La estrella sí va DENTRO de la envoltura: su posición es la foto,
         // no la tarjeta, y no cambia entre pantallas.
+        // ── LA X VA SOBRE LA FOTO, EN SU ESQUINA SUPERIOR DERECHA ──
+        //
+        // El dueño lo pidió así: «reubica la x de cerrar el modal en la parte
+        // superior derecha de la foto».
+        //
+        // ── POR QUÉ ANTES NO ESTABA AHÍ ──
+        //
+        // Estaba dentro de `.cust-cuerpo`, que en el teléfono va DEBAJO de la
+        // foto (la rejilla es "foto" / "datos" / "lista"). Anclada a ese
+        // bloque, la X caía en la esquina del cuerpo, no de la foto: quedaba
+        // flotando a la derecha del título, en el hueco que el propio `padding`
+        // del cuerpo le reservaba. De ahí el espacio vacío que el dueño vio
+        // entre la X y el contenido.
+        //
+        // Ahora es hija de `.cust-foto-wrap`, que es `position:relative`: la X
+        // se ancla a la foto en cualquier orientación y el hueco desaparece,
+        // porque el cuerpo ya no tiene que reservarle sitio.
+        //
+        // En pantalla ancha la foto es la columna izquierda, así que la X queda
+        // en la esquina de la foto, que sigue siendo «la parte superior derecha
+        // de la foto». Se mantiene la excepción de horizontal, más abajo.
         html += '<div class="cust-foto-wrap">' +
+            '<button type="button" class="cust-cerrar" id="custCerrar" ' +
+              'aria-label="Cerrar la ventana del plato">&times;</button>' +
             estrellaFav +
             (foto
                 ? '<img id="customizeFoto" class="cust-foto" src="' + foto + '" ' +
@@ -244,23 +267,6 @@
 
         html += '<div class="cust-flujo">' +
           '<div class="cust-cuerpo">' +
-
-            // ── LA X VA DENTRO DEL CONTENIDO, NO SOBRE LA VENTANA ──
-            //
-            // Antes era hermana de `.cust-layout` y se anclaba a
-            // `.modal-container`, que NO scrollea: la X se quedaba clavada
-            // en la esquina mientras el texto pasaba por debajo. El dueño lo
-            // describió exacto: «no quiero que me persiga mientras scrolleo».
-            //
-            // Aquí es la primera hija de `.cust-cuerpo`, que es el bloque de
-            // arriba a la derecha (y en horizontal, la cabeza de la columna
-            // que scrollea). Al deslizar, se va con el contenido; al volver
-            // arriba, reaparece en la esquina.
-            //
-            // El padding del cuerpo reserva su sitio para que no tape el
-            // título ni la tarjeta de los modos.
-            '<button type="button" class="cust-cerrar" id="custCerrar" ' +
-              'aria-label="Cerrar la ventana del plato">&times;</button>' +
 
             // Nombre, descripción y precio: lo primero que se lee.
             '<div>' +

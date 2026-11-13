@@ -3035,8 +3035,12 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         .cust-cerrar {
             position:absolute;
             z-index:5;
-            top:.7rem;
-            right:.7rem;
+            /* Se ancla a `.cust-foto-wrap`, que es su padre y declara
+               `position:relative`. En el telefono la foto esta arriba, asi que
+               .7rem desde su borde es la esquina superior derecha de la foto,
+               que es donde el dueño la quiere. */
+            top:.6rem;
+            right:.6rem;
             width:40px;
             height:40px;
             display:flex;
@@ -3109,11 +3113,12 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             display:flex;
             flex-direction:column;
             gap:.85rem;
-            /* Relleno derecho: deja sitio a la X, que ahora vive DENTRO de
-               este bloque y viaja con el contenido al deslizar. Sin esto, la
-               X taparia el título del plato. */
+            /* Relleno simetrico. Antes el derecho era de 3.4rem para reservar
+               sitio a la X, que vivia dentro de este bloque. Ahora la X esta
+               anclada a la FOTO, asi que ese hueco solo dejaba un vacio a la
+               derecha del titulo: es el espacio muerto que el dueño reporto.
+               Con el relleno parejo, el contenido ocupa todo el ancho. */
             padding:1.05rem;
-            padding-right:3.4rem;
             min-width:0;
             /* Ancla de la X. Antes lo era `.modal-container`, que no
                scrollea: la X se quedaba clavada en la ventana y el texto
@@ -4295,13 +4300,14 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             .cust-ing-btn { width:30px; height:30px; }
             .cust-ing-btn--paso { width:28px; height:28px; }
             .cust-ing-agrandar { gap:.15rem; }
-            /* En horizontal la X ya NO se ancla a la tarjeta: vive dentro
-               del cuerpo y viaja con el contenido. Aquí solo se ajusta para
-               que caiga en la esquina de su columna, que es la que se lee
-               primero. */
+            /* En pantalla ancha la foto es la columna izquierda y la X sigue
+               anclada a ella (su padre, `.cust-foto-wrap`, es relative): queda
+               en la esquina superior derecha de la foto, que es lo que el dueño
+               pidió, y no flotando en el hueco del título. Aquí solo se ajusta
+               el fondo, porque sobre la foto necesita contraste propio. */
             #customizeModal .modal-container.cust-ventana .cust-cerrar {
-                top:.7rem;
-                right:.7rem;
+                top:.6rem;
+                right:.6rem;
                 background:var(--superficie);
                 color:var(--text-primary);
                 box-shadow:0 2px 10px rgba(0,0,0,.18);
