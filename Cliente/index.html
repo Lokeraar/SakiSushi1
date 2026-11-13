@@ -378,6 +378,38 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            el navegador permite arrastrar la página en horizontal y lo que
            se ve es la foto de fondo «corrida» hacia un lado. */
         html{background-color:var(--fondo-respaldo,#12121c);overflow-x:hidden}
+
+        /* ── EL RESPALDO DEL DOCUMENTO TIENE QUE SEGUIR AL TEMA ──
+
+           DEFECTO MEDIDO EN EL VIDEO DEL DUEÑO. Durante el deslizamiento se
+           ve una banda en la parte de abajo, y no es gris: es el azul
+           nocturno del tema OSCURO asomando en el tema CLARO.
+
+             banda medida en el video   ≈ (11,16,22)  = #0B1016
+             :root    --fondo-respaldo    (18,18,28)  = #12121c   ← tema oscuro
+             tema claro --fondo-respaldo  (240,233,224) = #F0E9E0 ← papel cálido
+
+           POR QUÉ ASOMA. `--fondo-respaldo` del tema claro está declarada en
+           `body.tema-claro`, y `html` NO es descendiente de `body`: nunca ve
+           esa variable y se queda con el valor de `:root`, que es el oscuro.
+
+           Y por qué se llega a ver: el fondo real vive en `body::after` (la
+           foto) y `body::before` (el velo), las dos `position:fixed` con
+           z-index negativo. Mientras el compositor de Chrome para Android
+           alcanza a pintarlas durante el scroll, no queda hueco. Cuando no
+           alcanza —y por eso la banda aparece en unas tomas y en otras no—,
+           lo que queda a la vista es el fondo del documento.
+
+           El velo del tema claro es `rgba(251,247,242,0.94)`: sobre CUALQUIER
+           foto da un color claro. Una banda de (11,16,22) es imposible con el
+           velo pintado, así que la medición confirma que las dos capas
+           faltaban, no que el velo fuera oscuro.
+
+           Con `:has()` el documento sigue la misma decisión de tema que el
+           resto. Así, cualquier zona que el compositor no alcance a pintar
+           sale del color del papel y no se distingue del fondo: la banda deja
+           de ser visible SIN depender de que el compositor llegue a tiempo. */
+        html:has(body.tema-claro){background-color:#F0E9E0}
         body{font-family:'Roboto',sans-serif;
             background:transparent;
             color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column;
@@ -393,6 +425,13 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             background-repeat:no-repeat;
             pointer-events:none;
             z-index:-2;
+            /* ── CAPA PROPIA PARA EL COMPOSITOR ──
+               `translateZ(0)` promueve la capa de una vez. Sin esto, Chrome
+               para Android puede mostrarla un instante tarde al desplazar y
+               deja ver lo que hay debajo. Es una mitigación: con el respaldo
+               ya del color del papel, aunque llegue tarde no se nota. */
+            transform:translateZ(0);
+            will-change:transform;
         }
         body::before {
             content:'';
@@ -3084,7 +3123,14 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         }
         /* En oscuro --superficie es translucido: se refuerza para que la X
            siempre tenga un fondo legible sobre la foto. */
-        html:not(.tema-claro) .cust-cerrar {
+        /* ── ESTE SELECTOR NUNCA COINCIDÍA ──
+
+           `tema-claro` se pone en `body` (cliente-theme.js), no en `html`. Un
+           `html:not(.tema-claro)` es verdad SIEMPRE, así que la X recibía el
+           refuerzo oscuro también en tema claro: fondo blanco translúcido con
+           letra blanca sobre papel claro. Se corrige apuntando a donde vive la
+           clase. */
+        body:not(.tema-claro) .cust-cerrar {
             background:rgba(255,255,255,.14);
             color:#fff;
             backdrop-filter:blur(6px);
