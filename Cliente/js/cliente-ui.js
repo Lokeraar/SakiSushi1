@@ -62,6 +62,22 @@
         var overlay = document.getElementById('overlay');
         if (sidebar.classList.contains('open')) overlay.classList.add('active');
         else overlay.classList.remove('active');
+
+        // ── EL AJUSTE DEL TEXTO SE REHACE AL ABRIR, NO SOLO AL PINTAR ──
+        //
+        // El menú se pinta una vez, al cargar la carta. Si el auto-ajuste
+        // corrió mientras el panel estaba cerrado —desplazado fuera de la
+        // pantalla con `transform`—, midió el ancho de un panel que el cliente
+        // todavía no ve, y en algunos aparatos ese ancho llega a cero: todo
+        // sale al piso de 8 pt o sin ajustar. Al abrirlo, el ancho es el real.
+        //
+        // Se pide un cuadro después para que el navegador haya aplicado la
+        // transición de apertura antes de medir.
+        if (seAbre && typeof window.ajustarPagina === 'function') {
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() { window.ajustarPagina(); });
+            });
+        }
     }
     window.toggleMenuCategorias = toggleMenuCategorias;
     S.modules.ui.toggleMenuCategorias = toggleMenuCategorias;

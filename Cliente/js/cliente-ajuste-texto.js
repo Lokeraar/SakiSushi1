@@ -643,7 +643,16 @@
         var techo = op.techo || TECHO.descripcion;
         var cap = {
             lineas: op.lineas || CAPACIDAD_POR_DEFECTO.lineas,
-            maxLineas: op.maxLineas || Math.max(op.lineas || 1, CAPACIDAD_POR_DEFECTO.maxLineas)
+            maxLineas: op.maxLineas || Math.max(op.lineas || 1, CAPACIDAD_POR_DEFECTO.maxLineas),
+            // ── LA ESTRATEGIA VIAJABA EN EL VACÍO ──
+            //
+            // Estas dos puertas aceptaban `estrategia` en el objeto de
+            // opciones y la tiraban al construir la capacidad, así que quien
+            // pedía 'renglones' recibía el valor por defecto ('letra') sin
+            // enterarse: la llamada no fallaba, simplemente no hacía lo que
+            // decía. Se vio al ajustar el menú hamburguesa, donde la
+            // diferencia entre las dos estrategias es un renglón entero.
+            estrategia: op.estrategia
         };
         return ajustarElemento(el, techo, cap);
     }
@@ -657,7 +666,8 @@
         var techo = op.techo || TECHO.descripcion;
         var cap = {
             lineas: op.lineas || CAPACIDAD_POR_DEFECTO.lineas,
-            maxLineas: op.maxLineas || Math.max(op.lineas || 1, CAPACIDAD_POR_DEFECTO.maxLineas)
+            maxLineas: op.maxLineas || Math.max(op.lineas || 1, CAPACIDAD_POR_DEFECTO.maxLineas),
+            estrategia: op.estrategia
         };
         return ajustarGrupo(elementos, techo, cap);
     }
@@ -1143,15 +1153,49 @@
             { sel: '.menu-card-title', lineas: 2, maxLineas: 3 },
             // El precio: una sola línea, es un dato.
             { sel: '.menu-card-price', lineas: 1, maxLineas: 1 },
-            // Categorías de la barra lateral: una línea, y son cortas.
-            { sel: '.category-item span', lineas: 1, maxLineas: 2 },
+            // ── EL MENÚ HAMBURGUESA COMPLETO ──
+            //
+            // Cada opción ocupa UN renglón, con UNA línea de gracia si no cabe
+            // ni al piso de 8 pt. Es la regla que fijó el dueño: «que utilice
+            // solo 1 fila por opción (+1 de gracia por si el contenido no cabe
+            // aún reduciendo al mínimo de 8 pt en ese renglón)».
+            //
+            // «🔥 OFERTAS ESPECIALES» era el caso visible: al ser dos palabras
+            // largas se partía en dos renglones y descuadraba el ritmo del
+            // menú, donde las demás ocupan uno.
+            //
+            // ── LA ESTRATEGIA ES 'renglones', Y ESO ES LO QUE HACE QUE MANDEN ──
+            //
+            // Con la estrategia por defecto ('letra'), el motor PREFIERE una
+            // letra más grande aunque gaste el renglón de gracia: 16 pt en dos
+            // renglones antes que 11 pt en uno. Para un título eso está bien,
+            // porque su alto es libre.
+            //
+            // En el menú no: el dueño fue explícito —«que utilice solo 1 fila
+            // por opción (+1 de gracia por si el contenido no cabe aún
+            // reduciendo al mínimo de 8pt en ese renglón)»—. La gracia NO es
+            // una preferencia estética, es el último recurso cuando ni a 8 pt
+            // cabe en una. Eso es exactamente `'renglones'`: se agota la letra
+            // antes de crecer de renglón.
+            //
+            // Medido en la prueba: «OFERTAS ESPECIALES» a 150 px de ancho sale
+            // en DOS renglones a 21,33 px con 'letra', y en UN renglón a 11,2
+            // px con 'renglones'. El segundo es el que se pidió.
+            //
+            // Se ajustan como GRUPO, igual que la cabecera de la tabla del
+            // platillo: todas las opciones del menú comparten un tamaño, el de
+            // la más larga. Con tamaños distintos se leería como un error.
+            { sel: '.category-item span', lineas: 1, maxLineas: 2, estrategia: 'renglones' },
+            // Las subcategorías cuelgan de su categoría y sufren lo mismo.
+            { sel: '.subcategory-item', lineas: 1, maxLineas: 2, estrategia: 'renglones' },
+            // El título del panel («Categorías») y los rótulos del carrito.
+            { sel: '.category-header span', lineas: 1, maxLineas: 2 },
             // Eslogan de la cabecera.
             { sel: '.header-slogan', lineas: 1, maxLineas: 2 },
             // Categoría activa, en el título de la sección.
             { sel: '#categoryTitle', lineas: 1, maxLineas: 2, techo: TECHO.titulo },
             // Título del carrito y del panel de categorías.
-            { sel: '.cart-header h3', lineas: 1, maxLineas: 2 },
-            { sel: '.category-header span', lineas: 1, maxLineas: 2 }
+            { sel: '.cart-header h3', lineas: 1, maxLineas: 2 }
         ];
 
         for (var i = 0; i < objetivos.length; i++) {
@@ -1164,7 +1208,10 @@
             // misma regla de consistencia que se aplica dentro del platillo.
             ajustarGrupo(els, o.techo || TECHO.descripcion, {
                 lineas: o.lineas,
-                maxLineas: o.maxLineas
+                maxLineas: o.maxLineas,
+                // Sin este paso la estrategia se perdía en el camino y todo se
+                // ajustaba como 'letra', que es el valor por defecto del motor.
+                estrategia: o.estrategia
             });
         }
     }
@@ -1172,8 +1219,8 @@
     /** Devuelve los textos de la página a su tamaño de CSS. */
     function limpiarPagina() {
         var sels = ['.menu-card-title', '.menu-card-price', '.category-item span',
-                    '.header-slogan', '#categoryTitle', '.cart-header h3',
-                    '.category-header span'];
+                    '.subcategory-item', '.header-slogan', '#categoryTitle',
+                    '.cart-header h3', '.category-header span'];
         for (var i = 0; i < sels.length; i++) {
             var els = document.querySelectorAll(sels[i]);
             for (var j = 0; j < els.length; j++) {

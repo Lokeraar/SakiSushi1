@@ -100,6 +100,53 @@
         if (img.complete) aplicar();
     }
 
+    /**
+     * Coloca la X de cerrar donde corresponde según el ancho.
+     *
+     * ── DOS DESTINOS, Y ES UNA DECISIÓN DEL DUEÑO ──
+     *
+     *   TELÉFONO (<600px)   esquina superior derecha de la FOTO.
+     *                       La foto ocupa el ancho completo y arranca en el
+     *                       borde de la ventana, así que esa esquina es también
+     *                       la de la ventana: no hay diferencia visible, y
+     *                       sobre la foto el pulgar la alcanza sin estirarse.
+     *
+     *   TABLET / ESCRITORIO  esquina superior derecha de la VENTANA.
+     *                       Aquí la foto es solo la columna izquierda (280 px).
+     *                       Anclada a ella, la X caía a mitad de la ventana,
+     *                       encima de la foto y lejos de la esquina real.
+     *
+     * ── POR QUÉ SE MUEVE EN EL DOM Y NO SOLO CON CSS ──
+     *
+     * `position:absolute` se resuelve contra el ancestro posicionado MÁS
+     * CERCANO. La X vive dentro de `.cust-foto-wrap`, que es `relative` porque
+     * la estrella de favoritos lo necesita. Quitarle ese `relative` para que la
+     * X subiera a la ventana arrastraría también la estrella.
+     *
+     * Así que se cambia la X de padre: en teléfono dentro de la foto, en el
+     * resto dentro de `.modal-container`, que ya es `relative`.
+     *
+     * `position:fixed` no sirve en ningún caso: el contenedor scrollea por
+     * dentro, y la X quedaría clavada en la pantalla en vez de en la ventana.
+     */
+    function _ubicarBotonCerrar() {
+        var x = document.getElementById('custCerrar');
+        if (!x) return;
+        var ventana = document.querySelector('#customizeModal .modal-container.cust-ventana');
+        var foto = document.querySelector('#customizeModal .cust-foto-wrap');
+        if (!ventana || !foto) return;
+
+        var esTelefono = window.matchMedia
+            ? window.matchMedia('(max-width:599px)').matches
+            : ventana.clientWidth < 600;
+
+        var destino = esTelefono ? foto : ventana;
+
+        // `appendChild` sobre el mismo padre reordena y puede perder el foco:
+        // solo se mueve si de verdad cambia de sitio.
+        if (x.parentElement !== destino) destino.appendChild(x);
+    }
+
     function abrirPersonalizacion(platilloId) {
         var item = (S.state.menuItems || []).find(function(i) { return i.id == platilloId; });
         if (!item) return;
@@ -667,6 +714,7 @@
                 modal.classList.remove('active');
             });
         }
+        _ubicarBotonCerrar();
 
         // ── LA ESTRELLA NO CIERRA LA VENTANA ──
         //
@@ -1188,6 +1236,11 @@
                 // Abrir un modal o cambiar de modo ya dispara su propio ajuste;
                 // aquí solo interesa el caso de la ventana ya abierta.
                 if (!_platilloAbierto()) return;
+                // La X cambia de dueño según el ancho: en el teléfono va sobre
+                // la foto y en tablet/escritorio en la esquina de la ventana.
+                // Girar el aparato o cambiar el tamaño cruza ese límite, así
+                // que se reubica junto con el resto del ajuste.
+                _ubicarBotonCerrar();
                 // Un solo camino: `ajustarVentanaPlatillo` fija primero los
                 // anchos de las columnas y después ajusta la letra a esos
                 // anchos. Llamar a las dos por separado desde aquí sería un
