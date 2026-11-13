@@ -377,7 +377,18 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
            deja el documento más ancho que la pantalla. Sin este recorte,
            el navegador permite arrastrar la página en horizontal y lo que
            se ve es la foto de fondo «corrida» hacia un lado. */
-        html{background-color:var(--fondo-respaldo,#12121c);overflow-x:hidden}
+        html{background-color:var(--fondo-respaldo,#12121c);overflow-x:hidden;
+            /* ── EL REBOTE ELÁSTICO SE CORTA EN QUIEN SCROLLEA DE VERDAD ──
+               Aquí `overscroll-behavior` sí es correcto, y la diferencia con el
+               intento anterior importa: `html` ES el contenedor de scroll de
+               la página (ni `html` ni `body` tienen altura fija; el contenido
+               crece y arrastra al documento). Antes se puso en `.main-content`,
+               que NO scrollea, y mató el scroll. Aquí contiene el rebote sin
+               quitarle el gesto a nadie.
+
+               Solo el eje vertical: el horizontal se deja libre porque los
+               paneles laterales se esconden con `translateX`. */
+            overscroll-behavior-y:none;}
 
         /* ── EL RESPALDO DEL DOCUMENTO TIENE QUE SEGUIR AL TEMA ──
 
@@ -412,7 +423,36 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
         html:has(body.tema-claro){background-color:#F0E9E0}
         body{font-family:'Roboto',sans-serif;
             background:transparent;
-            color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column;
+            color:var(--text-primary);
+            /* ── `100vh` AQUÍ RE-ANCLABA EL SCROLL AL DESLIZAR CON FUERZA ──
+               DEFECTO REPORTADO: «cuando en modo desktop de smartphone
+               (equivalente a tablet) deslizo con fuerza, se devuelve a la parte
+               superior».
+
+               MEDIDO sobre su video (320x657, 58 fotogramas, correlación de la
+               franja de contenido): el contenido se desplaza a saltos de −72,
+               −42, −80 y −52 px, seguidos de un rebote hacia abajo, en un ciclo
+               de ~9 fotogramas. No es un salto único al tope: es un rebote que
+               se repite mientras dura el gesto.
+
+               Y en la secuencia de fotogramas se ve el mecanismo: un cuadro
+               aparece SIN la cabecera ni el buscador —la página arriba del
+               todo— y el siguiente vuelve a estar completo.
+
+               `100vh` mide en Android el viewport GRANDE: el alto que tendría
+               la pantalla con la barra de direcciones escondida. Cuando esa
+               barra aparece o desaparece por el gesto, `100vh` NO cambia pero
+               el área visible SÍ. El `body` conserva el alto viejo, el
+               documento cambia de tamaño y el navegador re-ancla el scroll:
+               eso es el salto.
+
+               `100dvh` sigue el viewport VISIBLE: se encoge y crece con la
+               barra, así que el alto del documento deja de depender de un
+               valor que no se mueve cuando debería. Se deja `100vh` primero
+               como respaldo para motores sin `dvh`. */
+            min-height:100vh;
+            min-height:100dvh;
+            display:flex;flex-direction:column;
             overflow-x:hidden;width:100%}
         /* La foto, en su propia capa fija: el scroll no la mueve. */
         body::after {
