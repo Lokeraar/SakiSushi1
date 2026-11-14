@@ -1527,6 +1527,34 @@ window.addEventListener('beforeunload',function(e){if(!window._sakiReady){e.prev
             will-change:transform;
             min-height:400px;
             position:relative;
+            /* ── UNA TARJETA NO SE ESTIRA HASTA EL ALTO MÍNIMO DE LA REJILLA ──
+
+               DEFECTO REPORTADO: «en el apartado de Favoritos las tarjetas
+               están quedando más alargadas, y deberían quedar como cuando
+               están en el menú principal».
+
+               CON LA MEDICIÓN EN LA MANO (capturas 1080x2220):
+
+                 Menú       tarjeta ~680 px de alto, 6 en pantalla
+                 Favoritos  tarjeta ~860 px de alto, 1 sola
+
+               La diferencia, ~180 px, es el hueco entre la descripción y el
+               botón «Personalizar».
+
+               POR QUÉ. `min-height:400px` existe para que la rejilla no
+               colapse mientras carga la carta. Con seis tarjetas, esa altura
+               la llenan ellas y no sobra nada. Con UNA sola, la pista de la
+               rejilla sigue midiendo 400 px y su valor por defecto para las
+               filas es `stretch`: la tarjeta se estira para ocupar la pista
+               entera. Y como `.menu-card` es `flex` en columna y
+               `.menu-card-content` lleva `flex:1`, ese sobrante se reparte
+               DENTRO de la tarjeta: aparece como aire entre la descripción y
+               el botón.
+
+               `align-content:start` deja las filas con su altura natural y el
+               `min-height` sigue cumpliendo su función. Una tarjeta mide lo
+               que mide su contenido, sea la única o sean seis. */
+            align-content:start;
         }
         @media (max-width:640px){.menu-grid{grid-template-columns:1fr}}
         @media (min-width:641px) and (max-width:992px){.menu-grid{grid-template-columns:repeat(2,1fr)}}
